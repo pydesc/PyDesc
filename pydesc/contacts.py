@@ -441,6 +441,32 @@ class RingCenterContact(PointsDistanceCriterion):
         self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
 
 
+@for_monomer_type_only(pydesc.monomer.Nucleotide)
+class PrcContact(PointsDistanceCriterion):
+
+    """Nucleotide ring center distance criterion."""
+
+    monomer_hallmark = "prc"
+
+    def __init__(self, *args, **kwargs):
+        """RingCenterContact constructor, extended PointsDistanceCriterion method."""
+        PointsDistanceCriterion.__init__(self, *args, **kwargs)  # pylint: disable=no-member
+        self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
+
+
+@for_monomer_type_only(pydesc.monomer.Nucleotide)
+class NxContact(PointsDistanceCriterion):
+
+    """Nucleotide ring center distance criterion."""
+
+    monomer_hallmark = "nx"
+
+    def __init__(self, *args, **kwargs):
+        """RingCenterContact constructor, extended PointsDistanceCriterion method."""
+        PointsDistanceCriterion.__init__(self, *args, **kwargs)  # pylint: disable=no-member
+        self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
+
+
 class VectorDistanceCriterion(ContactCriterion):    # pylint: disable=abstract-class-little-used
     # this class will be used more in future
 
