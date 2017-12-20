@@ -1159,7 +1159,9 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
             else:
                 atom.ring_flag = False
         self.calculate_ring_center()
+        self.calculate_proximate_ring_center()
         self.calculate_ring_plane()
+        self.calculate_nx()
         self.ion_neighbours = []
         self._check_name('nucleotide')
 
@@ -1167,7 +1169,7 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
         """Adds pseudoatom representing base ring center."""
         #~ vec = (self.ring_atoms['N1 '].vector + self.ring_atoms['C4 '].vector) * 0.5
         vec = (self.ring_atoms['N1'].vector + self.ring_atoms['C4'].vector) * 0.5
-        self.pseudoatoms['ring_center'] = Pseudoatom(numpy_vec = vec, name='ring_center')
+        self.pseudoatoms['ring_center'] = Pseudoatom(numpy_vec=vec, name='ring_center')
 
     def calculate_ring_plane(self):
         """Adds pydesc.geometry.Plane object representing base to current nucleotide pseudoatom dictionary."""
@@ -1175,6 +1177,38 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
         at1, at2, at3 = self.ring_atoms['C2'], self.ring_atoms['C4'], self.ring_atoms['C6']
         self.ring_plane = pydesc.geometry.Plane.build(at1, at2, at3)     # pylint:disable=attribute-defined-outside-init
         # current method is called by init
+
+    def calculate_proximate_ring_center(self):
+        """Adds pseudoatom representing center of the base ring beeing closer to glycosidic bond."""
+        try:
+            vec = numpy.array([0., 0., 0.])
+            for at in ('C4', 'C5', 'N7', 'C8', 'N9'):
+                vec += self.atoms[at].vector
+            vec /= 5.
+            self.pseudoatoms['prc'] = Pseudoatom(numpy_vec=vec, name='prc')
+        except KeyError:
+            pass
+
+    @property
+    def prc(self):
+        try:
+            return self.pseudoatoms['prc']
+        except KeyError:
+            return self.pseudoatoms['ring_center']
+
+    def calculate_nx(self):
+        """Adds pseudoatom representing extended by 1.4A vector along glycosidic bond."""
+        at1 = self.atoms["C1'"]
+        try:
+            at2 = self.N9
+        except AttributeError:
+            at2 = self.N1
+        vec = (at2 - at1).vector
+        nrm = norm(vec)
+        nvec = vec * ((nrm + 1.4) / nrm)
+
+        nx = at1.vector + nvec
+        self.pseudoatoms['nx'] = Pseudoatom(numpy_vec=nx, name='nx')
 
 
 class MonomerOther(Monomer):

@@ -33,6 +33,9 @@ from pydesc import geometry
 from pydesc import contactmap
 
 
+def fmt(string):
+    return string.replace(' ', '_').replace("<", "").replace(">", "")
+
 def register_pydesc():
     import sys
     sys.path.append(os.path.dirname(__file__))
@@ -172,6 +175,7 @@ class SupportingStructure(structure.AbstractStructure):
         structure.AbstractStructure.__init__(self, derived_from)
         self.name = name
         self._monomers = []
+
 
 # ======
 # PATCHE
@@ -392,14 +396,17 @@ def show_contacts(self, point='rc', split_contacts=False, add_name='_cmap'):
     points = []
     for ind1 in self.contacts:
         for ind2 in self.contacts[ind1]:
-            p1 = getattr(self.substructure[ind1], point)
-            p2 = getattr(self.substructure[ind2], point)
-            p1n = str(self.substructure) + "_" + str(ind1) + '_' + point
-            p2n = str(self.substructure) + "_" + str(ind2) + '_' + point
+            try:
+                p1 = getattr(self.substructure[ind1], point)
+                p2 = getattr(self.substructure[ind2], point)
+            except AttributeError:
+                print('Skipping contact between %s and %s due to lack of pseudoatom.' % (self.substructure[ind1].pid, self.substructure[ind1].pid))
+            p1n = fmt(str(self.substructure) + "_" + str(ind1) + '_' + point)
+            p2n = fmt(str(self.substructure) + "_" + str(ind2) + '_' + point)
             cmd.pseudoatom(p1n, pos=p1.get_coord(trt))
             cmd.pseudoatom(p2n, pos=p2.get_coord(trt))
             name = p1n + '_' + p2n if split_contacts else self.substructure.name + add_name
-            cmd.distance(name, p1n, p2n)
+            cmd.distance(fmt(name), p1n, p2n)
             points.extend([p1n, p2n])
     if not split_contacts:
         for i in points:
