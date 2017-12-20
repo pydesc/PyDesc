@@ -5,12 +5,12 @@ Classes that represents molecular structures and their substructures.
 created: 10.07.2013 - , Tymoteusz 'hert' Oleniecki
 """
 
-import pydesc.contactmap
 import pydesc.dbhandler
 import pydesc.geometry
 import pydesc.monomer
 import pydesc.numberconverter
 import pydesc.selection
+import pydesc.contactmap
 import operator
 import math
 from abc import ABCMeta
