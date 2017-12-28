@@ -59,62 +59,93 @@ class ContactMapCalculator(object):
         self.structure = structure_obj
         self.frame = None
         self._contacts = None
-        self._substructure_1 = select1.create_structure(structure_obj)
-        sel2 = select2.create_structure(structure_obj)
-        self._substructure_2 = None if [i.ind for i in sel2] == [i.ind for i in self._substructure_1] else sel2
+        self.sel1 = select1.create_structure(structure_obj)
+        self.sel2 = select2.create_structure(structure_obj)
+        sel12 = select1 * select2
+        self.sel12 = sel12.create_structure(structure_obj)
+        self.sel1uni = (select1 - sel12).create_structure(structure_obj)
+        self.sel2uni = (select2 - sel12).create_structure(structure_obj)
         self._rc_dist = None
 
+    def __iter__(self):
+        """Returns iterator thet runs over all contacts in contact map."""
+        return iter([(i, j, v) for i, cs in self._contacts.items() for j, v in cs.items()])
+
     def calculate_rc_dist(self):
-        points1 = [i.rc.vector for i in self._substructure_1]
-        try:
-            points2 = [i.rc.vector for i in self._substructure_2]
-        except TypeError:
-            points2 = points1
-        self._rc_dist = scipy.spatial.distance.cdist(points1, points2)
+        items = (
+            (self.sel12, self.sel12, '_rcdistC'),
+            (self.sel1uni, self.sel12, '_rcdist1C'),
+            (self.sel2uni, self.sel12, '_rcdist2C'),
+            (self.sel1uni, self.sel2uni, '_rcdist12'),
+            )
+        for sel1, sel2, attrn in items:
+            points1 = [i.rc.vector for i in sel1]
+            points2 = [i.rc.vector for i in sel2]
+            try:
+                res = scipy.spatial.distance.cdist(points1, points2)
+            except:
+                res = None
+            setattr(self, attrn, res)
 
     def calculate_contact_map(self):
-        """Return ContactMap for structure set during initialization."""
+        """Return ContactMap for structure set during initialization.
+
+        Contact is a tuple containing first and second Monomer, distance(s) between them and a contact value under the ContactMap criterion.
+        """
+
+        def cmp(mer1, mer2):
+            try:
+                value = iic(mer1, mer2)
+            except WrongMerType:
+                return
+            if value > 0:
+                self._contacts[mer1.ind][mer2.ind] = value
+                self._contacts[mer2.ind][mer1.ind] = value
 
         self.calculate_rc_dist()
         iic = self._contact_criterion.is_in_contact
         self._contacts = dict((monomer_obj.ind, {}) for monomer_obj in self.structure)
         max_rc_dist = getattr(self._contact_criterion, "max_rc_dist", None)
-        sstr2 = self._substructure_2
 
         if max_rc_dist is not None:
-            indexes = np.transpose(np.where(self._rcdist <= max_rc_dist))
-            add_rev = False
-            if sstr2 is None:
-                indexes = indexes[indexes[:, 0] < indexes[:, 1]]
-                sstr2 = self._substructure_1
-                add_rev = True
+            #common(C) vs C
+            indexes = np.transpose(np.where(self._rcdistC <= max_rc_dist))
+            indexes = indexes[indexes[:, 0] < indexes[:, 1]]
 
             for (i, j) in indexes:
-                monomer_1 = self._substructure_1._monomers[i]
-                monomer_2 = sstr2._monomers[j]
+                mer1 = self.sel12._monomers[i]
+                mer2 = self.sel12._monomers[j]
+                cmp(mer1, mer2)
 
-                try:
-                    value = iic(monomer_1, monomer_2, rcdist=self._rcdist[i][j])
-                except WrongMerType:
-                    pass
-                else:
-                    if value > 0:
-                        self._contacts[monomer_1.ind][monomer_2.ind] = value
-                        if add_rev:
-                            self._contacts[monomer_2.ind][monomer_1.ind] = value
+            items = (
+                (self.sel1uni, self.sel12, '_rcdist1C'),    #uniA vs C
+                (self.sel2uni, self.sel12, '_rcdist2C'),    #uniB vs C
+                (self.sel1uni, self.sel2uni, '_rcdist12'),  #uniA vs uniB
+                )
+            for sel1, sel2, rcname in items:
+                rcmtx = getattr(self, rcname)
+                if not rcmtx:
+                    continue
+                indexes = np.transpose(np.where(rcmtx <= max_rc_dist))
+                for (i, j) in indexes:
+                    mer1 = sel1._monomers[i]
+                    mer2 = sel2._monomers[j]
+                    cmp(mer1, mer2)
         else:
-            for i, monomer_1 in enumerate(self._substructure_1._monomers):    # pylint: disable=protected-access
-                for j, monomer_2 in enumerate(self._substructure_2._monomers) if sstr2 else enumerate(self._substructure_1._monomers[i + 1:], i + 1):    # pylint: disable=protected-access
-                    # attribute is not protected from contact_map
-                    try:
-                        value = iic(monomer_1, monomer_2, rcdist=self._rcdist[i][j])
-                    except WrongMerType:
-                        pass
-                    else:
-                        if value > 0:
-                            self._contacts[monomer_1.ind][monomer_2.ind] = value
-                            if not sstr2:
-                                self._contacts[monomer_2.ind][monomer_1.ind] = value
+            #common(C) vs C
+            for i, mer1 in enumerate(self.sel12):
+                for mer2 in self.sel12._monomers[i + 1:]:
+                    cmp(mer1, mer2)
+            items = (
+                (self.sel1uni, self.sel12),     #uniA vs C
+                (self.sel2uni, self.sel12),     #uniB vs C
+                (self.sel1uni, self.sel2uni),   #uniA vs uniB
+                )
+            for sel1, sel2 in items:
+                for mer1 in sel1:
+                    for mer2 in sel2:
+                        cmp(mer1, mer2)
+
 
 
 class ContactMap(object):
@@ -224,7 +255,6 @@ class ContactMap(object):
                     m2 = self.structure[k2]
                     line = "%s\t%s\t%i\n" % (str(m1.pid), str(m2.pid), self.contacts[k1][k2])
                     fobj.write(line)
-
 
     @property
     def contact_criterion(self):
