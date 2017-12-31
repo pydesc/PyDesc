@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PyDesc is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -26,6 +26,7 @@ import pydesc.contacts.contacts
 from pydesc.warnexcept import WrongMerType
 from pydesc.selection import Everything
 
+from operator import add
 import numpy as np
 import scipy.spatial
 
@@ -55,7 +56,7 @@ class ContactMapCalculator(object):
                 )
             )
         self.derived_from = structure_obj.derived_from
-        self._contact_criterion = contact_criterion_obj
+        self.contact_criterion = contact_criterion_obj
         self.structure = structure_obj
         self.frame = None
         self._contacts = None
@@ -103,49 +104,50 @@ class ContactMapCalculator(object):
                 self._contacts[mer2.ind][mer1.ind] = value
 
         self.calculate_rc_dist()
-        iic = self._contact_criterion.is_in_contact
-        self._contacts = dict((monomer_obj.ind, {}) for monomer_obj in self.structure)
-        max_rc_dist = getattr(self._contact_criterion, "max_rc_dist", None)
+        iic = self.contact_criterion.is_in_contact
+        self._contacts = dict((monomer_obj.ind, {})
+                              for monomer_obj in self.structure)
+        max_rc_dist = getattr(self.contact_criterion, "max_rc_dist", None)
 
-        if max_rc_dist is not None:
-            #common(C) vs C
-            indexes = np.transpose(np.where(self._rcdistC <= max_rc_dist))
-            indexes = indexes[indexes[:, 0] < indexes[:, 1]]
+        if max_rc_dist:
+            # common(C) vs C
+            try:
+                indexes = np.transpose(np.where(self._rcdistC <= max_rc_dist))
+                indexes = indexes[indexes[:, 0] < indexes[:, 1]]
 
-            for (i, j) in indexes:
-                mer1 = self.sel12._monomers[i]
-                mer2 = self.sel12._monomers[j]
-                cmp(mer1, mer2)
-
-            items = (
-                (self.sel1uni, self.sel12, '_rcdist1C'),    #uniA vs C
-                (self.sel2uni, self.sel12, '_rcdist2C'),    #uniB vs C
-                (self.sel1uni, self.sel2uni, '_rcdist12'),  #uniA vs uniB
-                )
-            for sel1, sel2, rcname in items:
-                rcmtx = getattr(self, rcname)
-                if not rcmtx:
-                    continue
-                indexes = np.transpose(np.where(rcmtx <= max_rc_dist))
                 for (i, j) in indexes:
-                    mer1 = sel1._monomers[i]
-                    mer2 = sel2._monomers[j]
+                    mer1 = self.sel12._monomers[i]
+                    mer2 = self.sel12._monomers[j]
                     cmp(mer1, mer2)
+
+            except ValueError:
+                pass
         else:
-            #common(C) vs C
             for i, mer1 in enumerate(self.sel12):
                 for mer2 in self.sel12._monomers[i + 1:]:
                     cmp(mer1, mer2)
-            items = (
-                (self.sel1uni, self.sel12),     #uniA vs C
-                (self.sel2uni, self.sel12),     #uniB vs C
-                (self.sel1uni, self.sel2uni),   #uniA vs uniB
-                )
-            for sel1, sel2 in items:
-                for mer1 in sel1:
-                    for mer2 in sel2:
-                        cmp(mer1, mer2)
 
+        items = (
+            (self.sel1uni, self.sel12, '_rcdist1C'),  # uniA vs C
+            (self.sel2uni, self.sel12, '_rcdist2C'),  # uniB vs C
+            (self.sel1uni, self.sel2uni, '_rcdist12'),  # uniA vs uniB
+        )
+        for sel1, sel2, rcname in items:
+            if max_rc_dist:
+                try:
+                    rcmtx = getattr(self, rcname)
+                    indexes = np.transpose(np.where(rcmtx <= max_rc_dist))
+                    for (i, j) in indexes:
+                        mer1 = sel1._monomers[i]
+                        mer2 = sel2._monomers[j]
+                        cmp(mer1, mer2)
+                except ValueError:
+                    pass
+            else:
+                for sel1, sel2 in items:
+                    for mer1 in sel1:
+                        for mer2 in sel2:
+                            cmp(mer1, mer2)
 
 
 class ContactMap(object):
@@ -270,11 +272,74 @@ class ContactMap(object):
         Contact values are values of 2nd level dicts. Mers that are not with contact with given mer
         have no entry in 2nd level dicts.
         """
-
-        str_frame = self.substructure.frame
+        str_frame = self.derived_from.frame
 
         if self.frame != str_frame:
             self.calculate_contacts()
             self.frame = str_frame
 
         return self._contacts
+
+    def to_string(self, fobj):
+        """Writes pairs of mers in contacts to a given file-like object in CSV format."""
+        with fobj:
+            for k1 in self.contacts:
+                m1 = self.structure[k1]
+                for k2 in self.contacts[k1]:
+                    m2 = self.structure[k2]
+                    line = "%s\t%s\t%i\n" % (
+                        str(m1.pid), str(m2.pid), self.contacts[k1][k2])
+                    fobj.write(line)
+
+    def reset(self):
+        """Erases stored contacts."""
+        self._contacts = None
+
+
+class FrequencyContactMap(object):
+
+    """Class representing maps of contact frequencies in trajectories or NMR structures."""
+
+    def __init__(self, structures, contact_criterion_obj=None, ignore1=True, select1=Everything(), select2=Everything()):
+        """ContactMap costructor.
+
+        Arguments:
+        structures -- list of pydesc.structure.AbstractStructure subclass instances representing the same structure.
+        contact_criterion_obj -- instance of pydesc.contacts.ContactCriterion determinion how to calculate contacts. Initailly set to None.
+        If so, contact for residues is based on ca-cbx criterion, and contact for nucleotides is based on ion contact or ring center contact.
+        ignore1 -- bool; determines if contact value 1 is to be treted as 0 (True) or 2 (False).
+        select1, select2 -- pydesc.selection.Selection subclass instances to be used in contact map calculation against each other.
+        By default Everything selection is used.
+        """
+        self.contact_criterion = contact_criterion_obj
+        self.selA = select1
+        self.selB = select2
+        self.stcA = select1.create_structure(structures[0])
+        self.stcB = select2.create_structure(structures[0])
+        self.contacts = None
+        self.structures = structures
+        self.ignore = ignore1
+
+    def __iter__(self):
+        return iter([(list(self.stcA)[i].ind, list(self.stcB)[j].ind, v) for i, j, v in self.contacts.items()])
+
+    @property
+    def frames(self):
+        """Returns number of trajectory frames."""
+        return len(self.structures)
+
+    def calculate_frequencies(self):
+        def get_value(val):
+            """Returns value depended on self.ignore."""
+            if self.ignore:
+                return int(val == 2)
+            return int(bool(val))
+
+        for stc in self.structures:
+            cmap = ContactMap(stc, self.contact_criterion, self.selA, self.selB)
+            cmap.calculate_contacts()
+            new_mtx = cmap.get_as_sparse_mtx(get_value)
+            try:
+                self.contacts += new_mtx
+            except TypeError:
+                self.contacts = new_mtx

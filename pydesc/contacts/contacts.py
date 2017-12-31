@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PyDesc is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -105,6 +105,7 @@ def optional(iic_method):
         return int(bool(iic_method(self, mer1, mer2, **kwargs)))
     return wrapped_iic
 
+
 def skip_missing(criterion_class):
     """Class decorator that allows to ignore errors raised by criterions that needs attributes not present in all mers.
 
@@ -157,6 +158,7 @@ def Not(criterion_class):
 def check_type(ory_mth):
     """
     """
+
     def new_mth(self, monomer_1, monomer_2, *args, **kwargs):
         if self.type_2 is None or self.type_1 == self.type_2:
             if self.type_1 is None:
@@ -228,7 +230,6 @@ class ContactCriterion(object):
 
         return False
 
-
     @check_type
     def is_in_contact_nopre(self, monomer_1, monomer_2, *args, **kwargs):
         """Like is_in_contact, but withour precheck."""
@@ -260,6 +261,12 @@ class ContactCriterion(object):
         return self._calculate_distance(monomer_1, monomer_2, *args, **kwargs)
 
     def set_types(self, type_1, type_2=None):
+        """Sets types of mers for which criterion is to be applied.
+
+        Arguments:
+        type_1 -- pydesc.monomer.Monomer subclass.
+        type_2 -- if not given, type_1 assumed for both.
+        """
         if type_1 == type_2:
             type_2 = None
 
@@ -269,8 +276,8 @@ class ContactCriterion(object):
         self.type_1 = type_1
         self.type_2 = type_2
 
-
     def get_types(self):
+        """Returns types of mer for which criterion is created."""
         type_1 = pydesc.monomer.Monomer if self.type_1 is None else self.type_1
         type_2 = type_1 if self.type_2 is None else self.type_2
 
@@ -309,7 +316,7 @@ class ContactCriterion(object):
                 return rcdist <= self.max_rc_dist
             else:
                 return abs(monomer_1.rc - monomer_2.rc) <= self.max_rc_dist
-        except: # If anything goes wrong, just disregard the whole precheck.
+        except:  # If anything goes wrong, just disregard the whole precheck.
             pass
 
         return True
@@ -366,12 +373,14 @@ class PointsDistanceCriterion(ContactCriterion):
 
     @property
     def criterion_distance(self):
+        """Property returning criterion distance."""
         if self._criterion_distance is not None:
             return self._criterion_distance
         return getattr(ConfigManager.contacts, self.monomer_hallmark + '_contact_distance')
 
     @property
     def undecidable_range(self):
+        """Property returning undecidable range."""
         if self._undecidable_range is not None:
             return self._undecidable_range
         return getattr(ConfigManager.contacts, self.monomer_hallmark + '_contact_undecidable_range')
@@ -461,26 +470,12 @@ class PrcContact(PointsDistanceCriterion):
 
     monomer_hallmark = "prc"
 
-    #~ def __init__(self, *args, **kwargs):
-        #~ """RingCenterContact constructor, extended PointsDistanceCriterion method."""
-        #~ PointsDistanceCriterion.__init__(self, *args, **kwargs)  # pylint: disable=no-member
-        #~ self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
-
-
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
-class NcxContact(PointsDistanceCriterion):
-
-    """Nucleotide extended N->C distance criterion."""
-
-    monomer_hallmark = "ncx"
-
-
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
-class XncContact(PointsDistanceCriterion):
-
-    """Nucleotide centered C4/C2 (purines/pyrimidines) distance criterion."""
-
-    monomer_hallmark = "xnc"
+    def __init__(self, *args, **kwargs):
+        """RingCenterContact constructor, extended PointsDistanceCriterion method."""
+        PointsDistanceCriterion.__init__(
+            self, *args, **kwargs)  # pylint: disable=no-member
+        self.max_rc_dist = self.max_rc_dist - \
+            2  # for the sake of compatibilty!
 
 
 @for_monomer_type_only(pydesc.monomer.Nucleotide)
@@ -490,10 +485,10 @@ class NxContact(PointsDistanceCriterion):
 
     monomer_hallmark = "nx"
 
-    #~ def __init__(self, *args, **kwargs):
-        #~ """RingCenterContact constructor, extended PointsDistanceCriterion method."""
-        #~ PointsDistanceCriterion.__init__(self, *args, **kwargs)  # pylint: disable=no-member
-        #~ self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
+    def __init__(self, *args, **kwargs):
+        """RingCenterContact constructor, extended PointsDistanceCriterion method."""
+        PointsDistanceCriterion.__init__(self, *args, **kwargs)  # pylint: disable=no-member
+        self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
 
 
 class DifferentPointsDistanceCriterion(ContactCriterion):
@@ -691,7 +686,6 @@ class SetDistanceCriterion(ContactCriterion):
         Takes all atoms into consideration if monomer_hallmarks are none
         """
 
-
         def get_hallmark(mark_strnum, mer_obj):
             """Returns hallmarks atoms.
 
@@ -717,7 +711,6 @@ class SetDistanceCriterion(ContactCriterion):
 
         return dist_mat
 
-
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
         """Returns three-valued logic contact value.
 
@@ -732,7 +725,6 @@ class SetDistanceCriterion(ContactCriterion):
         dist_mat = self._calculate_distance(monomer_1_obj, monomer_2_obj)
         min_value = self.criterion_distance - self.undecidable_range
         max_value = self.criterion_distance + self.undecidable_range
-
 
         class Vertex(object):
 
@@ -771,7 +763,7 @@ class SetDistanceCriterion(ContactCriterion):
                 u_s = [Vertex() for i in us]
                 c_dict = dict(zip(us, u_s))
                 for r, v in zip(vs, v_s):
-                    for i in numpy.where(mtx[r]==-1)[0]:
+                    for i in numpy.where(mtx[r] == -1)[0]:
                         u = c_dict[i]
                         v.add_edge(u)
                         u.add_edge(v)
@@ -866,6 +858,7 @@ class SetDistanceCriterion(ContactCriterion):
             # algorithm stops here
         return 0
 
+
 @for_monomer_type_only(pydesc.monomer.Nucleotide)
 class RaContact(SetDistanceCriterion):
 
@@ -902,7 +895,7 @@ class AtContact(SetDistanceCriterion):
         nprs = 2 if range is None else no_pairs
         # pylint: enable=no-member
         SetDistanceCriterion.__init__(self, rng, urng, nprs)
-        self.max_rc_dist =  rng + urng + 18
+        self.max_rc_dist = rng + urng + 18
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
         """AtContact _is_in_contact, extended SetDistanceCriterion method."""
@@ -929,6 +922,7 @@ class NIContact(SetDistanceCriterion):
 
     def _calculate_distance(self, *args, **kwargs):
         return super(NIContact, self)._calculate_distance(*args, **kwargs) - args[1].get_radius()
+
 
 class DihedralAngleCriterion(ContactCriterion):
 
@@ -1261,7 +1255,6 @@ class ContactsConjunction(CombinedContact):
         type_1 = pydesc.monomer.Monomer
         type_2 = pydesc.monomer.Monomer
 
-
         for i in criteria_objs:
             (t1, t2) = i.get_types()
 
@@ -1282,9 +1275,6 @@ class ContactsConjunction(CombinedContact):
                 pass
 
         self.set_types(type_1, type_2)
-
-
-
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True, **kwargs):
         """Returns contact value under conjunction of the given criteria.
@@ -1345,7 +1335,7 @@ class ContactsDisjunction(CombinedContact):
 
         self.set_types(type_1, type_2)
 
-        self.max_rc_dist=0
+        self.max_rc_dist = 0
         for i in self.criteria:
             try:
                 self.max_rc_dist = max(self.max_rc_dist, i.max_rc_dist)
