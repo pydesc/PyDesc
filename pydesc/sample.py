@@ -23,5 +23,14 @@ nie usuwac, bedzie rozbudowany przy tworzeniu tutoriala
 from pydesc.structure import StructureLoader
 
 def get(stc_name="1no5", ind=0):
+    """Returns structure of given PDB id.
+
+    Arguments:
+    stc_name -- PDB id; str. 1NO5 by default.
+    ind -- 0 by default. Number of model to be returned. Pass 'all' to get all models.
+    """
     sl = StructureLoader()
-    return sl.load_structures(stc_name)[ind]
+    res = sl.load_structure(stc_name)
+    if 'all' != ind:
+        res = res[ind]
+    return res
