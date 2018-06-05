@@ -22,6 +22,7 @@ import pydesc.structure
 import pydesc.warnexcept
 
 import re
+import numpy
 import operator
 import tempfile
 import contextmeta
@@ -34,9 +35,9 @@ from Bio.SeqRecord import SeqRecord
 from Bio.Blast.Applications import NcbiblastpCommandline
 from Bio.Blast.Applications import NcbiblastnCommandline
 
-from StringIO import StringIO
-
 from abc import ABCMeta
+from itertools import chain
+from StringIO import StringIO
 
 from pydesc.cydesc.overfit import Overfit
 
@@ -652,6 +653,56 @@ class Alignment(object):
             docu.writexml(file_, addindent="  ", newl="\n")
         # pylint: enable=no-member
         # there is no point in arguing with minidom doc about its classes attrs
+
+    def expand(self):
+        """Add tuples containing all mers of all structures (aligned with no other mers from other structures)."""
+        all_mers = [set(stc) for stc in self.structures]
+        aligned_mers_by_stc = zip(*self.aligned_mers)
+        mers_to_add = [full - set(alg) for full, alg in zip(all_mers, aligned_mers_by_stc)]
+        n_stcs = len(self.structures)
+        for stc_ind, mers in enumerate(mers_to_add):
+            for mer in mers:
+                row = list("-" * (n_stcs - 1))
+                row.insert(stc_ind, mer)
+                self.aligned_mers.append(tuple(row))
+
+    def sort(self):
+        """Sort tuples in self.aligned_mers by indexes of their mers in structures."""
+
+        class TSLst(object):
+
+            def __init__(self, c):
+                self.c = c
+
+            def lt(self, it1, it2, no=False):
+                for i, j in zip(it1, it2):
+                    if "-" in (i, j):
+                        continue
+                    return i.ind < j.ind
+                return no
+
+            def push_fwd(self, it):
+                for n, i in enumerate(self.c):
+                    if self.lt(it, i):
+                        self.c.insert(n, it)
+                        break
+
+        tsl = TSLst(sorted([i for i in self.aligned_mers if i[0] != '-'], key=lambda x: x[0].ind))
+
+        dct = {}
+        for tup in self.aligned_mers:
+            if tup in tsl.c:
+                continue
+            dct.setdefault(tup.count("-"), []).append(tup)
+
+        def show(tup):
+            print " ".join(map(str, [i if type(i) is str else i.ind for i in tup]))
+
+        for key in sorted(dct):
+            for tup in dct[key]:
+                tsl.push_fwd(tup)
+
+        self.aligned_mers = tsl.c
 
 
 class PairAlignment(Alignment):
