@@ -42,19 +42,27 @@ ConfigManager.contacts.set_default("rc_contact_undecidable_range", 0.5)
 ConfigManager.contacts.set_default("ring_center_contact_distance", 6.25)
 ConfigManager.contacts.set_default("ring_center_contact_undecidable_range", 0.0)
 ConfigManager.contacts.set_default("at_contact_distance", 5.0)
-ConfigManager.contacts.set_default("at_contact_undecidable_range", 0)
+ConfigManager.contacts.set_default("at_contact_undecidable_range", 0.)
 ConfigManager.contacts.set_default("rpa_contact_distance", 0.9)
-ConfigManager.contacts.set_default("rpa_contact_undecidable_range", 0)
-ConfigManager.contacts.set_default("rcb_pairing_contact_distance", 7)
-ConfigManager.contacts.set_default("rcb_pairing_contact_undecidable_range", 0)
+ConfigManager.contacts.set_default("rpa_contact_undecidable_range", 0.)
+ConfigManager.contacts.set_default("rcb_pairing_contact_distance", 7.)
+ConfigManager.contacts.set_default("rcb_pairing_contact_undecidable_range", 0.)
 ConfigManager.contacts.set_default("rcb_stacking_contact_distance", 2.4)
-ConfigManager.contacts.set_default("rcb_stacking_contact_undecidable_range", 0)
+ConfigManager.contacts.set_default("rcb_stacking_contact_undecidable_range", 0.)
 ConfigManager.contacts.set_default("rc_pairing_contact_distance", 1.5)
-ConfigManager.contacts.set_default("rc_pairing_contact_undecidable_range", 0)
+ConfigManager.contacts.set_default("rc_pairing_contact_undecidable_range", 0.)
 ConfigManager.contacts.set_default("rc_stacking_contact_distance", 4.9)
-ConfigManager.contacts.set_default("rc_stacking_contact_undecidable_range", 0)
+ConfigManager.contacts.set_default("rc_stacking_contact_undecidable_range", 0.)
 ConfigManager.contacts.set_default("ni_contact_distance", 7.4)
 ConfigManager.contacts.set_default("ni_contact_undecidable_range", 0.0)
+ConfigManager.contacts.set_default("nx_contact_distance", 7.5)
+ConfigManager.contacts.set_default("nx_contact_undecidable_range", 0.0)
+ConfigManager.contacts.set_default("ncx_contact_distance", 7.5)
+ConfigManager.contacts.set_default("ncx_contact_undecidable_range", 0.0)
+ConfigManager.contacts.set_default("xnc_contact_distance", 5.75)
+ConfigManager.contacts.set_default("xnc_contact_undecidable_range", 0.0)
+ConfigManager.contacts.set_default("prc_contact_distance", 7.5)
+ConfigManager.contacts.set_default("prc_contact_undecidable_range", 0.0)
 ConfigManager.contacts.set_default("cacbx_contact_distance", 0.75)
 ConfigManager.contacts.set_default("cacbx_undecidable_range", 0.05)
 # pylint: enable=no-member
@@ -91,6 +99,11 @@ def for_monomer_type_only(type_1, type_2=None):
 
     return proper_type_decorator
 
+
+def optional(iic_method):
+    def wrapped_iic(self, mer1, mer2, **kwargs):
+        return int(bool(iic_method(self, mer1, mer2, **kwargs)))
+    return wrapped_iic
 
 def skip_missing(criterion_class):
     """Class decorator that allows to ignore errors raised by criterions that needs attributes not present in all mers.
@@ -353,13 +366,13 @@ class PointsDistanceCriterion(ContactCriterion):
 
     @property
     def criterion_distance(self):
-        if self._criterion_distance:
+        if self._criterion_distance is not None:
             return self._criterion_distance
         return getattr(ConfigManager.contacts, self.monomer_hallmark + '_contact_distance')
 
     @property
     def undecidable_range(self):
-        if self._undecidable_range:
+        if self._undecidable_range is not None:
             return self._undecidable_range
         return getattr(ConfigManager.contacts, self.monomer_hallmark + '_contact_undecidable_range')
 
@@ -444,14 +457,30 @@ class RingCenterContact(PointsDistanceCriterion):
 @for_monomer_type_only(pydesc.monomer.Nucleotide)
 class PrcContact(PointsDistanceCriterion):
 
-    """Nucleotide ring center distance criterion."""
+    """Nucleotide proximate ring center distance criterion."""
 
     monomer_hallmark = "prc"
 
-    def __init__(self, *args, **kwargs):
-        """RingCenterContact constructor, extended PointsDistanceCriterion method."""
-        PointsDistanceCriterion.__init__(self, *args, **kwargs)  # pylint: disable=no-member
-        self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
+    #~ def __init__(self, *args, **kwargs):
+        #~ """RingCenterContact constructor, extended PointsDistanceCriterion method."""
+        #~ PointsDistanceCriterion.__init__(self, *args, **kwargs)  # pylint: disable=no-member
+        #~ self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
+
+
+@for_monomer_type_only(pydesc.monomer.Nucleotide)
+class NcxContact(PointsDistanceCriterion):
+
+    """Nucleotide extended N->C distance criterion."""
+
+    monomer_hallmark = "ncx"
+
+
+@for_monomer_type_only(pydesc.monomer.Nucleotide)
+class XncContact(PointsDistanceCriterion):
+
+    """Nucleotide centered C4/C2 (purines/pyrimidines) distance criterion."""
+
+    monomer_hallmark = "xnc"
 
 
 @for_monomer_type_only(pydesc.monomer.Nucleotide)
@@ -461,10 +490,73 @@ class NxContact(PointsDistanceCriterion):
 
     monomer_hallmark = "nx"
 
-    def __init__(self, *args, **kwargs):
-        """RingCenterContact constructor, extended PointsDistanceCriterion method."""
-        PointsDistanceCriterion.__init__(self, *args, **kwargs)  # pylint: disable=no-member
-        self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
+    #~ def __init__(self, *args, **kwargs):
+        #~ """RingCenterContact constructor, extended PointsDistanceCriterion method."""
+        #~ PointsDistanceCriterion.__init__(self, *args, **kwargs)  # pylint: disable=no-member
+        #~ self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
+
+
+class DifferentPointsDistanceCriterion(ContactCriterion):
+
+    """Abstract class for criteria based on distances between two different points from two different mers.
+
+    Methods in those classes should be symmetrical, i.e. _is_in_contact
+    and _calculate_distance should return the same result when called for
+    *(mer1, mer2) and *(mer2, mer1).
+    """
+
+    def __init__(self, criterion_distance=None, undecidable_range=None, mer1_hallmark=None, mer2_hallmark=None):
+        """Contact criterion constructor.
+
+        Arguments:
+        criterion_distance -- radius of the sphere of a center at a given point, inside of which all points are in contact with the central point.
+        undecidable_range -- distance from the surface of the sphere, at which all points assume contact value 1 according to the  three-valued logic. Innitially set to 0.
+
+        See also config file docstring.
+        """
+        self._criterion_distance = criterion_distance
+        self._undecidable_range = undecidable_range
+        self.mer1_hallmark = mer1_hallmark
+        self.mer2_hallmark = mer2_hallmark
+        self.max_rc_dist = self.criterion_distance + self.undecidable_range + 10
+        self.min_value = self.criterion_distance - self.undecidable_range
+        self.max_value = self.criterion_distance + self.undecidable_range
+
+    @property
+    def criterion_distance(self):
+        if self._criterion_distance is not None:
+            return self._criterion_distance
+        return getattr(ConfigManager.contacts, "_".join((self.mer1_hallmark , self.mer2_hallmark, 'contact_distance')))
+
+    @property
+    def undecidable_range(self):
+        if self._undecidable_range is not None:
+            return self._undecidable_range
+        return getattr(ConfigManager.contacts, "_".join((self.mer1_hallmark , self.mer2_hallmark, 'contact_undecidable_range')))
+
+
+    def _calculate_distance(self, mer1, mer2, *args, **kwargs):
+        #~ super(DifferentPointsDistanceCriterion, self)._calculate_distance(mer1, mer2, *args, **kwargs)
+        res = set([])
+        for m1, m2 in ((mer1, mer2), (mer2, mer1)):
+            try:
+                res.add((getattr(m1, self.mer1_hallmark) - (getattr(m2, self.mer2_hallmark))).calculate_length())
+            except AttributeError:
+                pass
+        try:
+            return min(res)
+        except ValueError:
+            raise CannotCalculateContact(mer1, mer2, self)
+
+    def _is_in_contact(self, mer1, mer2, *args, **kwargs):
+        #~ super(DifferentPointsDistanceCriterion, self)._is_in_contact(mer1, mer2, *args, **kwargs)
+        distance = self.calculate_distance(mer1, mer2, *args, **kwargs)
+        if distance <= self.min_value:
+            return 2
+        elif distance >= self.max_value:
+            return 0
+        else:
+            return 1
 
 
 class VectorDistanceCriterion(ContactCriterion):    # pylint: disable=abstract-class-little-used
@@ -829,12 +921,14 @@ class NIContact(SetDistanceCriterion):
         self.monomer_hallmark2 = 'rc'
         self.max_rc_dist = ConfigManager.contacts.ni_contact_distance + ConfigManager.contacts.ni_contact_undecidable_range + 9
 
+    @optional
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
         """NIContact _is_in_contact, extended SetDistanceCriterion method."""
-
         contact_value = SetDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
         return contact_value
 
+    def _calculate_distance(self, *args, **kwargs):
+        return super(NIContact, self)._calculate_distance(*args, **kwargs) - args[1].get_radius()
 
 class DihedralAngleCriterion(ContactCriterion):
 
@@ -1385,6 +1479,5 @@ class DescriptorCriterion(ContactCriterion):
             return contact.value
 
         return 0
-
 
 # pylint: disable=missing-docstring, protected-access, attribute-defined-outside-init

@@ -234,6 +234,8 @@ class AbstractStructure(object):
             if isinstance(param, pydesc.numberconverter.PDB_id) or isinstance(param, tuple):
                 # if given parameter already is a PDB_id or a coresponding tuple instance
                 param = self.derived_from.converter.get_ind(param)
+            if isinstance(param, pydesc.monomer.Monomer):
+                return self._monomers.index(param)
             try:
                 # if parameter is an integer - it is probably monomer ind
                 return self._hash(param)

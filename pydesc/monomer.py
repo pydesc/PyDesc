@@ -443,7 +443,7 @@ class Monomer(object):
 
     def __repr__(self):
         try:
-            return '<%s: %s no. %i, PDB: %s>' % (self.__class__.__name__, self.name, self.ind, str(self.get_pdb_id()))
+            return '<%s: %s no. %i, PDB: %s>' % (self.__class__.__name__, self.name, self.ind, str(self.structure) + str(self.get_pdb_id()))
         except (TypeError, KeyError):
             return '<%s: %s>' % (self.__class__.__name__, self.name)
 
@@ -1162,6 +1162,8 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
         self.calculate_proximate_ring_center()
         self.calculate_ring_plane()
         self.calculate_nx()
+        self.calculate_ncx()
+        self.calculate_xnc()
         self.ion_neighbours = []
         self._check_name('nucleotide')
 
@@ -1209,6 +1211,40 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
 
         nx = at1.vector + nvec
         self.pseudoatoms['nx'] = Pseudoatom(numpy_vec=nx, name='nx')
+
+    def calculate_ncx(self):
+        """Adds pseudoatom representing extended by 1.45A vector along N1-C2 or N9-C4 bond."""
+        try:
+            at1 = self.N9
+            vec = self.C4 - at1
+        except AttributeError:
+            at1 = self.N1
+            vec = self.C2 - at1
+        vec = vec.vector
+        nrm = norm(vec)
+        nvec = vec * ((nrm + 1.45) / nrm)
+
+        ncx = at1.vector + nvec
+        self.pseudoatoms['ncx'] = Pseudoatom(numpy_vec=ncx, name='ncx')
+
+    def calculate_xnc(self):
+        """Adds pseudoatom calculated as C4 (for purines) or C2 (for pyrimidines) moved by 0.70A
+        in direction of C1'->N9 or C1'->N1 vector, respectively."""
+        at1 = self.atoms["C1'"]
+        try:
+            at2 = self.N9
+            at3 = self.C4
+            factor = .7
+        except AttributeError:
+            at2 = self.N1
+            at3 = self.C2
+            factor = 1.4
+        vec = (at2 - at1).vector
+
+        nrm = norm(vec)
+        nvec = at3.vector + (vec / nrm * factor)
+
+        self.pseudoatoms['xnc'] = Pseudoatom(numpy_vec=nvec, name='xnc')
 
 
 class MonomerOther(Monomer):
