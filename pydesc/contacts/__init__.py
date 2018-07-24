@@ -80,11 +80,11 @@ class ContactMapCalculator(object):
             (self.sel1uni, self.sel2uni, '_rcdist12'),
             )
         for sel1, sel2, attrn in items:
-            points1 = [i.rc.vector for i in sel1]
-            points2 = [i.rc.vector for i in sel2]
+            points1 = np.array([i.rc.vector for i in sel1])
+            points2 = np.array([i.rc.vector for i in sel2])
             try:
                 res = scipy.spatial.distance.cdist(points1, points2)
-            except:
+            except Exception as e:
                 res = None
             setattr(self, attrn, res)
 
@@ -120,7 +120,7 @@ class ContactMapCalculator(object):
                     mer2 = self.sel12._monomers[j]
                     cmp(mer1, mer2)
 
-            except ValueError:
+            except (ValueError, IndexError):
                 pass
         else:
             for i, mer1 in enumerate(self.sel12):
