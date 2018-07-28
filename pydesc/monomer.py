@@ -49,6 +49,7 @@ except ImportError:
 # pylint: disable=no-member
 ConfigManager.new_branch("monomer")
 ConfigManager.monomer.set_default("monomer_acceptable_distance", 2.0)
+ConfigManager.monomer.set_default("solvent", ['HOH'])
 ConfigManager.monomer.new_branch("nucleotide")
 ConfigManager.monomer.new_branch("residue")
 ConfigManager.monomer.new_branch("monomerchainable")
@@ -221,7 +222,7 @@ class MonomerFactory(object):
         This class tries to build monomers classes from given.
         """
         if classes is None:
-            classes = [Residue, Nucletoid, Ion, Ligand]
+            classes = [Residue, Nucleotide, Ion, Ligand]
         self.chainable = [i for i in classes if issubclass(i, MonomerChainable)]
         self.other = [i for i in classes if issubclass(i, MonomerOther)]
 
@@ -246,23 +247,25 @@ class MonomerFactory(object):
         base -- an instance of Monomer class containing atoms from pdb_residue. Should be supplied when restarting monomer creation.
         """
 
-        if pdb_residue.get_id()[0] == "W":
-            return None     # We ignore waters
-                            #TODO any solvent form setting should be ommitted
+        name = self.get_pdb_residue_name(pdb_residue)
+        if name in ConfigManager.monomer.solvent:
+            return None     # We ignore solvent
 
         if warnings_ is None:
             warnings_ = WarnManager(pdb_residue)
 
-        if base is None:
-            base = Monomer(pdb_residue, structure_obj)
+        try:
+            ind = self.structure.converter.get_ind(pydesc.numberconverter.PDB_id.from_pdb_residue(pdb_residue))
+        except (AttributeError, KeyError):
+            ind = None
 
-        mers = self._create_monomers(pdb_residue, structure_obj, base, warnings_)
+        if base is None:
+            base = Monomer(structure_obj, ind, *self.unpack_pdb_residue(pdb_residue, name))
+
+        mers = self._create_monomers(pdb_residue, structure_obj, base, warnings_, self.chainable + self.other)
         if warn_in_place:
-            for class_ in self.chainable + self.other:
-                try:
-                    warnings_.raise_all(class_)
-                except KeyError:
-                    pass
+            for class_ in self.chainable + self.other:  #TODO do we really need to keep them separately?
+                warnings_.raise_all(class_)
         else:
             mers['warnings'] = warnings_
 
@@ -270,9 +273,7 @@ class MonomerFactory(object):
         return mers
 
     def _create_monomers(self, pdb_residue, structure_obj, base_monomer, warnings_, classes):
-        """Static method, returns Monomer instances.
-
-        Returns dictionary of different monomer types as values, while subclasses of MonomerChainable and MonomerOther are keys.
+        """Return dictionary of different monomer types as values and subclasses of MonomerChainable and MonomerOther as keys.
 
         Arguments:
         pdb_residue -- instance of BioPython Bio.PDB.Residue based on which monomer is created.
@@ -286,13 +287,35 @@ class MonomerFactory(object):
         for monomer_type in classes:
             try:
                 with warnings_(monomer_type):
-                    mers[monomer_type] = monomer_type(pdb_residue, structure_obj, base=base_monomer)
+                    mers[monomer_type] = monomer_type(self.unpack_base(base_monomer))
             except (IncompleteParticle, WrongAtomDistances, AttributeError, ValueError, KeyError):
                 # AttributeError is raised by nucleotides during Residue.__init__
                 # KeyError is raised by different __init__s when needed Atoms/Pseudoatoms are absent
                 pass
 
         return mers
+
+    def unpack_pdb_residue(self, pdb_residue, name=None):
+        """Return important data from pdb_residue.
+
+        Argument:
+        pdb_residue -- instance of Bio.PDB.PdbResidue.
+        name -- str; residue name; None by default. If so name is taken from pdb_residue with get_pdb_residue_name method.
+
+        Returns tuple of name, chain name and dict of atoms.
+        """
+        if name is not None:
+            name = self.get_pdb_residue_name(pdb_residue)
+        chain = pdb_residue.get_full_id()[2]
+        atoms = {pdb_atom.get_fullname().strip(): Atom(pdb_atom) for pdb_atom in pdb_residue}
+        return name, chain, atoms
+
+    def unpack_base(self, base):
+        return base.structure_obj, base.ind, base.name, base.chain, base.atoms
+
+    def get_pdb_residue_name(self, pdb_residue):
+        return pdb_residue.get_resname().strip()
+
 
 class Atom(pydesc.geometry.Coord):
 
@@ -315,13 +338,12 @@ class Atom(pydesc.geometry.Coord):
         """
         self._vector = None
         self.vector = numpy.array(pdb_atom.get_coord())
-        self.name = pdb_atom.get_fullname().lstrip()
         self.element = pdb_atom.element
         self.pdb_atom = pdb_atom
         self.prody_atom = None
 
     def __repr__(self):
-        return "<Atom %s: %f %f %f>" % ((self.name,) + tuple(self.vector))
+        return "<Atom at %s>" % " ".join(["%.2f" % i for i in self.vector])
 
     @property
     def vector(self):
@@ -471,44 +493,32 @@ class Monomer(object):
         return res
 
 
-    def __init__(self, pdb_residue, structure_obj, base=None, **kwargs):
+    def __init__(self, structure_obj, ind, name, chain,atoms):
         """Monomer contructor.
 
         Arguments:
-        pdb_residue -- instance of BioPython Bio.PDB.Residue.
-        structure -- Structure in which current monomer is included.
+        structure_obj -- Structure in which current monomer is included.
+        name -- str; mers name.
+        chain -- str; chain name.
+        atoms -- dict; dict of str names of atoms as keys and Atom instances as values.
 
         Sets attributes:
         name -- mer or ligand name, up to three letters, according to PDB file.
         structure -- the Structure instance to which the monomer belongs.
         my_chain -- character of the chain that the monomers belong to, according to PDB file.
-        list of atoms - a list of atoms building current monomer repersented by Atom instances.
+        atoms - dict of atoms building current monomer repersented by Atom instances.
         ind -- PyDesc integer.
+        pseudoatoms -- dict of Pseudoatoms.
+        dynamic_properties -- dict of other geometrical properties like planes for cyclic chemical compounds.
+        _ss -- secondary structure sign.
         """
 
         self.structure = structure_obj
-        if base is None:
-            self.pdb_residue = pdb_residue
-            self.name = pdb_residue.get_resname()
-            self.my_chain = self.pdb_residue.get_full_id()[2]
-            try:
-                self.ind = self.structure.converter.get_ind(pydesc.numberconverter.PDB_id.from_pdb_residue(pdb_residue))
-            except (AttributeError, KeyError):
-                self.ind = None
-            self.atoms = {}
-            for pdb_atom in pdb_residue:
-                atom = Atom(pdb_atom)
-                #~ self.atoms[atom.name] = atom
-                self.atoms[atom.name.strip()] = atom
-        else:
-            self.pdb_residue = base.pdb_residue
-            self.name = base.name
-            self.my_chain = base.my_chain
-            self.ind = base.ind
-            self.atoms = base.atoms
+        self.name = name
+        self.my_chain = chain
+        self.ind = ind
+        self.atoms = atoms
 
-
-        # self.calculate_rc()
         self.pseudoatoms = DynamicPropertiesDict(self)
         self.dynamic_properties = DynamicPropertiesDict(self)
         self._ss = '='

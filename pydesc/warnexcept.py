@@ -154,7 +154,7 @@ class WarnManager(warnings.catch_warnings):
 
         Method use pydesc.warnexcept.warn function to throw warnings, therefore pydesc configuration affects warnings filtering.
         """
-        for warning in self.exceptions[context]:
+        for warning in self.exceptions.get(context, []):
             warn(warning, 0)
 
 

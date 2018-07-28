@@ -33,6 +33,7 @@ import unittest
 import types
 import itertools
 import numpy
+import os
 
 import Bio.PDB
 
@@ -70,11 +71,6 @@ notest(monomer.Monomer.is_next)
 notest(monomer.Monomer.is_prev)
 notest(monomer.Monomer.get_representation)
 
-notest(monomer.MonomerChainable.__metaclass__)
-notest(monomer.MonomerChainable.__metaclass__.__call__)
-
-notest(monomer.MonomerOther.__metaclass__)
-notest(monomer.MonomerOther.__metaclass__.__call__)
 notest(monomer.MonomerOther.next_monomer)
 notest(monomer.MonomerOther.previous_monomer)
 
@@ -90,105 +86,6 @@ tests_performed = dict((x, False) for x in [
 data_dir = tests.__path__[0] + '/data/test_structures/'
 
 # pylint: disable=C0111
-
-
-@testing(monomer.Atom)
-@testing(monomer.Pseudoatom)
-class AtomEnhancements(unittest.TestCase):
-
-    """ TestCase for enhancements requested in monomer.Atom. """
-
-    @testing(monomer.Atom.__init__)
-#    @testing(monomer.Atom.__getitem__)
-#    @testing(monomer.Atom.__setitem__)
-    @unittest.expectedFailure
-    def test_deprec(self):
-        """ Deprecation of __getitem__ interface to Atom. """
-        a = monomer.Atom(*randomcoord())
-        syntax_check.test_deprec(self, lambda: a['name'], "__getitem__")
-        syntax_check.test_deprec(self, lambda: a.__setitem__('name', 'aa'), "__setitem__")
-
-    @unittest.expectedFailure
-    def test_hashable(self):
-        """ Check whether Atom is hashable. """
-        a = monomer.Atom(*randomcoord())
-        try:
-            set([a])
-        except:
-            self.fail()
-
-    @testing(monomer.Pseudoatom.__init__)
-    @testing(monomer.Atom.vector)
-    def test_pseudoatom_init(self):
-        """Checks if Pseudoatoms are created both ways."""
-        for d in range(100):
-            random_coords = randomcoord()
-            pa = monomer.Pseudoatom(*random_coords)
-            pa2 = monomer.Pseudoatom(numpy_vec=numpy.array(random_coords))
-            for i in zip(pa.vector, pa2.vector):
-                self.assertEqual(*i)
-
-@testing(monomer.Monomer)
-class MonomerClassMethods(unittest.TestCase):
-
-    @testing(monomer.Monomer.seq_3to1)
-    @testing(monomer.Monomer.seq_1to3)
-    def test_seqs(self):
-        cls = monomer.Residue
-        self.assertEqual(cls.seq_3to1('ALA'), 'A')
-        self.assertEqual(cls.seq_1to3('A'), 'ALA')
-        self.assertEqual(cls.seq_3to1('CYS'), 'C')
-        self.assertEqual(cls.seq_1to3('C'), 'CYS')
-        self.assertEqual(cls.seq_3to1('ASP'), 'D')
-        self.assertEqual(cls.seq_1to3('D'), 'ASP')
-        self.assertEqual(cls.seq_3to1('GLU'), 'E')
-        self.assertEqual(cls.seq_1to3('E'), 'GLU')
-        self.assertEqual(cls.seq_3to1('PHE'), 'F')
-        self.assertEqual(cls.seq_1to3('F'), 'PHE')
-        self.assertEqual(cls.seq_3to1('GLY'), 'G')
-        self.assertEqual(cls.seq_1to3('G'), 'GLY')
-        self.assertEqual(cls.seq_3to1('HIS'), 'H')
-        self.assertEqual(cls.seq_1to3('H'), 'HIS')
-        self.assertEqual(cls.seq_3to1('ILE'), 'I')
-        self.assertEqual(cls.seq_1to3('I'), 'ILE')
-        self.assertEqual(cls.seq_3to1('LYS'), 'K')
-        self.assertEqual(cls.seq_1to3('K'), 'LYS')
-        self.assertEqual(cls.seq_3to1('LEU'), 'L')
-        self.assertEqual(cls.seq_1to3('L'), 'LEU')
-        self.assertEqual(cls.seq_3to1('MET'), 'M')
-        self.assertEqual(cls.seq_1to3('M'), 'MET')
-        self.assertEqual(cls.seq_3to1('ASN'), 'N')
-        self.assertEqual(cls.seq_1to3('N'), 'ASN')
-        self.assertEqual(cls.seq_3to1('PRO'), 'P')
-        self.assertEqual(cls.seq_1to3('P'), 'PRO')
-        self.assertEqual(cls.seq_3to1('GLN'), 'Q')
-        self.assertEqual(cls.seq_1to3('Q'), 'GLN')
-        self.assertEqual(cls.seq_3to1('ARG'), 'R')
-        self.assertEqual(cls.seq_1to3('R'), 'ARG')
-        self.assertEqual(cls.seq_3to1('SER'), 'S')
-        self.assertEqual(cls.seq_1to3('S'), 'SER')
-        self.assertEqual(cls.seq_3to1('THR'), 'T')
-        self.assertEqual(cls.seq_1to3('T'), 'THR')
-        self.assertEqual(cls.seq_3to1('TRP'), 'W')
-        self.assertEqual(cls.seq_1to3('W'), 'TRP')
-        self.assertEqual(cls.seq_3to1('TYR'), 'Y')
-        self.assertEqual(cls.seq_1to3('Y'), 'TYR')
-        self.assertEqual(cls.seq_3to1('VAL'), 'V')
-        self.assertEqual(cls.seq_1to3('V'), 'VAL')
-        cls = monomer.Nucleotide
-        self.assertEqual(cls.seq_3to1('  A'), 'A')
-        self.assertEqual(cls.seq_1to3('A'), '  A')
-        self.assertEqual(cls.seq_3to1('  U'), 'U')
-        self.assertEqual(cls.seq_1to3('U'), '  U')
-        self.assertEqual(cls.seq_3to1('  G'), 'G')
-        self.assertEqual(cls.seq_1to3('G'), '  G')
-        self.assertEqual(cls.seq_3to1('  C'), 'C')
-        self.assertEqual(cls.seq_1to3('C'), '  C')
-        self.assertEqual(cls.seq_3to1(' DA'), 'A')
-        self.assertEqual(cls.seq_3to1(' DT'), 'T')
-        self.assertEqual(cls.seq_1to3('T'), ' DT')
-        self.assertEqual(cls.seq_3to1(' DG'), 'G')
-        self.assertEqual(cls.seq_3to1(' DC'), 'C')
 
 
 def make_monomertestbasic(strname, cls):
@@ -577,6 +474,137 @@ def load_tests(loader, standard_tests, pattern):
     standard_tests.addTests(loader.loadTestsFromTestCase(syntax_check.variants_tested(tests_performed)))
 
     return standard_tests
+
+
+@testing(monomer.Atom)
+@testing(monomer.Pseudoatom)
+class AtomEnhancements(unittest.TestCase):
+
+    """ TestCase for enhancements requested in monomer.Atom. """
+
+    @testing(monomer.Atom.__init__)
+#    @testing(monomer.Atom.__getitem__)
+#    @testing(monomer.Atom.__setitem__)
+    @unittest.expectedFailure
+    def test_deprec(self):
+        """ Deprecation of __getitem__ interface to Atom. """
+        a = monomer.Atom(*randomcoord())
+        syntax_check.test_deprec(self, lambda: a['name'], "__getitem__")
+        syntax_check.test_deprec(self, lambda: a.__setitem__('name', 'aa'), "__setitem__")
+
+    @unittest.expectedFailure
+    def test_hashable(self):
+        """ Check whether Atom is hashable. """
+        a = monomer.Atom(*randomcoord())
+        try:
+            set([a])
+        except:
+            self.fail()
+
+    @testing(monomer.Pseudoatom.__init__)
+    @testing(monomer.Atom.vector)
+    def test_pseudoatom_init(self):
+        """Checks if Pseudoatoms are created both ways."""
+        for d in range(100):
+            random_coords = randomcoord()
+            pa = monomer.Pseudoatom(*random_coords)
+            pa2 = monomer.Pseudoatom(numpy_vec=numpy.array(random_coords))
+            for i in zip(pa.vector, pa2.vector):
+                self.assertEqual(*i)
+
+@testing(monomer.Monomer)
+class MonomerClassMethods(unittest.TestCase):
+
+    @testing(monomer.Monomer.seq_3to1)
+    @testing(monomer.Monomer.seq_1to3)
+    def test_seqs(self):
+        cls = monomer.Residue
+        self.assertEqual(cls.seq_3to1('ALA'), 'A')
+        self.assertEqual(cls.seq_1to3('A'), 'ALA')
+        self.assertEqual(cls.seq_3to1('CYS'), 'C')
+        self.assertEqual(cls.seq_1to3('C'), 'CYS')
+        self.assertEqual(cls.seq_3to1('ASP'), 'D')
+        self.assertEqual(cls.seq_1to3('D'), 'ASP')
+        self.assertEqual(cls.seq_3to1('GLU'), 'E')
+        self.assertEqual(cls.seq_1to3('E'), 'GLU')
+        self.assertEqual(cls.seq_3to1('PHE'), 'F')
+        self.assertEqual(cls.seq_1to3('F'), 'PHE')
+        self.assertEqual(cls.seq_3to1('GLY'), 'G')
+        self.assertEqual(cls.seq_1to3('G'), 'GLY')
+        self.assertEqual(cls.seq_3to1('HIS'), 'H')
+        self.assertEqual(cls.seq_1to3('H'), 'HIS')
+        self.assertEqual(cls.seq_3to1('ILE'), 'I')
+        self.assertEqual(cls.seq_1to3('I'), 'ILE')
+        self.assertEqual(cls.seq_3to1('LYS'), 'K')
+        self.assertEqual(cls.seq_1to3('K'), 'LYS')
+        self.assertEqual(cls.seq_3to1('LEU'), 'L')
+        self.assertEqual(cls.seq_1to3('L'), 'LEU')
+        self.assertEqual(cls.seq_3to1('MET'), 'M')
+        self.assertEqual(cls.seq_1to3('M'), 'MET')
+        self.assertEqual(cls.seq_3to1('ASN'), 'N')
+        self.assertEqual(cls.seq_1to3('N'), 'ASN')
+        self.assertEqual(cls.seq_3to1('PRO'), 'P')
+        self.assertEqual(cls.seq_1to3('P'), 'PRO')
+        self.assertEqual(cls.seq_3to1('GLN'), 'Q')
+        self.assertEqual(cls.seq_1to3('Q'), 'GLN')
+        self.assertEqual(cls.seq_3to1('ARG'), 'R')
+        self.assertEqual(cls.seq_1to3('R'), 'ARG')
+        self.assertEqual(cls.seq_3to1('SER'), 'S')
+        self.assertEqual(cls.seq_1to3('S'), 'SER')
+        self.assertEqual(cls.seq_3to1('THR'), 'T')
+        self.assertEqual(cls.seq_1to3('T'), 'THR')
+        self.assertEqual(cls.seq_3to1('TRP'), 'W')
+        self.assertEqual(cls.seq_1to3('W'), 'TRP')
+        self.assertEqual(cls.seq_3to1('TYR'), 'Y')
+        self.assertEqual(cls.seq_1to3('Y'), 'TYR')
+        self.assertEqual(cls.seq_3to1('VAL'), 'V')
+        self.assertEqual(cls.seq_1to3('V'), 'VAL')
+        cls = monomer.Nucleotide
+        self.assertEqual(cls.seq_3to1('  A'), 'A')
+        self.assertEqual(cls.seq_1to3('A'), '  A')
+        self.assertEqual(cls.seq_3to1('  U'), 'U')
+        self.assertEqual(cls.seq_1to3('U'), '  U')
+        self.assertEqual(cls.seq_3to1('  G'), 'G')
+        self.assertEqual(cls.seq_1to3('G'), '  G')
+        self.assertEqual(cls.seq_3to1('  C'), 'C')
+        self.assertEqual(cls.seq_1to3('C'), '  C')
+        self.assertEqual(cls.seq_3to1(' DA'), 'A')
+        self.assertEqual(cls.seq_3to1(' DT'), 'T')
+        self.assertEqual(cls.seq_1to3('T'), ' DT')
+        self.assertEqual(cls.seq_3to1(' DG'), 'G')
+        self.assertEqual(cls.seq_3to1(' DC'), 'C')
+
+
+
+
+class TestMonomerFactory(unittest.TestCase):
+
+    @classmethod
+    def setUpClass(cls):
+        stcs = ['1no5']
+        cls.bio_stc_objs = []
+        pth = 'tests/data/test_structures/'
+        for f in os.listdir(pth):
+            pdbS = Bio.PDB.PDBParser(QUIET=True).get_structure(f, os.path.join(pth, f))
+            cls.bio_stc_objs.append(pdbS)
+
+    def setUp(self):
+        self.mf = monomer.MonomerFactory()
+
+    def test_init(self):
+        pass
+
+    def test_create_default(self):
+        for s in self.bio_stc_objs:
+            for ch in list(s.get_models())[0]:
+                for m in ch:
+                    res = self.mf.create_from_BioPDB(m)
+                    mn = m.get_resname().strip()
+                    if mn == 'HOH':
+                        self.assertIs(res, None)
+                        continue
+                    for i in res.values():
+                        self.assertEqual(i.name, mn)
 
 
 if __name__ == '__main__':
