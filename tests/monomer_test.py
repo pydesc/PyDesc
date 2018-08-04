@@ -33,6 +33,7 @@ import unittest
 import types
 import itertools
 import numpy
+import random
 import os
 
 import Bio.PDB
@@ -42,39 +43,20 @@ from syntax_check import notest, testing, randomcoord, test_name_append
 
 import pydesc.structure as structure
 import pydesc.monomer as monomer
-import pydesc.geometry as geometry
 import pydesc.config as config
-import pydesc.selection as selection
-import pydesc.numberconverter as numcon
 import tests
 from pydesc.warnexcept import IncompleteChainableParticle as IncompleteChainableParticle
 
-config.ConfigManager.warnings_and_exceptions.class_filters.set("UnknownParticleName", "ignore")
-config.ConfigManager.warnings_and_exceptions.class_filters.set("IncompleteChainableParticle", "ignore")
+config.ConfigManager.warnings_and_exceptions.class_filters.set("UnknownParticleName", "always")
+config.ConfigManager.warnings_and_exceptions.class_filters.set("IncompleteChainableParticle", "always")
 
 fast = False
-
-fast = True
 
 syntax_check.module = monomer
 
 TestSyntax = syntax_check.module_syntax()
 
-notest(monomer.Atom.__iter__)
-#notest(monomer.Atom.__getattr__)
-#notest(monomer.Atom.__setattr__)
-
-notest(monomer.Monomer.get_pdb_id)
-notest(monomer.MonomerChainable.next_monomer)
-notest(monomer.MonomerChainable.previous_monomer)
-notest(monomer.Monomer.is_next)
-notest(monomer.Monomer.is_prev)
-notest(monomer.Monomer.get_representation)
-
-notest(monomer.MonomerOther.next_monomer)
-notest(monomer.MonomerOther.previous_monomer)
-
-notest(monomer.Residue.calculate_cbx_legacy)
+#~ notest(monomer.MonomerOther.next_monomer)
 
 tests_performed = dict((x, False) for x in [
     'monomer.Ion',
@@ -83,12 +65,47 @@ tests_performed = dict((x, False) for x in [
     'monomer.Nucleotide'
 ])
 
-data_dir = tests.__path__[0] + '/data/test_structures/'
+data_dir = os.path.join(os.path.abspath(os.path.dirname(tests.__file__)), 'data/test_structures/')
 
 # pylint: disable=C0111
 
 
-def make_monomertestbasic(strname, cls):
+def make_monomertestinits(strname, test_structure_dir, cls, names):
+    """ Create and return a MonomerTestBasic test case for a given structure and monomer class. """
+
+    @testing(cls)
+    @testing(monomer.Monomer)
+    @testing(monomer.MonomerChainable)
+    @test_name_append(cls, strname)
+    class MonomerTestInit(unittest.TestCase):
+
+        @classmethod
+        def setUpClass(clss):
+            clss.mf = monomer.MonomerFactory()
+
+        def setUp(self):
+            self.pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(strname, os.path.join(data_dir, test_structure_dir, strname))
+            self.stc = PatchStc()
+
+        @testing(cls.__init__)
+        @testing(monomer.Monomer.__init__)
+        @testing(monomer.MonomerChainable.__init__)
+        def test_init_random_name(self):
+            for i in range(100):
+                nm = random.choice(names)
+                it = cls(self.stc, i, nm, 'A', atoms)
+
+        @testing(cls.__init__)
+        @testing(monomer.Monomer.__init__)
+        @testing(monomer.MonomerChainable.__init__)
+        def test_init_form_MF_unpacked_Bio(self):
+            for n, res in enumerate(self.pdb_structure.get_residues()):
+                data = self.mf.unpack_pdb_residue(res)
+                it = cls(self.stc, n, *data)
+
+    return MonomerTestInit
+
+def make_monomertestbasic(strname, test_structure_dir, cls, names):
     """ Create and return a MonomerTestBasic test case for a given structure and monomer class. """
 
     @testing(cls)
@@ -97,47 +114,24 @@ def make_monomertestbasic(strname, cls):
     @test_name_append(cls, strname)
     class MonomerTestBasic(unittest.TestCase):
 
-        def setUp(self):
-            self.pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(strname, data_dir + '%s.pdb' % strname)
-            self.ress = filter(lambda x: x is not None, map(monomer.Monomer.create_monomers, self.pdb_structure.get_residues()))
-
-        @testing(cls.__init__)
-        @testing(monomer.Monomer.__init__)
-        @testing(monomer.MonomerChainable.__init__)
-        def test_init(self):
-            for res in self.pdb_structure.get_residues():
-                res_id = res.get_id()[0]
-                if not res_id.startswith('H_') and not res_id.startswith('W'):
-                    try:
-                        cls(res)
-                    except KeyError as error:
-                        try:
-                            res[str(error).strip()]
-                        except:
-                            pass
-                        else:
-                            raise error
-
-        @testing(monomer.Monomer.get_config)
+        @testing(cls.get_config)
         def test_get_config(self):
             config.ConfigManager.monomer.residue.set_default('test', 1)
             config.ConfigManager.monomer.nucleotide.set_default('test', 2)
             config.ConfigManager.monomer.ligand.set_default('test', 3)
             config.ConfigManager.monomer.ion.set_default('test', 4)
             test_dict = {monomer.Residue: 1, monomer.Nucleotide: 2, monomer.Ligand: 3, monomer.Ion: 4}
-            for i in self.ress:
-                for cls, res in i.items():
-                    if cls == monomer.MonomerOther:
-                        cls = res.__class__
-                    self.assertEqual(test_dict[cls], res.get_config('test'), "")
+            for n, res in enumerate(self.pdb_structure.get_residues()):
+                if cls == monomer.MonomerOther:
+                    cls = res.__class__
+                self.assertEqual(test_dict[cls], res.get_config('test'), "")
 
-                    class TestMonomer(cls):
-                        pass
+                class TestMonomer(cls):
+                    pass
 
-                    artif = TestMonomer(res.pdb_residue)
-                    self.assertEqual(test_dict[cls], artif.get_config('test'))
+                artif = TestMonomer(res.pdb_residue)
+                self.assertEqual(test_dict[cls], artif.get_config('test'))
 
-        
         @testing(monomer.Monomer.select)
         def test_select(self):
             nc = numcon.NumberConverter(self.pdb_structure)
@@ -170,16 +164,11 @@ def make_monomertestbasic(strname, cls):
 
     return MonomerTestBasic
 
-
 def make_monomertest(strname, cls):
     """ Create and return a MonomerTest test case for a given structure and monomer class. """
 
     @testing(cls)
     @testing(monomer.Monomer)
-    @testing(monomer.ABCMetamonomer)
-    @testing(monomer.ABCMetamonomer.__call__)
-    @testing(monomer.Monomer.__metaclass__)
-    @testing(monomer.Monomer.__metaclass__.__class__)
     # TO I believe four above units are tested here
     @testing(monomer.MonomerChainable)
     @test_name_append(cls, strname)
@@ -190,35 +179,6 @@ def make_monomertest(strname, cls):
 
         def setUp(self):
             self.load_mers(strname, data_dir + '%s.pdb' % strname, cls)
-
-        #~ @testing(monomer.MonomerChainable.is_next)
-        #~ def test_next(self):
-            #~ ww = []
-            #~ for pi, p in enumerate(self.l):
-                #~ for ni, n in enumerate(self.l):
-                    #~ if pi < ni:
-                        #~ with warnings.catch_warnings(record=True) as w:
-                            #~ v = p.is_next(n)
-                            #~ if len(w):
-                                #~ ww += w
-
-                        #~ if ni - pi != 1:
-                            #~ self.assertFalse(
-                                #~ v, "Mers %s %s are not connected." %
-                                #~ #(str(self.pdbl[pi]), str(self.pdbl[ni])))
-                                    #~ #TO -- hoping for more informable msg
-                                #~ (str(p), str(n)))
-                        #~ else:
-                            #~ if not pi in self.cont_excl.get(self.pdb_structure.get_id(), []):
-                                #~ self.assertTrue(
-                                    #~ v, "Mers %s %s are connected." %
-                                    #~ #(str(self.pdbl[pi]), str(self.pdbl[ni])))
-                                    #~ #TO -- hoping for more informable msg
-                                    #~ (str(p), str(n)))
-
-            #~ syntax_check.warning_message(self, ww)
-        #TO -- is_next uses attribute 'next_monomer" which is set by Structure.__init__
-        #so it's not going to work with unbound mers used here
 
         def load_mers(self, name, filename, cls):
             self.pdb_structure = Bio.PDB.PDBParser(
@@ -358,7 +318,6 @@ def make_monomercreatetest(strname):
         def setUp(self):
             self.pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(strname, data_dir + '%s.pdb' % strname)
 
-        @testing(monomer.Monomer.create_monomers)
         @testing(monomer.Monomer.__len__)
         @testing(monomer.MonomerOther)
         @testing(monomer.MonomerOther.__init__)
@@ -405,71 +364,72 @@ def make_monomercreatetest(strname):
                 for i in m.values():
                     tests_performed["monomer.%s" % i.__class__.__name__] = True
 
-
-        #~ @testing(monomer.Monomer.create_monomers)
-        #~ def test_create_monomer_failures(self):
-
-            #~ def get_full_id():
-                #~ return ('stru', 0, 'A', (' ', 0, ' '))
-
-            #~ for res in self.pdb_structure.get_residues():
-                #~ res.get_full_id = get_full_id
-                #~ chainable = []
-                #~ for monomer_type in MonomerChainable.__subclasses__():
-                    #~ try:
-                        #~ mers[monomer_type] = monomer_type(pdb_residue, structure_obj, warnings_)
-                        #~ chainable.append(1)
-                    #~ except:
-                        #~ pass
-                #~ if len(chainable) != 0:
-                    #~ self.assertRaises(IncompleteChainableParticle, lambda: monomer.Monomer.create_monomers(res))
-                #~ else:
-                    #~ self.assertTrue(monomer.Monomer.create_monomers(res)[monomer.MonomerOther].__class__ in (monomer.Ion, monomer.Lignad))
-
-
     return MonomerCreateTest
 
+def make_monomerfactorytest(strname, test_structure_dir, cls_):
+
+    @testing(cls_)
+    @test_name_append(cls_.__name__, strname.split(".")[0])
+    class TestMonomerFactory(unittest.TestCase):
+
+        @classmethod
+        def setUpClass(cls):
+            f = os.path.join(data_dir, test_structure_dir, strname)
+            cls.pdbS = Bio.PDB.PDBParser(QUIET=True).get_structure(f, f)
+            cls.cls = cls_
+
+        def setUp(self):
+            self.mf = monomer.MonomerFactory()
+
+        def test_init(self):
+            pass
+
+        def test_create_residues_from_Bio(self):
+            for ch in list(self.pdbS.get_models())[0]:
+                for m in ch:
+                    res = self.mf.create_from_BioPDB(m)
+                    mn = m.get_resname().strip()
+                    if mn == 'HOH':
+                        self.assertIs(res, None)
+                        continue
+                    self.assertIn(self.cls, res)
+                    for i in res.values():
+                        self.assertEqual(i.name, mn)
+
+    return TestMonomerFactory
 
 def load_tests(loader, standard_tests, pattern):
     """ Add tests created by make_* functions for all structures. Return a complete TestSuite. """
 
-    structures_rna = ['3npn']
-    structures_prot = ['3m6x', '1no5', '1pxq', '2lp2',
-                       '3ftk', '3g88', '3lgb', '3tk0']
+    bio_stc = {}
+    bio_stc_sh = {}
+    for i in (('prots_only', monomer.Residue), ('rna_only', monomer.Nucleotide), ('dna_only', monomer.Nucleotide)):
+        for f in os.listdir(os.path.join(data_dir, i[0])):
+            bio_stc.setdefault(i, []).append(f)
+    for i in bio_stc:
+        bio_stc_sh[i] = bio_stc[i][:3]
+
 
     if fast:
-        structures_rna = structures_rna[:1]
-        structures_prot = structures_prot[:1]
+        bio_stc = bio_stc_sh
 
-    structures_any = structures_prot + structures_rna + []
+    factory = unittest.TestSuite()
 
-    protbasic = unittest.TestSuite()
-    prot = unittest.TestSuite()
-    rnabasic = unittest.TestSuite()
-    rna = unittest.TestSuite()
-    create = unittest.TestSuite()
+    names = {'prots_only': ['ALA', 'GLY', 'TRP', 'TYR', 'LYS'],
+             'rna_oly': ['U', 'A', 'C', 'G'],
+             'dna_only': ['dT', 'dA', 'dG', 'dC'],
+             }
 
-    for name in structures_prot:
-        protbasic.addTests(
-            loader.loadTestsFromTestCase(make_monomertestbasic(name, monomer.Residue)))
-        prot.addTests(loader.loadTestsFromTestCase(
-            make_monomertest(name, monomer.Residue)))
+    for pth, tp in bio_stc:
+        for stc in bio_stc[(pth, tp)]:
+            factory.addTests(loader.loadTestsFromTestCase(make_monomerfactorytest(stc, pth, tp)))
 
-    for name in structures_rna:
-        rnabasic.addTests(loader.loadTestsFromTestCase(
-            make_monomertestbasic(name, monomer.Nucleotide)))
-        rna.addTests(loader.loadTestsFromTestCase(
-            make_monomertest(name, monomer.Nucleotide)))
+    for pth, tp in bio_stc_sh:
+        for stc in bio_stc_sh[(pth, tp)]:
+            nms = names.get(pth, ['random1'])
+            standard_tests.addTests(loader.loadTestsFromTestCase(make_monomertestinits(stc, pth, tp, nms)))
 
-    for name in structures_any:
-        create.addTests(loader.loadTestsFromTestCase(
-            make_monomercreatetest(name)))
-
-    standard_tests.addTests(protbasic)
-    standard_tests.addTests(rnabasic)
-    standard_tests.addTests(prot)
-    standard_tests.addTests(rna)
-    standard_tests.addTests(create)
+    standard_tests.addTests(factory)
 
     standard_tests.addTests(loader.loadTestsFromTestCase(syntax_check.variants_tested(tests_performed)))
 
@@ -575,36 +535,10 @@ class MonomerClassMethods(unittest.TestCase):
         self.assertEqual(cls.seq_3to1(' DC'), 'C')
 
 
+class PatchStc(object):
 
-
-class TestMonomerFactory(unittest.TestCase):
-
-    @classmethod
-    def setUpClass(cls):
-        stcs = ['1no5']
-        cls.bio_stc_objs = []
-        pth = 'tests/data/test_structures/'
-        for f in os.listdir(pth):
-            pdbS = Bio.PDB.PDBParser(QUIET=True).get_structure(f, os.path.join(pth, f))
-            cls.bio_stc_objs.append(pdbS)
-
-    def setUp(self):
-        self.mf = monomer.MonomerFactory()
-
-    def test_init(self):
-        pass
-
-    def test_create_default(self):
-        for s in self.bio_stc_objs:
-            for ch in list(s.get_models())[0]:
-                for m in ch:
-                    res = self.mf.create_from_BioPDB(m)
-                    mn = m.get_resname().strip()
-                    if mn == 'HOH':
-                        self.assertIs(res, None)
-                        continue
-                    for i in res.values():
-                        self.assertEqual(i.name, mn)
+    def __init__(self):
+        self._monomers = []
 
 
 if __name__ == '__main__':

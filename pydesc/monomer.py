@@ -226,7 +226,7 @@ class MonomerFactory(object):
         self.chainable = [i for i in classes if issubclass(i, MonomerChainable)]
         self.other = [i for i in classes if issubclass(i, MonomerOther)]
 
-    def create_from_BioPDB(self, pdb_residue, structure_obj=None, warn_in_place=True, warnings_=None, base=None):
+    def create_from_BioPDB(self, pdb_residue, structure_obj=None, warn_in_place=True, warnings_=None, base=None, dbg=False):
         """Class method, returns Monomer instances.
 
         Returns dictionary of different monomer types as values, calls _create_monomers to create actual objects.
@@ -262,7 +262,7 @@ class MonomerFactory(object):
         if base is None:
             base = Monomer(structure_obj, ind, *self.unpack_pdb_residue(pdb_residue, name))
 
-        mers = self._create_monomers(pdb_residue, structure_obj, base, warnings_, self.chainable + self.other)
+        mers = self._create_monomers(pdb_residue, structure_obj, base, warnings_, self.chainable + self.other, dbg)
         if warn_in_place:
             for class_ in self.chainable + self.other:  #TODO do we really need to keep them separately?
                 warnings_.raise_all(class_)
@@ -272,7 +272,7 @@ class MonomerFactory(object):
         mers[Monomer] = base
         return mers
 
-    def _create_monomers(self, pdb_residue, structure_obj, base_monomer, warnings_, classes):
+    def _create_monomers(self, pdb_residue, structure_obj, base_monomer, warnings_, classes, dbg=False):
         """Return dictionary of different monomer types as values and subclasses of MonomerChainable and MonomerOther as keys.
 
         Arguments:
@@ -282,13 +282,13 @@ class MonomerFactory(object):
         warnings_ -- context manager for catching warnings.
         classes -- list of classes to try to initialize.
         """
-
+        base_data = self.unpack_base(base_monomer)
         mers = {}
         for monomer_type in classes:
             try:
                 with warnings_(monomer_type):
-                    mers[monomer_type] = monomer_type(self.unpack_base(base_monomer))
-            except (IncompleteParticle, WrongAtomDistances, AttributeError, ValueError, KeyError):
+                    mers[monomer_type] = monomer_type(*base_data)
+            except (IncompleteParticle, WrongAtomDistances, AttributeError, ValueError, KeyError) as e:
                 # AttributeError is raised by nucleotides during Residue.__init__
                 # KeyError is raised by different __init__s when needed Atoms/Pseudoatoms are absent
                 pass
@@ -311,7 +311,7 @@ class MonomerFactory(object):
         return name, chain, atoms
 
     def unpack_base(self, base):
-        return base.structure_obj, base.ind, base.name, base.chain, base.atoms
+        return base.structure, base.ind, base.name, base.chain, base.atoms
 
     def get_pdb_residue_name(self, pdb_residue):
         return pdb_residue.get_resname().strip()
@@ -493,7 +493,7 @@ class Monomer(object):
         return res
 
 
-    def __init__(self, structure_obj, ind, name, chain,atoms):
+    def __init__(self, structure_obj, ind, name, chain, atoms):
         """Monomer contructor.
 
         Arguments:
@@ -515,7 +515,7 @@ class Monomer(object):
 
         self.structure = structure_obj
         self.name = name
-        self.my_chain = chain
+        self.chain = chain
         self.ind = ind
         self.atoms = atoms
 
@@ -747,17 +747,16 @@ class MonomerChainable(Monomer):
     Nucleotide
     """
 
-    def __init__(self, pdb_residue, structure_obj, **kwargs):
+    def __init__(self, structure_obj, ind, name, chain, atoms):
         """Chainable monomer constructor.
 
         Extends superclass method.
         """
-        Monomer.__init__(self, pdb_residue, structure_obj, **kwargs)
-        backbone_atoms = dict((atom_name, None) for atom_name in self.get_config('backbone_atoms'))
+        Monomer.__init__(self, structure_obj, ind, name, chain, atoms)
         try:
-            backbone_atoms = dict([(atom.name, atom) for atom in self.backbone])
+            backbone_atoms = dict((atom_name, None) for atom_name in self.get_config('backbone_atoms'))
         except AttributeError:
-            raise IncompleteParticle(pdb_residue)
+            raise IncompleteParticle(self.pid)
         
         if self.get_config('check_distances'):
             for atom_pair in self.get_config("crucial_atom_distances"):
@@ -852,13 +851,12 @@ class MonomerChainable(Monomer):
 
     def iter_atomsbb(self):
         """Returns iterator that iterates over monomer's backbone atoms."""
-        bb_atoms = self.get_config('backbone_atoms')
-        return itertools.ifilter(lambda atom: atom.name in bb_atoms, self.iter_atoms())
+        return iter(self.backbone)
 
     def iter_atomsnbb(self):
         """Returns iterator that iterates over monomer's all atoms except backbone."""
         bb_atoms = self.get_config('backbone_atoms')
-        return itertools.ifilter(lambda atom: atom.name not in bb_atoms, self.iter_atoms())
+        return iter([i for i in self.atoms.values() if i not in self.backbone])
 
     def adjusted_length(self):
         """Returns distance between backbone_average pseudoatoms of this and the next monomer or None if distance cannot be computed."""
@@ -925,7 +923,7 @@ class Residue(MonomerChainable):
         for res, (psi, phi) in zip(residues, zip(*angs)):
             res.dynamic_properties['angles'] = (psi, phi)
 
-    def __init__(self, pdb_residue, structure_obj=None, **kwargs):
+    def __init__(self, structure_obj, ind, name, chain, atoms):
         """Residue constructor.
 
         Arguments:
@@ -945,7 +943,7 @@ class Residue(MonomerChainable):
         max_c_o_dist
         old_cbx_calculation -- True or False
         """
-        super(Residue, self).__init__(pdb_residue, structure_obj, **kwargs)
+        MonomerChainable.__init__(self, structure_obj, ind, name, chain, atoms)
         self.calculate_cbx()
         self._check_name('residue')
 
@@ -1121,7 +1119,7 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
 
     """Representation of a nucleotide."""
 
-    def __init__(self, pdb_residue, structure=None, **kwargs):
+    def __init__(self, structure_obj, ind, name, chain, atoms):
         """Nucleotide constructor.
 
         Arguments:
@@ -1144,15 +1142,18 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
         min_c3'_o3'_dist
         max_c3'_o3'_dist
         """
-        MonomerChainable.__init__(self, pdb_residue, structure, **kwargs)
-        self.ring_atoms = {}
-        for atom in self.iter_atoms():
-            if atom.name.strip() in self.get_config('ring_atoms'):
+        MonomerChainable.__init__(self, structure_obj, ind, name, chain, atoms)
+
+        rats = self.get_config('ring_atoms')
+
+        def flag(name, atom):
+            if name in rats:
                 atom.ring_flag = True
-                #~ self.ring_atoms[atom.name] = atom
-                self.ring_atoms[atom.name.strip()] = atom
-            else:
-                atom.ring_flag = False
+                return True
+            atom.ring_flag = False
+
+        self.ring_atoms = {name: atom for name, atom in self.atoms.items() if flag(name, atom)}
+
         self.calculate_ring_center()
         self.calculate_proximate_ring_center()
         self.calculate_ring_plane()
@@ -1217,7 +1218,7 @@ class MonomerOther(Monomer):
 
     # __metaclass__ = ABCMetamonomer
 
-    def __init__(self, pdb_residue, structure_obj, **kwargs):
+    def __init__(self, structure_obj, ind, name, chain, atoms):
         """Monomer Other constructor.
 
         pdb_residue -- instance of BioPython residue.
@@ -1225,9 +1226,7 @@ class MonomerOther(Monomer):
 
         Extends superclass method.
         """
-        Monomer.__init__(self, pdb_residue, structure_obj, **kwargs)
-        if not pdb_residue.get_full_id()[3][0].startswith('H_'):
-            warn(IncompleteChainableParticle(pdb_residue, self.__class__.__name__), 2)
+        Monomer.__init__(self, structure_obj, ind, name, chain, atoms)
 
 # pylint:disable=no-self-use
 # following methods are needed and should not be a function
@@ -1257,7 +1256,7 @@ class Ion(MonomerOther):
 
     """Representation of an ion ligand."""
 
-    def __init__(self, pdb_residue, structure_obj=None, **kwargs):
+    def __init__(self, structure_obj, ind, name, chain, atoms):
         """Ion constructor.
 
         Sets basic attributes.
@@ -1266,12 +1265,12 @@ class Ion(MonomerOther):
         pdb_residue -- Bio.PDB.Residue instance representing ion.
         structure_obj -- instance of parental PyDesc structure.
         """
-        super(Ion, self).__init__(pdb_residue, structure_obj, **kwargs)
+        super(Ion, self).__init__(structure_obj, ind, name, chain, atoms)
         if len(self.atoms) != 1:
             raise ValueError("Failed to create Ion, given BioPython residue consists of to many atoms.")
 
     def get_radius(self):
-        name = self.atoms.values()[0].name.strip()
+        name = max(self.atoms)
         try:
             return self.get_config('radii')[name]
         except KeyError:
@@ -1283,7 +1282,7 @@ class Ligand(MonomerOther):
 
     """Representation of any ligand except ions."""
 
-    def __init__(self, pdb_residue, structure_obj=None, **kwargs):
+    def __init__(self, structure_obj, ind, name, chain, atoms):
         """Ligand constructor.
 
         Sets basic attributes.
@@ -1292,7 +1291,7 @@ class Ligand(MonomerOther):
         pdb_residue -- Bio.PDB.Residue instance representing ligands other than ions.
         structure_obj -- instance of parental PyDesc structure.
         """
-        super(Ligand, self).__init__(pdb_residue, structure_obj, **kwargs)
+        super(Ligand, self).__init__(structure_obj, ind, name, chain, atoms)
 
 
 
