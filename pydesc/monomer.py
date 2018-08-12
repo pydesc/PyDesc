@@ -304,11 +304,16 @@ class MonomerFactory(object):
 
         Returns tuple of name, chain name and dict of atoms.
         """
-        if name is not None:
+        if name is None:
             name = self.get_pdb_residue_name(pdb_residue)
         chain = pdb_residue.get_full_id()[2]
-        atoms = {pdb_atom.get_fullname().strip(): Atom(pdb_atom) for pdb_atom in pdb_residue}
+        crt = self.create_atom_from_BioAtom
+        atoms = {pdb_atom.get_fullname().strip(): crt(pdb_atom) for pdb_atom in pdb_residue}
         return name, chain, atoms
+
+    def create_atom_from_BioAtom(self, pdb_atom):
+        """Return Atom instance from given Bio.Atom instance."""
+        return Atom(numpy.array(pdb_atom.get_coord()), pdb_atom.element)
 
     def unpack_base(self, base):
         return base.structure, base.ind, base.name, base.chain, base.atoms
@@ -329,31 +334,18 @@ class Atom(pydesc.geometry.Coord):
     pdb_atom -- instance of BioPython Atom class.
     """
 
-    def __init__(self, pdb_atom):     # pylint:disable=super-init-not-called
+    def __init__(self, coords, element):     # pylint:disable=super-init-not-called
         # there is no need to call dict.__init__
         """Atom constructor.
 
         Arguments:
         pdb_atom -- instance of BioPython Atom class.
         """
-        self._vector = None
-        self.vector = numpy.array(pdb_atom.get_coord())
-        self.element = pdb_atom.element
-        self.pdb_atom = pdb_atom
-        self.prody_atom = None
+        self.vector = coords
+        self.element = element
 
     def __repr__(self):
         return "<Atom at %s>" % " ".join(["%.2f" % i for i in self.vector])
-
-    @property
-    def vector(self):
-        """Returns Atoms vector."""
-        return self._vector if self.prody_atom is None else self.prody_atom.getCoords()
-
-    @vector.setter
-    def vector(self, value):
-        """Sets Atoms vector."""
-        self._vector = value
 
 
 class Pseudoatom(pydesc.geometry.Coord):
@@ -1017,15 +1009,12 @@ class Residue(MonomerChainable):
                 pl1 = pydesc.geometry.Plane.build(*(atoms[1:]+[nxm.atoms['N']]))
                 ang_psi = pl1.dihedral_angle(pl2)
 
-
-
         self.dynamic_properties['angles'] = (ang_psi, ang_phi)
 
     @property
     def ca(self):     # pylint:disable=invalid-name
         # 'ca' is valid for us
         """Property that returns current residue alpha carbon Atom object."""
-        #~ return self.atoms['CA ']
         return self.atoms['CA']
 
     def calculate_cbx(self):
@@ -1034,15 +1023,13 @@ class Residue(MonomerChainable):
             self.calculate_cbx_legacy()
             return
         if self.name == "GLY":
-            #~ self.pseudoatoms['cbx'] = Pseudoatom(numpy_vec=self.atoms['CA '].vector, name='cbx')
             self.pseudoatoms['cbx'] = Pseudoatom(numpy_vec=self.atoms['CA'].vector, name='cbx')
         else:
-            #~ ca = self.atoms['CA '].vector
             ca = self.atoms['CA'].vector
-            #~ cb = self.atoms['CB '].vector
             cb = self.atoms['CB'].vector
             vec = cb - ca
-            nrm = norm(vec)
+            try: nrm = norm(vec)
+            except: import pdb; pdb.set_trace()
             vec = vec * ((nrm + 1) / nrm)
 
             cbx = ca + vec
@@ -1163,7 +1150,6 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
 
     def calculate_ring_center(self):
         """Adds pseudoatom representing base ring center."""
-        #~ vec = (self.ring_atoms['N1 '].vector + self.ring_atoms['C4 '].vector) * 0.5
         vec = (self.ring_atoms['N1'].vector + self.ring_atoms['C4'].vector) * 0.5
         self.pseudoatoms['ring_center'] = Pseudoatom(numpy_vec=vec, name='ring_center')
 

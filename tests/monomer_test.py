@@ -29,6 +29,7 @@ Pawel, Tymoteusz
 """
 
 import unittest
+import mock
 
 import types
 import itertools
@@ -45,10 +46,12 @@ import pydesc.structure as structure
 import pydesc.monomer as monomer
 import pydesc.config as config
 import tests
-from pydesc.warnexcept import IncompleteChainableParticle as IncompleteChainableParticle
+from pydesc.warnexcept import IncompleteChainableParticle
+from pydesc.warnexcept import set_filters
 
-config.ConfigManager.warnings_and_exceptions.class_filters.set("UnknownParticleName", "always")
+config.ConfigManager.warnings_and_exceptions.class_filters.set("UnknownParticleName", "ignore")
 config.ConfigManager.warnings_and_exceptions.class_filters.set("IncompleteChainableParticle", "always")
+set_filters()
 
 fast = False
 
@@ -70,7 +73,7 @@ data_dir = os.path.join(os.path.abspath(os.path.dirname(tests.__file__)), 'data/
 # pylint: disable=C0111
 
 
-def make_monomertestinits(strname, test_structure_dir, cls, names):
+def make_monomertestinits(strname, test_structure_dir, cls, names, crucial_atoms):
     """ Create and return a MonomerTestBasic test case for a given structure and monomer class. """
 
     @testing(cls)
@@ -85,23 +88,38 @@ def make_monomertestinits(strname, test_structure_dir, cls, names):
 
         def setUp(self):
             self.pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(strname, os.path.join(data_dir, test_structure_dir, strname))
-            self.stc = PatchStc()
+            self.stc = mock.MagicMock()
+            self.stc._monomers = []
 
         @testing(cls.__init__)
         @testing(monomer.Monomer.__init__)
         @testing(monomer.MonomerChainable.__init__)
+        @testing(monomer.MonomerChainable.get_config)
         def test_init_random_name(self):
+            errors = {}
             for i in range(100):
                 nm = random.choice(names)
-                it = cls(self.stc, i, nm, 'A', atoms)
+                atoms = {i: monomer.Atom(numpy.random.randn(3), 'E') for i in crucial_atoms}
+                try:
+                    it = cls(self.stc, i, nm, 'A', atoms)
+                except Exception as e:
+                    errors[i] = e
+            self.assertEqual(len(errors), 0, "Failed to create %i mers out of 100" % len(errors))
 
         @testing(cls.__init__)
         @testing(monomer.Monomer.__init__)
         @testing(monomer.MonomerChainable.__init__)
-        def test_init_form_MF_unpacked_Bio(self):
+        def test_init_from_MF_unpacked_Bio(self):
+            errors = {}
             for n, res in enumerate(self.pdb_structure.get_residues()):
                 data = self.mf.unpack_pdb_residue(res)
-                it = cls(self.stc, n, *data)
+                if 'HOH' == data[0]:
+                    continue
+                try:
+                    it = cls(self.stc, n, *data)
+                except Exception as e:
+                    errors[res] = e
+            self.assertEqual(len(errors), 0, "Failed to create mers %s" % ",".join([str(i.id[1]) for i in errors]))
 
     return MonomerTestInit
 
@@ -401,6 +419,7 @@ def make_monomerfactorytest(strname, test_structure_dir, cls_):
 def load_tests(loader, standard_tests, pattern):
     """ Add tests created by make_* functions for all structures. Return a complete TestSuite. """
 
+    # selecting structures
     bio_stc = {}
     bio_stc_sh = {}
     for i in (('prots_only', monomer.Residue), ('rna_only', monomer.Nucleotide), ('dna_only', monomer.Nucleotide)):
@@ -409,25 +428,34 @@ def load_tests(loader, standard_tests, pattern):
     for i in bio_stc:
         bio_stc_sh[i] = bio_stc[i][:3]
 
-
     if fast:
         bio_stc = bio_stc_sh
 
     factory = unittest.TestSuite()
 
-    names = {'prots_only': ['ALA', 'GLY', 'TRP', 'TYR', 'LYS'],
-             'rna_oly': ['U', 'A', 'C', 'G'],
-             'dna_only': ['dT', 'dA', 'dG', 'dC'],
+    # mers names
+    names = {monomer.Residue: ['ALA', 'GLY', 'TRP', 'TYR', 'LYS'],
+             monomer.Nucleotide: ['U', 'A', 'C', 'G'],
+             monomer.Nucleotide: ['dT', 'dA', 'dG', 'dC'],
              }
 
+    nuc_ats = ("C1'", "P", "O5'", "C5'", "C4'", "C3'", "O3'", "N1", "C2", "N3", "C4", "C5", "C6", "N7", "C8", "N9")
+    atoms = {monomer.Residue: ['CA', 'C', 'N', 'CB', 'CO'],
+             monomer.Nucleotide: nuc_ats,
+             monomer.Nucleotide: nuc_ats,
+             }
+
+    # making factory tests
     for pth, tp in bio_stc:
         for stc in bio_stc[(pth, tp)]:
             factory.addTests(loader.loadTestsFromTestCase(make_monomerfactorytest(stc, pth, tp)))
 
+    # making init tests
     for pth, tp in bio_stc_sh:
         for stc in bio_stc_sh[(pth, tp)]:
-            nms = names.get(pth, ['random1'])
-            standard_tests.addTests(loader.loadTestsFromTestCase(make_monomertestinits(stc, pth, tp, nms)))
+            nms = names[tp]
+            ats = atoms[tp]
+            standard_tests.addTests(loader.loadTestsFromTestCase(make_monomertestinits(stc, pth, tp, nms, ats)))
 
     standard_tests.addTests(factory)
 
@@ -436,41 +464,41 @@ def load_tests(loader, standard_tests, pattern):
     return standard_tests
 
 
-@testing(monomer.Atom)
-@testing(monomer.Pseudoatom)
-class AtomEnhancements(unittest.TestCase):
+#~ @testing(monomer.Atom)
+#~ @testing(monomer.Pseudoatom)
+#~ class AtomEnhancements(unittest.TestCase):
 
-    """ TestCase for enhancements requested in monomer.Atom. """
+    #~ """ TestCase for enhancements requested in monomer.Atom. """
 
-    @testing(monomer.Atom.__init__)
-#    @testing(monomer.Atom.__getitem__)
-#    @testing(monomer.Atom.__setitem__)
-    @unittest.expectedFailure
-    def test_deprec(self):
-        """ Deprecation of __getitem__ interface to Atom. """
-        a = monomer.Atom(*randomcoord())
-        syntax_check.test_deprec(self, lambda: a['name'], "__getitem__")
-        syntax_check.test_deprec(self, lambda: a.__setitem__('name', 'aa'), "__setitem__")
+    #~ @testing(monomer.Atom.__init__)
+#~ #    @testing(monomer.Atom.__getitem__)
+#~ #    @testing(monomer.Atom.__setitem__)
+    #~ @unittest.expectedFailure
+    #~ def test_deprec(self):
+        #~ """ Deprecation of __getitem__ interface to Atom. """
+        #~ a = monomer.Atom(*randomcoord())
+        #~ syntax_check.test_deprec(self, lambda: a['name'], "__getitem__")
+        #~ syntax_check.test_deprec(self, lambda: a.__setitem__('name', 'aa'), "__setitem__")
 
-    @unittest.expectedFailure
-    def test_hashable(self):
-        """ Check whether Atom is hashable. """
-        a = monomer.Atom(*randomcoord())
-        try:
-            set([a])
-        except:
-            self.fail()
+    #~ @unittest.expectedFailure
+    #~ def test_hashable(self):
+        #~ """ Check whether Atom is hashable. """
+        #~ a = monomer.Atom(*randomcoord())
+        #~ try:
+            #~ set([a])
+        #~ except:
+            #~ self.fail()
 
-    @testing(monomer.Pseudoatom.__init__)
-    @testing(monomer.Atom.vector)
-    def test_pseudoatom_init(self):
-        """Checks if Pseudoatoms are created both ways."""
-        for d in range(100):
-            random_coords = randomcoord()
-            pa = monomer.Pseudoatom(*random_coords)
-            pa2 = monomer.Pseudoatom(numpy_vec=numpy.array(random_coords))
-            for i in zip(pa.vector, pa2.vector):
-                self.assertEqual(*i)
+    #~ @testing(monomer.Pseudoatom.__init__)
+    #~ @testing(monomer.Atom.vector)
+    #~ def test_pseudoatom_init(self):
+        #~ """Checks if Pseudoatoms are created both ways."""
+        #~ for d in range(100):
+            #~ random_coords = randomcoord()
+            #~ pa = monomer.Pseudoatom(*random_coords)
+            #~ pa2 = monomer.Pseudoatom(numpy_vec=numpy.array(random_coords))
+            #~ for i in zip(pa.vector, pa2.vector):
+                #~ self.assertEqual(*i)
 
 @testing(monomer.Monomer)
 class MonomerClassMethods(unittest.TestCase):
