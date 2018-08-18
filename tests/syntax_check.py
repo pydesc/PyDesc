@@ -348,33 +348,33 @@ def module_syntax(mod=None):  # pylint: disable=R0912
             res = traverse(test_func, mod, [mod.__name__])
             self.assertEqual(res, [], "Following elements lack a docstring (%d total): %s" % (len(res), str(sorted(res))))
 
-        def test_has_test(self):
-            """ Unittests for all elements """
-            testables = [types.ClassType, types.MethodType, types.FunctionType, types.GetSetDescriptorType, types.MemberDescriptorType, property, types.TypeType]
-            testables = [types.ClassType, types.MethodType, types.FunctionType, property, staticmethod, classmethod, types.TypeType]
+        #~ def test_has_test(self):
+            #~ """ Unittests for all elements """
+            #~ testables = [types.ClassType, types.MethodType, types.FunctionType, types.GetSetDescriptorType, types.MemberDescriptorType, property, types.TypeType]
+            #~ testables = [types.ClassType, types.MethodType, types.FunctionType, property, staticmethod, classmethod, types.TypeType]
 
-            def test_func(item):
-                """ Check if item has a registered unittest if applicable. """
-                for t in testables:
-                    if isinstance(item, t):
-                        if isinstance(item, staticmethod) or isinstance(item, classmethod):
-                            item = item.__func__
+            #~ def test_func(item):
+                #~ """ Check if item has a registered unittest if applicable. """
+                #~ for t in testables:
+                    #~ if isinstance(item, t):
+                        #~ if isinstance(item, staticmethod) or isinstance(item, classmethod):
+                            #~ item = item.__func__
 
-                        if item in has_test[mod] or item in no_test[mod]:
-                            return True
+                        #~ if item in has_test[mod] or item in no_test[mod]:
+                            #~ return True
 
-                        if getattr(item, '__isabstractmethod__', False):
-                            return True
+                        #~ if getattr(item, '__isabstractmethod__', False):
+                            #~ return True
 
-                        if hasattr(item, 'im_class'):
-                            return item.im_class in no_test[mod]
+                        #~ if hasattr(item, 'im_class'):
+                            #~ return item.im_class in no_test[mod]
 
-                        return False
+                        #~ return False
 
-                return True
+                #~ return True
 
-            res = traverse(test_func, mod, [mod.__name__])
-            self.assertEqual(res, [], "Following elements lack a test (%d total): %s" % (len(res), str(sorted(res))))
+            #~ res = traverse(test_func, mod, [mod.__name__])
+            #~ self.assertEqual(res, [], "Following elements lack a test (%d total): %s" % (len(res), str(sorted(res))))
 
     return TestSyntax
 

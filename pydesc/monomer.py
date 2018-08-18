@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PyDesc is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -22,13 +22,11 @@ created: 11.07.2013 - 31.07.2013, Tymoteusz 'hert' Oleniecki
 """
 
 import pydesc.geometry
-import pydesc.selection
 import numpy
 import operator
 import itertools
 
 import scipy.linalg
-norm = scipy.linalg.get_blas_funcs('nrm2')
 
 from pydesc.config import ConfigManager as ConfigManager
 from pydesc.numberconverter import PDB_id
@@ -45,6 +43,8 @@ try:
     import prody
 except ImportError:
     warn(Info("No module: prody"))
+
+norm = scipy.linalg.get_blas_funcs('nrm2')
 
 # pylint: disable=no-member
 ConfigManager.new_branch("monomer")
@@ -99,119 +99,128 @@ ConfigManager.monomer.residue.set_default("residue_additional_code", {
     'HIC': 'H', '3AH': 'H', 'NEM': 'H', 'NEP': 'H', 'DHI': 'H', 'MHS': 'H', 'HIP': 'H', })
 ConfigManager.monomer.residue.set_default("backbone_atoms", ('N', 'CA', 'C'))
 ConfigManager.monomer.residue.set_default("check_distances", False)
-ConfigManager.monomer.residue.set_default("crucial_atom_distances", (('C', 'CA', 1.35, 1.71), ('CA', 'N', 1.35, 1.75)))
+ConfigManager.monomer.residue.set_default(
+    "crucial_atom_distances", (('C', 'CA', 1.35, 1.71), ('CA', 'N', 1.35, 1.75)))
 ConfigManager.monomer.residue.set_default("indicators", ('CA', 'cbx'))
 ConfigManager.monomer.residue.set_default("old_cbx_calculation", False)
 ConfigManager.monomer.residue.set_default("adjusted_segment_length", 18.0)
-ConfigManager.monomer.nucleotide.set_default("nucleotide_code", {'  G': 'G', '  C': 'C', '  U': 'U', '  A': 'A', ' DG': 'G', ' DA': 'A', ' DT': 'T', ' DC': 'C'})
-ConfigManager.monomer.nucleotide.set_default("backbone_atoms", ("P", "O5'", "C5'", "C4'", "C3'", "O3'"))
-ConfigManager.monomer.nucleotide.set_default("ring_atoms", ("N1", "C2", "N3", "C4", "C5", "C6", "N7", "C8", "N9"))
+ConfigManager.monomer.nucleotide.set_default("nucleotide_code", {
+                                             '  G': 'G', '  C': 'C', '  U': 'U', '  A': 'A', ' DG': 'G', ' DA': 'A', ' DT': 'T', ' DC': 'C'})
+ConfigManager.monomer.nucleotide.set_default(
+    "backbone_atoms", ("P", "O5'", "C5'", "C4'", "C3'", "O3'"))
+ConfigManager.monomer.nucleotide.set_default(
+    "ring_atoms", ("N1", "C2", "N3", "C4", "C5", "C6", "N7", "C8", "N9"))
 ConfigManager.monomer.nucleotide.set_default("check_distances", False)
-ConfigManager.monomer.nucleotide.set_default("crucial_atom_distances", (('P', "O5'", 1.54, 1.66), ("O5'", "C5'", 1.34, 1.54), ("C5'", "C4'", 1.44, 1.56), ("C4'", "C3'", 1.46, 1.58), ("C3'", "O3'", 1.37, 1.49)))
-ConfigManager.monomer.nucleotide.set_default("indicators", ("C3'", 'P',  'ring_center'))
+ConfigManager.monomer.nucleotide.set_default("crucial_atom_distances", (('P', "O5'", 1.54, 1.66), (
+    "O5'", "C5'", 1.34, 1.54), ("C5'", "C4'", 1.44, 1.56), ("C4'", "C3'", 1.46, 1.58), ("C3'", "O3'", 1.37, 1.49)))
+ConfigManager.monomer.nucleotide.set_default(
+    "indicators", ("C3'", 'P', 'ring_center'))
 ConfigManager.monomer.set_default("moving_average", 3)
 ConfigManager.monomer.ion.set_default("indicators", ("rc",))
 ConfigManager.monomer.ion.set_default("radii", {'BE': 0.59,
-                                         'BA': 1.49,
-                                         'BI': 1.17,
-                                         'BK': 1.1,
-                                         'BR': 1.82,
-                                         'RU': 0.82,
-                                         'RE': 0.77,
-                                         'TM': 1.17,
-                                         'RA': 1.62,
-                                         'RB': 1.66,
-                                         'RH': 0.805,
-                                         'P': 0.58,
-                                         'GE': 0.87,
-                                         'GD': 1.078,
-                                         'GA': 0.76,
-                                         'OS': 0.77,
-                                         'C': 0.3,
-                                         'HO': 1.041,
-                                         'HF': 0.85,
-                                         'HG': 1.33,
-                                         'PR': 1.13,
-                                         'PT': 0.94,
-                                         'PU': 1.14,
-                                         'PB': 1.33,
-                                         'PA': 1.16,
-                                         'PD': 1.0,
-                                         'PO': 1.08,
-                                         'PM': 1.11,
-                                         'ZN': 0.88,
-                                         'K': 1.52,
-                                         'O': 1.26,
-                                         'S': 1.7,
-                                         'W': 0.8,
-                                         'EU': 1.31,
-                                         'ZR': 0.86,
-                                         'ER': 1.03,
-                                         'MG': 0.86,
-                                         'MO': 0.83,
-                                         'MN': 0.97,
-                                         'AU': 1.51,
-                                         'FR': 1.94,
-                                         'FE': 0.92,
-                                         'NI': 0.83,
-                                         'NA': 1.16,
-                                         'NB': 0.86,
-                                         'ND': 1.43,
-                                         'ES': 0.928,
-                                         'NP': 1.24,
-                                         'B': 0.41,
-                                         'CO': 0.885,
-                                         'CM': 1.11,
-                                         'CL': 1.67,
-                                         'CA': 1.14,
-                                         'CF': 1.09,
-                                         'CE': 1.15,
-                                         'N': 1.32,
-                                         'V': 0.93,
-                                         'CS': 1.81,
-                                         'CR': 0.94,
-                                         'CU': 0.91,
-                                         'SR': 1.32,
-                                         'SI': 0.54,
-                                         'SN': 0.83,
-                                         'SM': 1.36,
-                                         'SC': 0.885,
-                                         'SB': 0.9,
-                                         'SE': 1.84,
-                                         'YB': 1.16,
-                                         'DY': 1.21,
-                                         'LA': 1.172,
-                                         'F': 1.19,
-                                         'LI': 0.9,
-                                         'TL': 1.64,
-                                         'LU': 1.001,
-                                         'TH': 1.08,
-                                         'TI': 1.0,
-                                         'TE': 2.07,
-                                         'TB': 1.063,
-                                         'TC': 0.785,
-                                         'TA': 0.86,
-                                         'AC': 1.26,
-                                         'AG': 1.29,
-                                         'I': 2.06,
-                                         'IR': 0.82,
-                                         'AM': 1.4,
-                                         'AL': 0.675,
-                                         'AS': 0.72,
-                                         'U': 1.165,
-                                         'AT': 0.76,
-                                         'IN': 0.94,
-                                         'Y': 1.04,
-                                         'CD': 1.09,
-                                         'XE': 0.62})
+                                                'BA': 1.49,
+                                                'BI': 1.17,
+                                                'BK': 1.1,
+                                                'BR': 1.82,
+                                                'RU': 0.82,
+                                                'RE': 0.77,
+                                                'TM': 1.17,
+                                                'RA': 1.62,
+                                                'RB': 1.66,
+                                                'RH': 0.805,
+                                                'P': 0.58,
+                                                'GE': 0.87,
+                                                'GD': 1.078,
+                                                'GA': 0.76,
+                                                'OS': 0.77,
+                                                'C': 0.3,
+                                                'HO': 1.041,
+                                                'HF': 0.85,
+                                                'HG': 1.33,
+                                                'PR': 1.13,
+                                                'PT': 0.94,
+                                                'PU': 1.14,
+                                                'PB': 1.33,
+                                                'PA': 1.16,
+                                                'PD': 1.0,
+                                                'PO': 1.08,
+                                                'PM': 1.11,
+                                                'ZN': 0.88,
+                                                'K': 1.52,
+                                                'O': 1.26,
+                                                'S': 1.7,
+                                                'W': 0.8,
+                                                'EU': 1.31,
+                                                'ZR': 0.86,
+                                                'ER': 1.03,
+                                                'MG': 0.86,
+                                                'MO': 0.83,
+                                                'MN': 0.97,
+                                                'AU': 1.51,
+                                                'FR': 1.94,
+                                                'FE': 0.92,
+                                                'NI': 0.83,
+                                                'NA': 1.16,
+                                                'NB': 0.86,
+                                                'ND': 1.43,
+                                                'ES': 0.928,
+                                                'NP': 1.24,
+                                                'B': 0.41,
+                                                'CO': 0.885,
+                                                'CM': 1.11,
+                                                'CL': 1.67,
+                                                'CA': 1.14,
+                                                'CF': 1.09,
+                                                'CE': 1.15,
+                                                'N': 1.32,
+                                                'V': 0.93,
+                                                'CS': 1.81,
+                                                'CR': 0.94,
+                                                'CU': 0.91,
+                                                'SR': 1.32,
+                                                'SI': 0.54,
+                                                'SN': 0.83,
+                                                'SM': 1.36,
+                                                'SC': 0.885,
+                                                'SB': 0.9,
+                                                'SE': 1.84,
+                                                'YB': 1.16,
+                                                'DY': 1.21,
+                                                'LA': 1.172,
+                                                'F': 1.19,
+                                                'LI': 0.9,
+                                                'TL': 1.64,
+                                                'LU': 1.001,
+                                                'TH': 1.08,
+                                                'TI': 1.0,
+                                                'TE': 2.07,
+                                                'TB': 1.063,
+                                                'TC': 0.785,
+                                                'TA': 0.86,
+                                                'AC': 1.26,
+                                                'AG': 1.29,
+                                                'I': 2.06,
+                                                'IR': 0.82,
+                                                'AM': 1.4,
+                                                'AL': 0.675,
+                                                'AS': 0.72,
+                                                'U': 1.165,
+                                                'AT': 0.76,
+                                                'IN': 0.94,
+                                                'Y': 1.04,
+                                                'CD': 1.09,
+                                                'XE': 0.62})
 
 ConfigManager.monomer.ligand.set_default("indicators", ("rc",))
 ConfigManager.new_branch("structure_mon")
-ConfigManager.structure_mon.set_default("simple_secondary_structure_code", {'H': 'H', 'B': 'E', 'E': 'E', 'G': 'H', 'I': 'H', 'T': 'C', 'S': 'C', '-': 'C', '=': '='})
+ConfigManager.structure_mon.set_default("simple_secondary_structure_code", {
+                                        'H': 'H', 'B': 'E', 'E': 'E', 'G': 'H', 'I': 'H', 'T': 'C', 'S': 'C', '-': 'C', '=': '='})
 # pylint: enable=no-member
 
 
 class MonomerFactory(object):
+
+    """Factory class for Monomer subclass instances."""
 
     def __init__(self, classes=None):
         """Monomer factory initializator.
@@ -223,7 +232,8 @@ class MonomerFactory(object):
         """
         if classes is None:
             classes = [Residue, Nucleotide, Ion, Ligand]
-        self.chainable = [i for i in classes if issubclass(i, MonomerChainable)]
+        self.chainable = [
+            i for i in classes if issubclass(i, MonomerChainable)]
         self.other = [i for i in classes if issubclass(i, MonomerOther)]
 
     def create_from_BioPDB(self, pdb_residue, structure_obj=None, warn_in_place=True, warnings_=None, base=None, dbg=False):
@@ -255,16 +265,19 @@ class MonomerFactory(object):
             warnings_ = WarnManager(pdb_residue)
 
         try:
-            ind = self.structure.converter.get_ind(pydesc.numberconverter.PDB_id.from_pdb_residue(pdb_residue))
+            ind = self.structure.converter.get_ind(
+                pydesc.numberconverter.PDB_id.from_pdb_residue(pdb_residue))
         except (AttributeError, KeyError):
             ind = None
 
         if base is None:
-            base = Monomer(structure_obj, ind, *self.unpack_pdb_residue(pdb_residue, name))
+            base = Monomer(
+                structure_obj, ind, *self.unpack_pdb_residue(pdb_residue, name))
 
-        mers = self._create_monomers(pdb_residue, structure_obj, base, warnings_, self.chainable + self.other, dbg)
+        mers = self._create_monomers(
+            pdb_residue, structure_obj, base, warnings_, self.chainable + self.other, dbg)
         if warn_in_place:
-            for class_ in self.chainable + self.other:  #TODO do we really need to keep them separately?
+            for class_ in self.chainable + self.other:  # TODO do we really need to keep them separately?
                 warnings_.raise_all(class_)
         else:
             mers['warnings'] = warnings_
@@ -290,7 +303,8 @@ class MonomerFactory(object):
                     mers[monomer_type] = monomer_type(*base_data)
             except (IncompleteParticle, WrongAtomDistances, AttributeError, ValueError, KeyError) as e:
                 # AttributeError is raised by nucleotides during Residue.__init__
-                # KeyError is raised by different __init__s when needed Atoms/Pseudoatoms are absent
+                # KeyError is raised by different __init__s when needed
+                # Atoms/Pseudoatoms are absent
                 pass
 
         return mers
@@ -308,7 +322,8 @@ class MonomerFactory(object):
             name = self.get_pdb_residue_name(pdb_residue)
         chain = pdb_residue.get_full_id()[2]
         crt = self.create_atom_from_BioAtom
-        atoms = {pdb_atom.get_fullname().strip(): crt(pdb_atom) for pdb_atom in pdb_residue}
+        atoms = {pdb_atom.get_fullname().strip(): crt(pdb_atom)
+                 for pdb_atom in pdb_residue}
         return name, chain, atoms
 
     def create_atom_from_BioAtom(self, pdb_atom):
@@ -316,9 +331,11 @@ class MonomerFactory(object):
         return Atom(numpy.array(pdb_atom.get_coord()), pdb_atom.element)
 
     def unpack_base(self, base):
+        """Return structure, PyDesc index, name, chain and atoms from given base (monomer.Monomer instance)."""
         return base.structure, base.ind, base.name, base.chain, base.atoms
 
     def get_pdb_residue_name(self, pdb_residue):
+        """Get residue name from given *pdb_residue* (Bio.PDBResidue instance)."""
         return pdb_residue.get_resname().strip()
 
 
@@ -437,7 +454,7 @@ class Monomer(object):
     def reset_config_cache(cls):
         """Resets cache of configuration settings in this class and all subclasses. Should be called after relevant changes in ConfigManager.
         """
-        cls._config_cache={}
+        cls._config_cache = {}
         for sub in cls.__subclasses__():
             sub.reset_config_cache()
 
@@ -476,14 +493,14 @@ class Monomer(object):
             res = getattr(branch, prop_name)
         except AttributeError:
             if issubclass(cls.__base__, Monomer):   # pylint: disable=no-member
-                res = cls.__base__.get_config(prop_name)  # pylint:disable=no-member, protected-access
+                res = cls.__base__.get_config(
+                    prop_name)  # pylint:disable=no-member, protected-access
                 # __base__ is not absent
                 # protected access to superclass method
             else:
                 raise
 
         return res
-
 
     def __init__(self, structure_obj, ind, name, chain, atoms):
         """Monomer contructor.
@@ -546,7 +563,8 @@ class Monomer(object):
                 return self.pseudoatoms[name]
             except (AttributeError, KeyError):
                 repr_ = self.ind if self.ind is not None else str(self)
-                raise AttributeError("Monomer %s has no attribute %s" % (repr_, name))
+                raise AttributeError(
+                    "Monomer %s has no attribute %s" % (repr_, name))
 
     def __getitem__(self, name):
         """Deprecated method. Returns proper attribute value.
@@ -556,7 +574,7 @@ class Monomer(object):
         getitem -- True by default, False if called by __getattr method.
         """
         warn(DeprecationWarning(
-        """Atom eventually won't inherit from dict type, so avoid getting to attributes via getitem.
+             """Atom eventually won't inherit from dict type, so avoid getting to attributes via getitem.
         Use getattr instead, e.g.
         instead of
         >>> print my_atom['rc']
@@ -576,7 +594,8 @@ class Monomer(object):
                     return self.pseudoatoms[name]
                 except (AttributeError, KeyError):
                     repr_ = self.ind if self.ind is not None else str(self)
-                    raise AttributeError("Monomer %s has no attribute %s" % (repr_, name))
+                    raise AttributeError(
+                        "Monomer %s has no attribute %s" % (repr_, name))
 
     def _finalize(self):
         """Method called by structures to calculate and set attributes that need structural information to be calculated."""
@@ -623,9 +642,11 @@ class Monomer(object):
         """Returns a one letter code for a given 3-letter code."""
         try:
             cls_name = cls.__name__.lower()
-            code_dictionary = getattr(getattr(ConfigManager.monomer, cls_name), cls_name + "_code")     # pylint:disable=no-member
+            code_dictionary = getattr(
+                getattr(ConfigManager.monomer, cls_name), cls_name + "_code")     # pylint:disable=no-member
             try:
-                additional_dictionary = getattr(getattr(ConfigManager.monomer, cls_name), cls_name + "_additional_code")     # pylint:disable=no-member
+                additional_dictionary = getattr(
+                    getattr(ConfigManager.monomer, cls_name), cls_name + "_additional_code")     # pylint:disable=no-member
             except AttributeError:
                 additional_dictionary = {}
             return code_dictionary[seq] if seq in code_dictionary else additional_dictionary[seq]
@@ -634,23 +655,27 @@ class Monomer(object):
                 # ??? Monomer has no __base__
                 return cls.__base__.seq_3to1(seq)     # pylint:disable=no-member
                 # ??? same here
-            raise AttributeError("No dictionary defined for class %s", str(cls))
+            raise AttributeError(
+                "No dictionary defined for class %s", str(cls))
 
     @classmethod
     def seq_1to3(cls, let):
         """Returns a three letter code for a given 1-letter code. In ambiguous cases the first matching code is returned."""
         try:
             cls_name = cls.__name__.lower()
-            code_dictionary = getattr(getattr(ConfigManager.monomer, cls_name), cls_name + "_code")     # pylint:disable=no-member
+            code_dictionary = getattr(
+                getattr(ConfigManager.monomer, cls_name), cls_name + "_code")     # pylint:disable=no-member
             for seq3, seq1 in code_dictionary.items():
                 if seq1 == let:
                     return seq3
-            raise KeyError('Cannot translate %s to 3 letter code' % (cls_name + " symbol " + let,))
+            raise KeyError('Cannot translate %s to 3 letter code' %
+                           (cls_name + " symbol " + let,))
         except AttributeError:
             if issubclass(cls.__base__, Monomer):     # pylint:disable=no-member
                 return cls.__base__.seq_1to3(let)     # pylint:disable=no-member
                 # Monomer has __base__ attr
-            raise AttributeError("No dictionary defined for class %s", str(cls))
+            raise AttributeError(
+                "No dictionary defined for class %s", str(cls))
 
     @property
     def seq(self):
@@ -661,7 +686,8 @@ class Monomer(object):
             warn(UnknownParticleName(self))
             return "?"
         except AttributeError:
-            warn(NoConfiguration("class %s has no dictionary in configuration manager, thus '=' inserted into sequence. to turn this exception into harmless warning - set NoConfiguration in ConfigManager.warnings_and_exceptions.class_filters to 'ignore' or ;always'" % self.__class__.__name__))
+            warn(NoConfiguration("class %s has no dictionary in configuration manager, thus '=' inserted into sequence. to turn this exception into harmless warning - set NoConfiguration in ConfigManager.warnings_and_exceptions.class_filters to 'ignore' or ;always'" %
+                 self.__class__.__name__))
             return "="
 
     @property
@@ -676,7 +702,8 @@ class Monomer(object):
 
     def get_representation(self):
         """Deprecated method. Returns self.representation."""
-        warn(DeprecationWarning("Method get_representation is deprecated. Please, use property representation instead."), 1)
+        warn(
+            DeprecationWarning("Method get_representation is deprecated. Please, use property representation instead."), 1)
         return self.representation
 
     def get_pdb_id(self):
@@ -688,6 +715,7 @@ class Monomer(object):
 
     @property
     def pid(self):
+        """Return PDB id as string."""
         return str(self.get_pdb_id())
 
     @property
@@ -711,22 +739,20 @@ class Monomer(object):
         C -- coil
         """
         temp = ConfigManager.structure_mon.simple_secondary_structure_code  # pylint:disable=no-member
-        # configuration manager is dynamic with member that cannot be recognized by pylint
+        # configuration manager is dynamic with member that cannot be
+        # recognized by pylint
         return temp[self._ss]
-
-    def select(self):
-        """Returns selection - set containing only self."""
-        return pydesc.selection.Set([self.structure.converter.get_pdb_id(self.ind)])
-        # ??? monomery bez struktury?
 
     def is_next(self, monomer):
         """Deprecated method. Returns True if given mer follows current mer."""
-        warn(DeprecationWarning("is_next method is deprecated, use attribute next_monomer instead."))
+        warn(
+            DeprecationWarning("is_next method is deprecated, use attribute next_monomer instead."))
         return self.next_monomer == monomer
 
     def is_prev(self, monomer):
         """Deprecated method. Returns True if given mer preceeds current mer."""
-        warn(DeprecationWarning("is_prev method is deprecated, use attribute prevoius_monomer instead."))
+        warn(
+            DeprecationWarning("is_prev method is deprecated, use attribute prevoius_monomer instead."))
         return self.previous_monomer == monomer
 
 
@@ -746,10 +772,11 @@ class MonomerChainable(Monomer):
         """
         Monomer.__init__(self, structure_obj, ind, name, chain, atoms)
         try:
-            backbone_atoms = dict((atom_name, None) for atom_name in self.get_config('backbone_atoms'))
+            backbone_atoms = dict((atom_name, None)
+                                  for atom_name in self.get_config('backbone_atoms'))
         except AttributeError:
             raise IncompleteParticle(self.pid)
-        
+
         if self.get_config('check_distances'):
             for atom_pair in self.get_config("crucial_atom_distances"):
                 self._check_distance(backbone_atoms, *atom_pair)
@@ -874,16 +901,20 @@ class Residue(MonomerChainable):
         """
         residues = [mer for mer in structure_obj if isinstance(mer, Residue)]
         nres = len(residues)
-        if nres == 0: return
-        n, ca, c = numpy.transpose(numpy.array([[a.vector for a in r.backbone] for r in residues]), (1,0,2))[[0,1,2]]
+        if nres == 0:
+            return
+        n, ca, c = numpy.transpose(
+            numpy.array([[a.vector for a in r.backbone] for r in residues]), (1, 0, 2))[[0, 1, 2]]
         pc = numpy.empty((nres, 3), dtype=numpy.float32)
         nn = numpy.empty((nres, 3), dtype=numpy.float32)
 
         pc[1:] = c[:-1]
         nn[:-1] = n[1:]
 
-        no_prev = numpy.fromiter((r.previous_monomer is None for r in residues), dtype=bool)
-        no_next = numpy.fromiter((r.next_monomer is None for r in residues), dtype=bool)
+        no_prev = numpy.fromiter(
+            (r.previous_monomer is None for r in residues), dtype=bool)
+        no_next = numpy.fromiter(
+            (r.next_monomer is None for r in residues), dtype=bool)
 
         pc[no_prev] = n[no_prev]
         nn[no_next] = c[no_next]
@@ -897,8 +928,9 @@ class Residue(MonomerChainable):
         pl2 = numpy.cross(nca, cca)    # vectors perpendicular to plane 2
         pl3 = numpy.cross(npc, nca)    # vectors perpendicular to plane 3
 
-        with numpy.errstate(divide='ignore',invalid='ignore'):
-            pl1, pl2, pl3 = (pl / numpy.sqrt(numpy.einsum('ij,ij->i', pl, pl)).reshape(-1,1) for pl in (pl1, pl2, pl3))
+        with numpy.errstate(divide='ignore', invalid='ignore'):
+            pl1, pl2, pl3 = (pl / numpy.sqrt(numpy.einsum('ij,ij->i', pl, pl)).reshape(-1, 1)
+                             for pl in (pl1, pl2, pl3))
 
         angs = []
         for planes, direction in (((pl1, pl2), -cca), ((pl2, pl3), nca)):
@@ -949,9 +981,11 @@ class Residue(MonomerChainable):
 
         Average ca is calculated as moving average for configurable number of residues around current residue.
         """
-        steps = self.get_config('moving_average')     # pylint:disable=no-member
+        steps = self.get_config(
+            'moving_average')     # pylint:disable=no-member
         if not steps % 2 == 1:
-            raise ValueError("Wrong Number of steps for moving average. Configure correnct length with ConfigManager")
+            raise ValueError(
+                "Wrong Number of steps for moving average. Configure correnct length with ConfigManager")
         average_ca = numpy.array(self.ca.vector)
         next_mer = last_mer = self
         cnt = 1
@@ -967,7 +1001,8 @@ class Residue(MonomerChainable):
             # they have no next/previous monomers
             pass
 
-        self.pseudoatoms['backbone_average'] = Pseudoatom(numpy_vec=(average_ca / cnt))
+        self.pseudoatoms['backbone_average'] = Pseudoatom(
+            numpy_vec=(average_ca / cnt))
 
     @property
     def angles(self):
@@ -983,7 +1018,8 @@ class Residue(MonomerChainable):
         ang_psi, ang_phi = 0., 0.
 
         try:
-            pd_resid = self.structure.prody_structure['', self.my_chain, self.get_pdb_id()[1]]
+            pd_resid = self.structure.prody_structure[
+                '', self.my_chain, self.get_pdb_id()[1]]
             try:
                 ang_psi = prody.calcPsi(pd_resid, radian=True)
             except ValueError:
@@ -1002,11 +1038,13 @@ class Residue(MonomerChainable):
             pl2 = pydesc.geometry.Plane.build(*atoms)
 
             if prm is not None:
-                pl3 = pydesc.geometry.Plane.build(*([prm.atoms['C']] + atoms[:2]))
+                pl3 = pydesc.geometry.Plane.build(
+                    *([prm.atoms['C']] + atoms[:2]))
                 ang_phi = pl2.dihedral_angle(pl3)
 
             if nxm is not None:
-                pl1 = pydesc.geometry.Plane.build(*(atoms[1:]+[nxm.atoms['N']]))
+                pl1 = pydesc.geometry.Plane.build(
+                    *(atoms[1:] + [nxm.atoms['N']]))
                 ang_psi = pl1.dihedral_angle(pl2)
 
         self.dynamic_properties['angles'] = (ang_psi, ang_phi)
@@ -1023,13 +1061,17 @@ class Residue(MonomerChainable):
             self.calculate_cbx_legacy()
             return
         if self.name == "GLY":
-            self.pseudoatoms['cbx'] = Pseudoatom(numpy_vec=self.atoms['CA'].vector, name='cbx')
+            self.pseudoatoms['cbx'] = Pseudoatom(
+                numpy_vec=self.atoms['CA'].vector, name='cbx')
         else:
             ca = self.atoms['CA'].vector
             cb = self.atoms['CB'].vector
             vec = cb - ca
-            try: nrm = norm(vec)
-            except: import pdb; pdb.set_trace()
+            try:
+                nrm = norm(vec)
+            except:
+                import pdb
+                pdb.set_trace()
             vec = vec * ((nrm + 1) / nrm)
 
             cbx = ca + vec
@@ -1046,11 +1088,13 @@ class Residue(MonomerChainable):
             [0, 0, -2.5],
             [0, 0, 0],
             [-1.23670, -0.656232, -3.010602]]
-        # positions of atoms/points C, C alfa, C beta extended by 1 A and N, respectively
+        # positions of atoms/points C, C alfa, C beta extended by 1 A and N,
+        # respectively
         try:
             coords = [self.atoms[i] for i in ("C", "CA", "CB", "N")]
         except KeyError:
-            coords = (self.atoms['C'], self.atoms['CA'], (self.atoms['CA'] - self.atoms['C']) + (self.atoms['CA'] - self.atoms['N']), self.atoms['N'])
+            coords = (self.atoms['C'], self.atoms['CA'], (self.atoms['CA'] - self.atoms['C']) + (
+                self.atoms['CA'] - self.atoms['N']), self.atoms['N'])
         bb_coords = [coord_obj.get_coord() for coord_obj in coords]
         #
 
@@ -1077,7 +1121,8 @@ class Residue(MonomerChainable):
         # This beautiful step provides the answer. V and Wt are the orthonormal
         # bases that when multiplied by each other give us the rotation matrix, U.
         # S, (Sigma, from SVD) provides us with the error!  Isn't SVD great!
-        V, S, Wt = numpy.linalg.svd(numpy.dot(numpy.transpose(pattern), bb_coords))
+        V, S, Wt = numpy.linalg.svd(
+            numpy.dot(numpy.transpose(pattern), bb_coords))
 
         # we alredy have our solution, in the aaults from SVD.
         # we just need to check for reflections and then produce
@@ -1139,7 +1184,8 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
                 return True
             atom.ring_flag = False
 
-        self.ring_atoms = {name: atom for name, atom in self.atoms.items() if flag(name, atom)}
+        self.ring_atoms = {
+            name: atom for name, atom in self.atoms.items() if flag(name, atom)}
 
         self.calculate_ring_center()
         self.calculate_proximate_ring_center()
@@ -1150,14 +1196,17 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
 
     def calculate_ring_center(self):
         """Adds pseudoatom representing base ring center."""
-        vec = (self.ring_atoms['N1'].vector + self.ring_atoms['C4'].vector) * 0.5
-        self.pseudoatoms['ring_center'] = Pseudoatom(numpy_vec=vec, name='ring_center')
+        vec = (
+            self.ring_atoms['N1'].vector + self.ring_atoms['C4'].vector) * 0.5
+        self.pseudoatoms['ring_center'] = Pseudoatom(
+            numpy_vec=vec, name='ring_center')
 
     def calculate_ring_plane(self):
         """Adds pydesc.geometry.Plane object representing base to current nucleotide pseudoatom dictionary."""
-        #~ at1, at2, at3 = self.ring_atoms['C2 '], self.ring_atoms['C4 '], self.ring_atoms['C6 ']
-        at1, at2, at3 = self.ring_atoms['C2'], self.ring_atoms['C4'], self.ring_atoms['C6']
-        self.ring_plane = pydesc.geometry.Plane.build(at1, at2, at3)     # pylint:disable=attribute-defined-outside-init
+        at1, at2, at3 = self.ring_atoms[
+            'C2'], self.ring_atoms['C4'], self.ring_atoms['C6']
+        self.ring_plane = pydesc.geometry.Plane.build(
+            at1, at2, at3)     # pylint:disable=attribute-defined-outside-init
         # current method is called by init
 
     def calculate_proximate_ring_center(self):
@@ -1173,6 +1222,7 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
 
     @property
     def prc(self):
+        """Get ring center of base ring closest to sugar."""
         try:
             return self.pseudoatoms['prc']
         except KeyError:
@@ -1253,9 +1303,11 @@ class Ion(MonomerOther):
         """
         super(Ion, self).__init__(structure_obj, ind, name, chain, atoms)
         if len(self.atoms) != 1:
-            raise ValueError("Failed to create Ion, given BioPython residue consists of to many atoms.")
+            raise ValueError(
+                "Failed to create Ion, given BioPython residue consists of to many atoms.")
 
     def get_radius(self):
+        """Return ion radius."""
         name = max(self.atoms)
         try:
             return self.get_config('radii')[name]
@@ -1278,7 +1330,6 @@ class Ligand(MonomerOther):
         structure_obj -- instance of parental PyDesc structure.
         """
         super(Ligand, self).__init__(structure_obj, ind, name, chain, atoms)
-
 
 
 Monomer.reset_config_cache()
