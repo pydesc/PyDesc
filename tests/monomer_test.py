@@ -32,7 +32,9 @@ import unittest
 import mock
 
 from tests.syntax_check import module_syntax
+from tests.syntax_check import parse_args
 
+import sys
 import types
 import itertools
 import numpy
@@ -430,6 +432,7 @@ def load_tests(loader, standard_tests, pattern):
             #~ for i in zip(pa.vector, pa2.vector):
                 #~ self.assertEqual(*i)
 
+
 class MonomerClassMethods(unittest.TestCase):
 
     def test_seqs(self):
@@ -496,14 +499,7 @@ class PatchStc(object):
         self._monomers = []
 
 
-def parse_args():
-    ap = AP()
-    ap.add_argument("--fast", action='store_true')
-    return ap.parse_known_args()
-
-
 if __name__ == '__main__':
-    import sys
     cla, sys.argv[1:] = parse_args()
 
     unittest.main()

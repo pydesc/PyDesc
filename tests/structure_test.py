@@ -27,16 +27,16 @@ Usage:
 """
 
 import unittest
+import tests
+from tests.syntax_check import module_syntax
+from tests.syntax_check import parse_args
+
 import random
 import operator
-
-import syntax_check
-from syntax_check import notest, testing, test_name_append
-
 import Bio.PDB
-
 import warnings
 import sys
+import os
 
 import pydesc.structure as structure
 import pydesc.selection as selection
@@ -44,7 +44,6 @@ import pydesc.monomer as monomer
 import pydesc.numberconverter as numberconverter
 import pydesc.warnexcept as warnexcept
 import pydesc.config as config
-import tests
 
 config.ConfigManager.warnings_and_exceptions.class_filters.set("NoConfiguration", "ignore")
 config.ConfigManager.warnings_and_exceptions.class_filters.set("LocalCopyAccess", "ignore")
@@ -54,36 +53,10 @@ config.ConfigManager.warnings_and_exceptions.class_filters.set("IncompleteChaina
 
 warnexcept.set_filters()
 
-syntax_check.module = structure
-
-notest(structure.AbstractStructure.rotate)
-notest(structure.AbstractStructure.translate)
-notest(structure.AbstractStructure.monomers)
-
-notest(structure.Chain)
-
-notest(structure.Contact.get_other_element)
-
-notest(structure.AbstractDescriptor.create_coord_vector)
-notest(structure.AbstractDescriptor.create_descriptors)
-
-data_dir = tests.__path__[0] + '/data/test_structures/'
-dcd_data_dir = tests.__path__[0] + '/data/dcd/'
-
-skip_slow = False
-fast = False
-
-tests_performed = dict((x, False) for x in [
-    'ElementChainable',
-    'ElementOther',
-    'ProteinDescriptor',
-    'NucleotideDescriptor'
-])
-
-TestSyntax = syntax_check.module_syntax()
+data_dir = os.path.join(os.path.abspath(os.path.dirname(tests.__file__)), 'data/test_structures/')
+dcd_data_dir = os.path.join(os.path.abspath(os.path.dirname(tests.__file__)), 'data/dcd/')
 
 
-@testing(structure.StructureLoader)
 class StructureLoaderTest(unittest.TestCase):
 
     """ Testcase for StructureLoader class. """
@@ -91,15 +64,13 @@ class StructureLoaderTest(unittest.TestCase):
     structures = ['1asz', '1gax', '1no5', '1pxq', '2dlc', '2lp2',
                   '3ftk', '3g88', '3lgb', '3m6x', '3npn', '3tk0', '3umy']
 
-    @testing(structure.StructureLoader.__init__)
-    @testing(structure.StructureLoader.load_structure)
     def test_loader(self):
         """ Test StructureLoader.load_structure. """
         loader = structure.StructureLoader()
         for name in self.structures:
             with warnings.catch_warnings(record=True):
                 struct = loader.load_structure(name)
-            f = loader.handler.get_file(name)
+            f = loader.handler.get_file(name)[0]
             pdb_models = Bio.PDB.PDBParser(QUIET=True).get_structure(name, f)
 
             for s in struct:
@@ -120,10 +91,6 @@ def make_trajectorytest(strname):
         def setUpClass(cls):
             cls.pdb_structure = sl.load_structure("mdm2", path=dcd_data_dir + cls.name + ".pdb")[0]
 
-        @testing(structure.Structure.link_dcd_file)
-        @testing(structure.Structure.disconnect_trajectory)
-        @testing(structure.Structure.next_frame)
-        @testing(structure.Structure.frame)
         def test_linking_trajectory(self):
             self.assertIsNone(self.pdb_structure.frame)
             self.pdb_structure.link_dcd_file(dcd_data_dir + self.name + ".dcd")
@@ -139,13 +106,9 @@ def make_trajectorytest(strname):
 
 def make_structurebasictest(strname):
     """Create and return a StructureBasicTest testcase for a given structure."""
-    @test_name_append(strname)
     class StructureBasicTest(unittest.TestCase):
         name = strname
 
-        @testing(structure.AbstractStructure.__init__)
-        @testing(structure.Structure.__init__)
-        @testing(structure.Chain.__init__)
         def test_init(self):
             pdb_structure = Bio.PDB.PDBParser(
                 QUIET=True).get_structure(self.name, data_dir + '%s.pdb' % self.name)
@@ -161,11 +124,6 @@ def make_structurebasictest(strname):
 
 def make_structuretest(strname):
     """Create and return a StructureTest testcase for a given structure."""
-    @testing(structure.AbstractStructure)
-    @testing(structure.Structure)
-    @testing(structure.UserStructure)
-    @testing(structure.Segment)
-    @test_name_append(strname)
     class StructureTest(unittest.TestCase):
         name = strname
 
@@ -184,15 +142,11 @@ def make_structuretest(strname):
             del cls.converter
             del cls.pdb_structure
 
-        @testing(structure.AbstractStructure.__len__)
         def test_len(self):
             #~ self.assertEqual(len(self.struct), sum(map(len, self.model)))
             #TO water particles were taken under consideration in last version
             self.assertEqual(len(self.struct), sum(map(len, [filter(lambda x: True if x.get_id()[0] != 'W' else False, chain) for chain in self.model])))
 
-        @testing(structure.Structure.get_secondary_structure)
-        @testing(structure.Structure.get_simple_secondary_structure)
-        @testing(structure.Structure.set_secondary_structure)
         def test_ss(self):
             self.struct.set_secondary_structure()
             ss = self.struct.get_secondary_structure()
@@ -204,7 +158,6 @@ def make_structuretest(strname):
             self.assertTrue(all(i in ('E', 'G', 'H', '-', 'S', 'T') for i in set(ss)))
             self.assertTrue(all(i in ('E', 'C', 'H') for i in set(sss)))
 
-        @testing(structure.AbstractStructure.__iter__)
         def test_iter(self):
             l = list(iter(self.struct))
 
@@ -216,7 +169,6 @@ def make_structuretest(strname):
                 pdb_id = numberconverter.PDB_id.from_pdb_residue(m.pdb_residue)
                 self.assertEqual(m.ind, self.converter.get_ind(tuple(pdb_id)))
 
-        @testing(structure.AbstractStructure.__getitem__)
         def test_getitem(self):
             for m in self.struct:
                 self.assertEqual(self.struct[m.ind], m)
@@ -229,7 +181,6 @@ def make_structuretest(strname):
                     if mer.previous_monomer:
                         self.assertEqual(mer, mer.previous_monomer.next_monomer)
 
-        @testing(structure.AbstractStructure.__getitem__)
         def test_getsliceunbound(self):
             whole = list(self.struct)
             pref = []
@@ -243,10 +194,7 @@ def make_structuretest(strname):
                 self.assertEqual(len(pref) + 1, len(slc1))
                 pref.append(m)
 
-        @testing(structure.AbstractStructure.next_monomer)
-        @testing(structure.UserStructure.__init__)
-        @testing(structure.Segment.__init__)
-        @unittest.skipIf(skip_slow, "Takes too long")
+        @unittest.skipIf(cla.fast, "Takes too long")
         def test_getslicebound(self):
             step = 20
             step1 = 10
@@ -278,10 +226,6 @@ def make_structuretest(strname):
                     if seg:
                         self.assertIsInstance(slc, structure.Segment, "Slice is Userstructure, should be Segment: structure %s, slice: from %s to %s" % (str(self.struct), str(slc[0]), str(slc[-1])))
 
-        @testing(structure.AbstractStructure.__add__)
-        @testing(structure.AbstractStructure.__contains__)
-        @testing(structure.UserStructure.__init__)
-        @testing(structure.Segment.__init__)
         def test_add_in(self):
             whole = list(self.struct)
 
@@ -313,10 +257,7 @@ def make_structuretest(strname):
                 if seg:
                     self.assertIsInstance(res, structure.Segment)
 
-        @testing(structure.AbstractStructure.get_contact_map)
-        @testing(structure.AbstractStructure.set_contact_map)
-        @testing(structure.Contact.value)
-        @unittest.skipIf(skip_slow, "Takes too long")
+        @unittest.skipIf(cla.fast, "Takes too long")
         def test_contactmap_and_contact_values(self):
             self.assertRaises(AttributeError, self.struct.get_contact_map)
             with warnings.catch_warnings(record=True) as wlist:
@@ -341,23 +282,15 @@ def make_structuretest(strname):
                     else:
                         self.assertEqual(c.value, 0)
 
-        @testing(structure.AbstractStructure.get_sequence)
-        @testing(structure.Structure.get_sequence)
         def test_getsequence(self):
             for ch in self.struct.chains:
                 seq = ch.get_sequence()
                 chainable = filter(lambda x: isinstance(x, monomer.MonomerChainable), ch)
                 self.assertEqual(len(seq), len(chainable), "Wrong len of sequence of %s chain" % ch.chain_char)
 
-        @testing(structure.AbstractStructure.select)
-        @testing(structure.Structure.select)
         def test_select(self):
             self.struct.select()
 
-        @testing(structure.Segment)
-        @testing(structure.Segment.select)
-        @testing(structure.Segment.start)
-        @testing(structure.Segment.end)
         def test_segment(self):
             whole = list(self.struct)
 
@@ -379,13 +312,6 @@ def make_structuretest(strname):
 
             self.assertTrue(nseg, "Random segment generation failed to generate any segments.")
 
-        @testing(structure.Element)
-        @testing(structure.Element.__init__)
-        @testing(structure.Element.build)
-        @testing(structure.ElementChainable)
-        @testing(structure.ElementChainable.__init__)
-        @testing(structure.ElementOther)
-        @testing(structure.ElementOther.__init__)
         def test_element(self):
             chs = [list(ch) for ch in self.struct.chains]
             whole = reduce(operator.add, chs)
@@ -437,9 +363,6 @@ def make_structuretest(strname):
             if valerr:
                 self.fail("Unexpected exceptions caught for mer %i:\n %s" % (msg[0][1].ind, str(msg[0][0])))
 
-        @testing(structure.Contact)
-        @testing(structure.Contact.__init__)
-        @testing(structure.Contact.__sub__)
         @unittest.expectedFailure
         def test_contact_future(self):
             # test fails because of lack of pydesc.contacts imported
@@ -479,10 +402,6 @@ def make_structuretest(strname):
 
                 self.assertTrue(isinstance(c.select(), selection.SelectionsUnion) or isinstance(c.select(), selection.Range))
 
-        @testing(structure.Contact)
-        @testing(structure.Contact.__init__)
-        @testing(structure.Contact.get_other_element)
-        @testing(structure.Contact.select)
         def test_contact(self):
             whole = list(self.struct)
 
@@ -510,9 +429,6 @@ def make_structuretest(strname):
                 sc = c.select()
                 self.assertEqual(len(sc.specify(c).ids), len(c))
 
-        @testing(structure.AbstractStructure.adjusted_number)
-        @testing(structure.Segment.adjusted_number)
-        @testing(structure.UserStructure.adjusted_number)
         def test_adjusted_number(self):
             whole = list(self.struct)
 
@@ -540,8 +456,6 @@ def make_structuretest(strname):
                             conts += 1
                     self.assertTrue(conts <= slc.adjusted_number())
 
-        @testing(structure.AbstractStructure.create_pdbstring)
-        @testing(structure.AbstractStructure.save_pdb)
         def test_pdbstring(self):
             stg = self.struct.create_pdbstring()
             self.struct.save_pdb('stc_test.pdb')
@@ -555,8 +469,7 @@ def make_structuretest(strname):
 def make_descriptortest(strname):
     """Create and return a StructureTest testcase for a given structure."""
 
-    @unittest.skipIf(skip_slow, "Takes too long")
-    @test_name_append(strname)
+    @unittest.skipIf(cla.fast, "Takes too long")
     class DescriptorTest(unittest.TestCase):
         name = strname
 
@@ -615,16 +528,6 @@ def make_descriptortest(strname):
             if valerr:
                 self.fail("Unexpected exceptions caught:\n %s" % str(msg))
 
-        @testing(structure.AbstractDescriptor)
-        @testing(structure.AbstractDescriptor.__init__)
-        @testing(structure.AbstractDescriptor.select)
-        @testing(structure.AbstractDescriptor.build)
-        @testing(structure.NucleotideDescriptor)
-        @testing(structure.NucleotideDescriptor.build)
-        @testing(structure.NucleotideDescriptor.__init__)
-        @testing(structure.ProteinDescriptor)
-        @testing(structure.ProteinDescriptor.build)
-        @testing(structure.ProteinDescriptor.__init__)
         def test_descriptor(self):
             whole = list(self.struct)
 
@@ -717,7 +620,7 @@ def load_tests(loader, standard_tests, pattern):
                   '3ftk', '3g88', '3lgb', '3m6x', '3npn', '3tk0', '3umy']
     dcd_structures = ['mdm2']
 
-    if fast:
+    if cla.fast:
         structures = ['4jgn']
 
     basic = unittest.TestSuite()
@@ -732,15 +635,11 @@ def load_tests(loader, standard_tests, pattern):
 
     standard_tests.addTests(basic)
 
-    standard_tests.addTests(loader.loadTestsFromTestCase(syntax_check.variants_tested(tests_performed)))
+    standard_tests.addTests(loader.loadTestsFromTestCase(module_syntax(structure)))
 
     return standard_tests
 
 if __name__ == '__main__':
-    if syntax_check.rip_argv('--skip-slow'):
-        skip_slow = True
-
-    if syntax_check.rip_argv('--fast'):
-        fast = True
+    cla, sys.argv[1:] = parse_args()
 
     unittest.main()

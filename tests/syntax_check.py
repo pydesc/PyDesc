@@ -37,6 +37,8 @@ import os
 
 from collections import defaultdict
 
+from argparse import ArgumentParser as AP
+
 import types
 
 module = None
@@ -232,6 +234,11 @@ def _regtest(d, item, mod=None):
 
 test = functools.partial(_regtest, has_test)
 notest = functools.partial(_regtest, no_test)
+
+def parse_args():
+    ap = AP()
+    ap.add_argument("--fast", action='store_true')
+    return ap.parse_known_args()
 
 
 def module_syntax(mod=None):  # pylint: disable=R0912

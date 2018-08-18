@@ -138,8 +138,7 @@ class DBHandler(object):
             except:
                 continue
             else:
-                return self._get_file(val)
-        raise
+                return [self._get_file(val)]
         raise IOError('No file to load for %s' % val)
 
     def _get_file(self, val):
@@ -369,7 +368,7 @@ class BioUnitHandler(DBHandler):
                 self.download_file(val, unit)
                 print "Downloading " + val + "_" + str(unit) + "..."
                 fh = gzip.open(self.get_file_location(val, unit), 'r')
-            return fh
+            return [fh]
 
         else:
             unit = 1

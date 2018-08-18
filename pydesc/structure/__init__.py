@@ -40,14 +40,15 @@ class StructureLoader(object):
 
     """Loads structures from the databases using a given designation."""
 
-    def __init__(self, handler=pydesc.dbhandler.MetaHandler(), parser=pydesc.dbhandler.MetaParser(QUIET=True)):
+    def __init__(self, handler=pydesc.dbhandler.MetaHandler(), parser=pydesc.dbhandler.MetaParser(QUIET=True), mer_factory=pydesc.monomer.MonomerFactory()):
         """Structure loader constructor.
 
         Argument:
         handler -- an instance of handler.
-        """
+        """ #TODO fix docstring
         self.handler = handler
         self.parser = parser
+        self.mer_factory = mer_factory
 
     def load_bundle(self, code, paths=None, mapping=None):
         """Returns list of structures assembled from a few files.
@@ -121,37 +122,63 @@ class StructureLoader(object):
         "1no5/1"
         in case of UnitHandler.
         """
-        def load_file(*inp):
-            """Executes parser get_structure."""    #??? probably shuold call method instead of function
-            return self.parser.get_structure(*inp)
+
+        def pick_mer(dct, most_frequent, others):
+            """Try to pick *most_frequent* key from given dict *dct*, otherwise pick first from list of *others*."""
+            try:
+                return dct[most_frequent]
+            except KeyError:
+                for key in others:
+                    try:
+                        return dct[key]
+                    except KeyError:
+                        continue
+            raise ValueError('Got empty dict.')
 
         set_filters()
-        path = self.handler.get_file(code) if path is None else open(path)
+        files = self.handler.get_file(code) if path is None else open(path)
         if code.find("://") != -1:
             dummy_db, code = code.split("://")
-        if not isinstance(path, list):
-            with path:
-                pdb_structure = load_file(code, path)
-            try:
-                converter = pydesc.numberconverter.NumberConverter(pdb_structure)
-            except IndexError:
-                raise ValueError('Failed to load %s -- file seems to be empty.' % code)
-            structures_list = [Structure(pdb_model, converter, path.name) for pdb_model in pdb_structure]
-            return structures_list
-        else:
-            bio_units = [load_file(code, handler) for handler in path]
-            map(operator.methodcaller("close"), path)
-            temp = []
-            for unit in bio_units:
-                for pdb_model in unit:
-                    number_of_mers = 0
-                    for pdb_chain in pdb_model:
-                        number_of_mers += len(pdb_chain)
-                    temp.append((unit, number_of_mers))
-            converter = pydesc.numberconverter.NumberConverter(max(temp, key=lambda x: x[1])[0])
-            # choosing the BioUnit containing the biggest amount of mers
-            # provides continus mers enumeration
-            return [Structure(pdb_model, converter, path.name) for unit in bio_units for pdb_model in unit]
+        models = []
+        for handler in files:
+            with handler:
+                pdb_structure = self.parser.get_structure(code, handler)
+            models.extend([pdb_model for pdb_model in pdb_structure])
+        try:
+            converter = pydesc.numberconverter.NumberConverter(models)
+        except IndexError:
+            raise ValueError('Failed to load %s -- file seems to be empty.' % code)
+        
+        structures_list = []
+        for pdb_model in models:
+            name = pdb_model.get_full_id()[0]
+            structure = Structure(name, files[0].name, converter)
+            chains = []
+            for pdb_chain in pdb_model:
+                mers = []
+                hits = dict((klass, 0) for klass in self.mer_factory.chainable)
+                for pdb_residue in pdb_chain:
+                    mer = self.mer_factory.create_from_BioPDB(pdb_residue, warn_in_place=False)
+                    if mer is None:
+                        continue
+                    mers.append(mer)
+                    for mer_class in hits:
+                        hits[mer_class] = hits.get(mer_class, 0) + int(mer_class in mer)
+
+                winner = max(hits.items(), key=lambda hit: hit[1])[0]
+
+                chain_mers = []
+                for mer_dct in mers:
+                    accepted_mer = pick_mer(mer_dct, winner, self.mer_factory.other)
+                    chain_mers.append(accepted_mer)
+                    mer_dct['warnings'].raise_all(type(accepted_mer))
+
+                chains.append(Chain(structure, pdb_chain.get_id(), chain_mers))
+
+            structure._finalize(chains)
+            structures_list.append(structure)
+
+        return structures_list
 
 
 class AbstractStructure(object):
@@ -463,66 +490,26 @@ class Structure(AbstractStructure):
 
     """Representation of molecular structure of the protein or the nucleotide acids."""
 
-    def __init__(self, pdb_model, converter_obj=None, path=None):
+    def __init__(self, name, path, converter_obj):
         """Structure constructor.
 
         Arguments:
-        pdb_model -- BioPython Model instance.
-        converter_obj -- instance of NumberConverter. None by default.
-        path -- string, path to structure file. None by default.
 
         Sets Structure's list of monomers and list of chains.
         Sets monomers' next_monomer attribute and creates their elements.
         Extended AbstractStructure method.
-        """
+        """ # TODO fix docstring
 
         AbstractStructure.__init__(self, self)
         self.path = path
-        self.pdb_model = pdb_model
-        self.name = pdb_model.get_full_id()[0]
-        # setting derived_from as self
-        self.converter = converter_obj if converter_obj is not None else pydesc.numberconverter.NumberConverter(pdb_model.parent)
-        # pylint: disable=no-member, protected-access
-        self._monomers = []
-        for pdb_chain in pdb_model:
-            monomers, hits = [], dict((klass, 0) for klass in pydesc.monomer.MonomerChainable.__subclasses__())
-            for pdb_residue in pdb_chain:
-                mer = pydesc.monomer.MonomerChainable.create_monomers(pdb_residue, self, warn_in_place=False)
-                if mer is None:
-                    continue
-                monomers.append(mer)
-                for mer_class in mer:
-                    try:
-                        hits[mer_class] += 1
-                    except KeyError:
-                        pass
-            winner = max(hits.items(), key=lambda hit: hit[1])[0]
+        self.name = name
+        self.converter = converter_obj
+        self.chains = None
 
-            for mer in monomers:
-                try:
-                    accepted_mer = mer[winner]
-                except KeyError:
-                    # try:
-                    mer.update(pydesc.monomer.MonomerOther.create_monomers(mer[pydesc.monomer.Monomer].pdb_residue, self, warn_in_place=False, base=mer[pydesc.monomer.Monomer]))
-                    accepted_mer = mer[pydesc.monomer.MonomerOther]
-
-                self._monomers.append(accepted_mer)
-                mer['warnings'].raise_all(type(accepted_mer))
-                try:
-                    if self._monomers[-2]._has_bond(accepted_mer):
-                        self._monomers[-2].next_monomer = accepted_mer
-                        accepted_mer.previous_monomer = self._monomers[-2]
-                except IndexError:
-                    pass
-        for mer in self._monomers:
-            mer._finalize()
+    def _finalize(self, chains):
+        self.chains = chains
+        self._monomers = [mer for chain in chains for mer in chain]
         self._set_hash()
-        # ??? byc moze niepotrzebne - init chainow wymaga w wersji 349
-        self.chains = [Chain(pdb_chain, self) for pdb_chain in self.pdb_model]
-        pydesc.monomer.Residue.calculate_angles_static(self)
-        # pylint: enable=no-member, protected-access
-        # _monomers is required for AbstractStructure instances
-        # access to all attrs and methods is protected, but not from cooperating class init
 
     def __repr__(self):
         return '<Structure %s>' % self.name
@@ -844,20 +831,20 @@ class Chain(AbstractStructure):
     As in PDB file, chains contain both: chainable mers and ligands.
     """
 
-    def __init__(self, pdb_chain, structure_obj):
+    def __init__(self, structure_obj, chain_char, mers):
         """Chain constructor.
 
         Arguments:
-        pdb_chain -- BioPython Bio.PDB.Chain instance.
-        structure - the Structure instance which the Chain is derived from.
+        XXX
 
         Sets Chain's list of Monomers.
         Extended Segment method.
-        """
+        """ # TODO fix docstring
         AbstractStructure.__init__(self, structure_obj)
-        self.pdb_chain = pdb_chain
-        self.chain_char = pdb_chain.get_id()
-        self._monomers = [mer for mer in structure_obj if mer.my_chain == self.chain_char]
+        self.chain = chain_char
+        self._monomers = mers
+        for mer in self._monomers:
+            mer._finalize()
 
     def __repr__(self, mode=0):
         return '<Chain %s>' % self.name

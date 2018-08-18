@@ -196,7 +196,7 @@ class NumberConverter(object):
 
     """Class of objects responsible for converting PDB names of mers to PyDesc integers (inds)."""
 
-    def __init__(self, pdb_structure=None, pdb_mers_list=None):
+    def __init__(self, pdb_models):
         """NumberConverter constructor.
 
         Arguments:
@@ -208,13 +208,10 @@ class NumberConverter(object):
 
         For structures containing few models - performs Smith-Waterman algoritm to establish correct order
         of mers common for all models.
-        """
+        """ #TODO fix docstring
 
         is_not_water = lambda pdb_residue: False if pdb_residue.get_id()[0] == "W" else True
-        if pdb_structure is not None:
-            models_ids = [map(PDB_id.from_pdb_residue, filter(is_not_water, pdb_model.get_residues())) for pdb_model in pdb_structure]
-        else:
-            models_ids = [map(PDB_id.from_pdb_residue, filter(is_not_water, sublist)) for sublist in pdb_mers_list]
+        models_ids = [map(PDB_id.from_pdb_residue, filter(is_not_water, pdb_model.get_residues())) for pdb_model in pdb_models]
 
         if len(models_ids) > 1:
             models_ids = perform_Smith_Waterman(models_ids)
