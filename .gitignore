@@ -1,0 +1,7 @@
+*.pyc
+doc/*.log
+doc/*.aux
+doc/*.out
+build/
+PyDesc.egg-info/
+lib

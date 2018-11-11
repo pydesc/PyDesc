@@ -935,7 +935,14 @@ class PairAlignment(Alignment):
         for m1, m2 in self.aligned_mers:
             for m1c in cm1.contacts[m1.ind]:
                 try:
-                    conts.add((pydesc.structure.Contact(m1.ind, m1c, cstc1), pydesc.structure.Contact(m2.ind, alg[cstc1[m1c]].ind, cstc2)))
+                    conts.add((pydesc.structure.Contact(pydesc.structure.ElementChainable(m1),\
+                                                        pydesc.structure.ElementChainable(cstc1[m1c])
+                                                        ),
+                               pydesc.structure.Contact(pydesc.structure.ElementChainable(m2),\
+                                                        pydesc.structure.ElementChainable(alg[cstc1[m1c]])
+                                                        )
+                              )
+                             )
                 except (ValueError, KeyError):
                     pass
             for m2c in cm2.contacts[m2.ind]:
