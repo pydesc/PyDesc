@@ -5,3 +5,5 @@ doc/*.out
 build/
 PyDesc.egg-info/
 lib
+
+*/*.pyc
