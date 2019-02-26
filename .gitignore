@@ -1,3 +1,4 @@
+biodb/*
 *.pyc
 doc/*.log
 doc/*.aux

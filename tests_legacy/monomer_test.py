@@ -130,7 +130,7 @@ def make_monomertestbasic(strname, test_structure_dir, cls, names):
                 for res in i.values():
                     res.structure = S
                     pid = res.pdb_residue.get_full_id()
-                    pids = numcon.PDB_id.from_string(pid[2] + str(pid[3][1]) + pid[3][2])
+                    pids = numcon.PDB_id.create_from_string(pid[2] + str(pid[3][1]) + pid[3][2])
                     res.ind = nc.get_ind(pids)
                     s = res.select()
                     self.assertEquals(len(s.ids), 1)
@@ -340,7 +340,7 @@ def make_monomerfactorytest(strname, test_structure_dir, cls_):
             done = 0
             for ch in list(self.pdbS.get_models())[0]:
                 for m in ch:
-                    res = self.mf.create_from_BioPDB(m)
+                    res = self.mf.create_from_biopdb(m)
                     mn = m.get_resname().strip()
                     if mn == 'HOH':
                         self.assertIs(res, None)

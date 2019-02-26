@@ -164,12 +164,12 @@ class NumberConverterTest(unittest.TestCase):
             for i in nc.dict_ind_to_pdb.values():
                 self.try_pdb_id(i)
 
-    @testing(numberconverter.PDB_id.from_string)
+    @testing(numberconverter.PDB_id.create_from_string)
     def test_PDB_id_from_string(self):
         for ch in ['a', 'A', ';', '%']:
             for i in range(201):
                 for ic in [' ', 'A', 'B']:
-                    self.try_pdb_id(numberconverter.PDB_id.from_string(ch+str(i)+ic))
+                    self.try_pdb_id(numberconverter.PDB_id.create_from_string(ch + str(i) + ic))
 
 
 if __name__ == '__main__':

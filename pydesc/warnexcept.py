@@ -72,6 +72,7 @@ def warn(warn_inst, stack_level=0):
         stack_level += 2
         warnings.warn(warn_inst, stacklevel=stack_level)
 
+
 def set_filters():
     """Sets filters in filter context manager."""
     warnings.resetwarnings()
@@ -180,10 +181,6 @@ class IncompleteParticle(Exception):
     arg1 -- BioPython Residue instance.
     """
 
-    def __str__(self):
-        stc, dummy_mdl, chain, (dummy_flag, num, icode) = self.args[0].get_full_id()
-        return "Monomer %s:%s%i%s construction failed due to lack of backbone atoms." % (stc, chain, num, icode.strip())
-
 
 class CannotCalculateContact(Exception):
 
@@ -194,10 +191,6 @@ class CannotCalculateContact(Exception):
     arg2 -- mer obj 2.
     arg3 -- criterion instance.
     """
-
-    def __str__(self):
-        tpl = (self.args[0].get_pdb_id(), self.args[1].get_pdb_id(), str(self.args[2]))
-        return 'Mers %s and %s lack attributes required by %s' % tpl
 
 
 class WrongAtomDistances(Exception):
@@ -215,7 +208,7 @@ class WrongAtomDistances(Exception):
         return "Wrong %s-%s distance in %s. Check if distance criteria in config manager are not to strict." % tpl
 
 
-class WrongMonomerType(Exception):
+class WrongMerType(Exception):
 
     """Class of warnings. Warning against wrong type of mers given for contact calculation under specific criteria. Printed by default.
 
@@ -231,16 +224,6 @@ class WrongMonomerType(Exception):
         tps = [i.__name__ if i is not None else "any type" for i in self.args[2:5]]
         tps[0] = tps[0].capitalize()
         return "Contact criterion does not apply to mers %s and %s. %s and %s are required." % tuple(mrs + tps)
-
-
-class IncompleteChainableParticle(Warning):
-
-    """Class of warnings. Informations about incomplete chainable particles turned into ions or lignads due to lack of atoms. Printed by default."""
-
-    def __str__(self):
-        stc, dummy_mdl, chain, (dummy_flag, num, icode) = self.args[0].get_full_id()
-        name = "%s:%s%i%s" % (stc, chain, num, icode.strip())
-        return "Too few atoms to create chainable particle %s, %s created." % (name, self.args[1])
 
 
 class Info(Warning):

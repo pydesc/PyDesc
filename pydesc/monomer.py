@@ -26,16 +26,17 @@ import numpy
 
 import scipy.linalg
 
-from pydesc.config import ConfigManager as ConfigManager
+from pydesc.config import ConfigManager
 from pydesc.numberconverter import PDB_id
-from pydesc.warnexcept import warn as warn
-from pydesc.warnexcept import WarnManager as WarnManager
-from pydesc.warnexcept import IncompleteParticle as IncompleteParticle
-from pydesc.warnexcept import IncompleteChainableParticle as IncompleteChainableParticle
-from pydesc.warnexcept import WrongAtomDistances as WrongAtomDistances
-from pydesc.warnexcept import UnknownParticleName as UnknownParticleName
-from pydesc.warnexcept import NoConfiguration as NoConfiguration
+from pydesc.warnexcept import warn
+from pydesc.warnexcept import WarnManager
+from pydesc.warnexcept import IncompleteParticle
+from pydesc.warnexcept import WrongAtomDistances
+from pydesc.warnexcept import WrongMerType
+from pydesc.warnexcept import UnknownParticleName
+from pydesc.warnexcept import NoConfiguration
 from pydesc.warnexcept import Info
+
 try:
     import prody
 except ImportError:
@@ -95,19 +96,19 @@ ConfigManager.monomer.residue.set_default("residue_additional_code", {
     'ARM': 'R', 'ACL': 'R', 'HAR': 'R', 'HMR': 'R', 'AGM': 'R', 'DAR': 'R',
     'HIC': 'H', '3AH': 'H', 'NEM': 'H', 'NEP': 'H', 'DHI': 'H', 'MHS': 'H', 'HIP': 'H', })
 ConfigManager.monomer.residue.set_default("backbone_atoms", ('N', 'CA', 'C'))
-ConfigManager.monomer.residue.set_default("check_distances", True)
+ConfigManager.monomer.residue.set_default("check_distances", False)
 ConfigManager.monomer.residue.set_default(
     "crucial_atom_distances", (('C', 'CA', 1.35, 1.71), ('CA', 'N', 1.35, 1.75)))
 ConfigManager.monomer.residue.set_default("indicators", ('CA', 'cbx'))
 ConfigManager.monomer.residue.set_default("old_cbx_calculation", False)
 ConfigManager.monomer.residue.set_default("adjusted_segment_length", 18.0)
 ConfigManager.monomer.nucleotide.set_default("nucleotide_code", {
-                                             '  G': 'G', '  C': 'C', '  U': 'U', '  A': 'A', ' DG': 'G', ' DA': 'A', ' DT': 'T', ' DC': 'C'})
+    '  G': 'G', '  C': 'C', '  U': 'U', '  A': 'A', ' DG': 'G', ' DA': 'A', ' DT': 'T', ' DC': 'C'})
 ConfigManager.monomer.nucleotide.set_default(
     "backbone_atoms", ("P", "O5'", "C5'", "C4'", "C3'", "O3'"))
 ConfigManager.monomer.nucleotide.set_default(
     "ring_atoms", ("N1", "C2", "N3", "C4", "C5", "C6", "N7", "C8", "N9"))
-ConfigManager.monomer.nucleotide.set_default("check_distances", True)
+ConfigManager.monomer.nucleotide.set_default("check_distances", False)
 ConfigManager.monomer.nucleotide.set_default("crucial_atom_distances", (('P', "O5'", 1.54, 1.66), (
     "O5'", "C5'", 1.34, 1.54), ("C5'", "C4'", 1.44, 1.56), ("C4'", "C3'", 1.46, 1.58), ("C3'", "O3'", 1.37, 1.49)))
 ConfigManager.monomer.nucleotide.set_default(
@@ -211,12 +212,13 @@ ConfigManager.monomer.ion.set_default("radii", {'BE': 0.59,
 ConfigManager.monomer.ligand.set_default("indicators", ("rc",))
 ConfigManager.new_branch("structure_mon")
 ConfigManager.structure_mon.set_default("simple_secondary_structure_code", {
-                                        'H': 'H', 'B': 'E', 'E': 'E', 'G': 'H', 'I': 'H', 'T': 'C', 'S': 'C', '-': 'C', '=': '='})
+    'H': 'H', 'B': 'E', 'E': 'E', 'G': 'H', 'I': 'H', 'T': 'C', 'S': 'C', '-': 'C', '=': '='})
+
+
 # pylint: enable=no-member
 
 
 class MonomerFactory(object):
-
     """Factory class for Monomer subclass instances."""
 
     def __init__(self, classes=None):
@@ -239,7 +241,7 @@ class MonomerFactory(object):
     def other(self):
         return [i for i in self.classes if issubclass(i, MonomerOther)]
 
-    def create_from_BioPDB(self,
+    def create_from_biopdb(self,
                            pdb_residue,
                            structure_obj=None,
                            warn_in_place=True,
@@ -269,7 +271,7 @@ class MonomerFactory(object):
 
         name = self.get_pdb_residue_name(pdb_residue)
         if name in ConfigManager.monomer.solvent:
-            return None     # We ignore solvent
+            return None, None  # We ignore solvent
 
         if warnings_ is None:
             warnings_ = WarnManager(pdb_residue)
@@ -285,8 +287,7 @@ class MonomerFactory(object):
                            *self.unpack_pdb_residue(pdb_residue, name)
                            )
 
-        mers = self._create_possible_monomers(
-            pdb_residue, structure_obj, base, warnings_, self.classes, dbg)
+        mers, warnings_ = self._create_possible_monomers(base, warnings_, self.classes)
         if warn_in_place:
             for class_ in self.classes:
                 warnings_.raise_all(class_)
@@ -294,13 +295,11 @@ class MonomerFactory(object):
         mers[Monomer] = base
         return mers, warnings_
 
-    def _create_possible_monomers(self, pdb_residue, structure_obj, base_monomer, warnings_, classes, dbg=False):
+    def _create_possible_monomers(self, base_monomer, warnings_, classes):
         """Return dictionary of different monomer types as values and subclasses of MonomerChainable and MonomerOther
         as keys.
 
         Arguments:
-        pdb_residue -- instance of BioPython Bio.PDB.Residue based on which monomer is created.
-        structure_obj -- Structure instance to which the monomer belongs. Could be None for unbounded
         monomers.
         base_monomer -- an instance of Monomer class containing atoms from pdb_residue.
         warnings_ -- context manager for catching warnings.
@@ -312,13 +311,10 @@ class MonomerFactory(object):
             try:
                 with warnings_(monomer_type):
                     mers[monomer_type] = monomer_type(*base_data)
-            except (IncompleteParticle, WrongAtomDistances, AttributeError, ValueError, KeyError) as e:
-                # AttributeError is raised by nucleotides during Residue.__init__
-                # KeyError is raised by different __init__s when needed
-                # Atoms/Pseudoatoms are absent
+            except (IncompleteParticle, WrongAtomDistances, WrongMerType):
                 pass
 
-        return mers
+        return mers, warnings_
 
     def unpack_pdb_residue(self, pdb_residue, name=None):
         """Return important data from pdb_residue.
@@ -354,7 +350,6 @@ class MonomerFactory(object):
 
 
 class Atom(pydesc.geometry.Coord):
-
     """Representation of atoms described in pdb files.
 
     Subclass of pydesc.geometry.Coord class.
@@ -365,7 +360,7 @@ class Atom(pydesc.geometry.Coord):
     pdb_atom -- instance of BioPython Atom class.
     """
 
-    def __init__(self, coords, element):     # pylint:disable=super-init-not-called
+    def __init__(self, coords, element):  # pylint:disable=super-init-not-called
         # there is no need to call dict.__init__
         """Atom constructor.
 
@@ -380,7 +375,6 @@ class Atom(pydesc.geometry.Coord):
 
 
 class Pseudoatom(pydesc.geometry.Coord):
-
     """Representation of any point related to monomer other than atom.
 
     Subclass of pydesc.geometry.Coord class.
@@ -392,7 +386,7 @@ class Pseudoatom(pydesc.geometry.Coord):
     def __repr__(self):
         return "<Pseudoatom %s: %f %f %f>" % ((self.name,) + tuple(self.vector))
 
-    def __init__(self, x=.0, y=.0, z=.0, numpy_vec=None, name=''):     # pylint:disable=super-init-not-called
+    def __init__(self, x=.0, y=.0, z=.0, numpy_vec=None, name=''):  # pylint:disable=super-init-not-called
         # there is no need to call dict.__init__
         """Pseudoatom constructor.
 
@@ -410,7 +404,6 @@ class Pseudoatom(pydesc.geometry.Coord):
 
 
 class DynamicPropertiesDict(dict):
-
     """Class of dicts to store values that need to be recalculated for every frame of molecular dynamics trajectory."""
 
     def __init__(self, owner):
@@ -456,7 +449,6 @@ class DynamicPropertiesDict(dict):
 
 
 class Monomer(object):
-
     """Abstract class, representation of mers and particles present in molecular structures.
 
     Subclasses:
@@ -506,7 +498,7 @@ class Monomer(object):
 
             res = getattr(branch, prop_name)
         except AttributeError:
-            if issubclass(cls.__base__, Monomer):   # pylint: disable=no-member
+            if issubclass(cls.__base__, Monomer):  # pylint: disable=no-member
                 res = cls.__base__.get_config(
                     prop_name)  # pylint:disable=no-member, protected-access
                 # __base__ is not absent
@@ -517,7 +509,7 @@ class Monomer(object):
         return res
 
     def __init__(self, structure_obj, ind, name, chain, atoms):
-        """Monomer contructor.
+        """Monomer constructor.
 
         Arguments:
         structure_obj -- Structure in which current monomer is included.
@@ -529,7 +521,7 @@ class Monomer(object):
         name -- mer or ligand name, up to three letters, according to PDB file.
         structure -- the Structure instance to which the monomer belongs.
         my_chain -- character of the chain that the monomers belong to, according to PDB file.
-        atoms - dict of atoms building current monomer repersented by Atom instances.
+        atoms - dict of atoms building current monomer represented by Atom instances.
         ind -- PyDesc integer.
         pseudoatoms -- dict of Pseudoatoms.
         dynamic_properties -- dict of other geometrical properties like planes for cyclic chemical compounds.
@@ -547,7 +539,7 @@ class Monomer(object):
         self._ss = '='
 
     def __len__(self):
-        """Return sum of lenghts of monomer's atoms and pseudoatoms."""
+        """Return sum of lengths of monomer's atoms and pseudoatoms."""
         return len(list(iter(self)))
 
     def __repr__(self):
@@ -561,7 +553,8 @@ class Monomer(object):
 
         Monomer iterator iterates over its atoms and pseudoatoms dictionaries.
         """
-        return iter([self.atoms[atom] for atom in sorted(self.atoms)] + [self.pseudoatoms[point] for point in sorted(self.pseudoatoms)])
+        return iter([self.atoms[atom] for atom in sorted(self.atoms)] + [self.pseudoatoms[point] for point in
+                                                                         sorted(self.pseudoatoms)])
 
     def __getattr__(self, name):
         """Returns proper attribute value.
@@ -588,15 +581,15 @@ class Monomer(object):
         getitem -- True by default, False if called by __getattr method.
         """
         warn(DeprecationWarning(
-             """Atom eventually won't inherit from dict type, so avoid getting to attributes via getitem.
-        Use getattr instead, e.g.
-        instead of
-        >>> print my_atom['rc']
-        use
-        >>> print my_atom.rc
-        or access atoms or pseudoatoms dicts directly:
-        >>> print my_atom.pseudoatoms['rc']
-        """), 1)
+            """Atom eventually won't inherit from dict type, so avoid getting to attributes via getitem.
+       Use getattr instead, e.g.
+       instead of
+       >>> print my_atom['rc']
+       use
+       >>> print my_atom.rc
+       or access atoms or pseudoatoms dicts directly:
+       >>> print my_atom.pseudoatoms['rc']
+       """), 1)
         name = name.lstrip()
         try:
             return object.__getattribute__(self, name)
@@ -611,8 +604,10 @@ class Monomer(object):
                     raise AttributeError(
                         "Monomer %s has no attribute %s" % (repr_, name))
 
-    def _finalize(self):
-        """Method called by structures to calculate and set attributes that need structural information to be calculated."""
+    def finalize(self):
+        """Method called by structures to calculate and set attributes that need structural
+        information to be calculated.
+        """
         self.calculate_rc()
 
     def calculate_rc(self):
@@ -657,36 +652,38 @@ class Monomer(object):
         try:
             cls_name = cls.__name__.lower()
             code_dictionary = getattr(
-                getattr(ConfigManager.monomer, cls_name), cls_name + "_code")     # pylint:disable=no-member
+                getattr(ConfigManager.monomer, cls_name), cls_name + "_code")  # pylint:disable=no-member
             try:
                 additional_dictionary = getattr(
-                    getattr(ConfigManager.monomer, cls_name), cls_name + "_additional_code")     # pylint:disable=no-member
+                    getattr(ConfigManager.monomer, cls_name), cls_name + "_additional_code")  # pylint:disable=no-member
             except AttributeError:
                 additional_dictionary = {}
             return code_dictionary[seq] if seq in code_dictionary else additional_dictionary[seq]
         except AttributeError:
-            if issubclass(cls.__base__, Monomer):     # pylint:disable=no-member
+            if issubclass(cls.__base__, Monomer):  # pylint:disable=no-member
                 # ??? Monomer has no __base__
-                return cls.__base__.seq_3to1(seq)     # pylint:disable=no-member
+                return cls.__base__.seq_3to1(seq)  # pylint:disable=no-member
                 # ??? same here
             raise AttributeError(
                 "No dictionary defined for class %s", str(cls))
 
     @classmethod
     def seq_1to3(cls, let):
-        """Returns a three letter code for a given 1-letter code. In ambiguous cases the first matching code is returned."""
+        """Returns a three letter code for a given 1-letter code. In ambiguous cases the first
+        matching code is returned.
+        """
         try:
             cls_name = cls.__name__.lower()
             code_dictionary = getattr(
-                getattr(ConfigManager.monomer, cls_name), cls_name + "_code")     # pylint:disable=no-member
+                getattr(ConfigManager.monomer, cls_name), cls_name + "_code")  # pylint:disable=no-member
             for seq3, seq1 in code_dictionary.items():
                 if seq1 == let:
                     return seq3
             raise KeyError('Cannot translate %s to 3 letter code' %
                            (cls_name + " symbol " + let,))
         except AttributeError:
-            if issubclass(cls.__base__, Monomer):     # pylint:disable=no-member
-                return cls.__base__.seq_1to3(let)     # pylint:disable=no-member
+            if issubclass(cls.__base__, Monomer):  # pylint:disable=no-member
+                return cls.__base__.seq_1to3(let)  # pylint:disable=no-member
                 # Monomer has __base__ attr
             raise AttributeError(
                 "No dictionary defined for class %s", str(cls))
@@ -700,12 +697,16 @@ class Monomer(object):
             warn(UnknownParticleName(self))
             return "?"
         except AttributeError:
-            warn(NoConfiguration("class %s has no dictionary in configuration manager, thus '=' inserted into sequence. to turn this exception into harmless warning - set NoConfiguration in ConfigManager.warnings_and_exceptions.class_filters to 'ignore' or ;always'" %
-                 self.__class__.__name__))
+            warn(NoConfiguration(
+                "class %s has no dictionary in configuration manager, thus '=' inserted"
+                " into sequence. to turn this exception into harmless warning - set "
+                "NoConfiguration in ConfigManager.warnings_and_exceptions.class_filters "
+                "to 'ignore' or ;always'" %
+                self.__class__.__name__))
             return "="
 
     @property
-    def seq3(self):         # ??? trzyliterowy kod to imie w wypadku aa, a reszta?
+    def seq3(self):  # ??? trzyliterowy kod to imie w wypadku aa, a reszta?
         """Returns mer three letter pdb name."""
         return self.name
 
@@ -717,7 +718,8 @@ class Monomer(object):
     def get_representation(self):
         """Deprecated method. Returns self.representation."""
         warn(
-            DeprecationWarning("Method get_representation is deprecated. Please, use property representation instead."), 1)
+            DeprecationWarning("Method get_representation is deprecated. Please, use property representation instead."),
+            1)
         return self.representation
 
     def get_pdb_id(self):
@@ -771,7 +773,6 @@ class Monomer(object):
 
 
 class MonomerChainable(Monomer):
-
     """Abstract class, representation of residue or nucleotide.
 
     Subclasses:
@@ -793,7 +794,12 @@ class MonomerChainable(Monomer):
 
         if self.get_config('check_distances'):
             for atom_pair in self.get_config("crucial_atom_distances"):
-                self._check_distance(backbone_atoms, *atom_pair)
+                try:
+                    self._check_distance(backbone_atoms, *atom_pair)
+                except AttributeError:
+                    atom_names = atom_pair[:2]
+                    msg = 'Crucial atoms are lacking (%s), unable to create %s' % (atom_names, type(self))
+                    raise IncompleteParticle(msg)
         self._asa = None
 
     def _has_bond(self, monomer):
@@ -802,7 +808,8 @@ class MonomerChainable(Monomer):
         Argument:
         monomer -- MonomerChainable instance.
 
-        Calculates distance between backbone atoms of Monomers. Returns True or False according to the configurable monomer_acceptable_distance.
+        Calculates distance between backbone atoms of Monomers. Returns True or False according to the configurable
+        monomer_acceptable_distance.
         """
         if type(monomer) != type(self):
             return False
@@ -810,7 +817,7 @@ class MonomerChainable(Monomer):
         next_atom = monomer.backbone[0]
         try:
             distance = (last_atom - next_atom).calculate_length()
-            return distance <= ConfigManager.monomer.monomer_acceptable_distance     # pylint:disable=no-member
+            return distance <= ConfigManager.monomer.monomer_acceptable_distance  # pylint:disable=no-member
         except UnboundLocalError:
             return False
 
@@ -849,7 +856,7 @@ class MonomerChainable(Monomer):
     @next_monomer.setter
     def next_monomer(self, value):
         """Property that returns monomer following current mer in its structure."""
-        self._next_monomer = value     # pylint:disable=attribute-defined-outside-init
+        self._next_monomer = value  # pylint:disable=attribute-defined-outside-init
         # there is no other way to complet property setter
 
     @next_monomer.deleter
@@ -868,7 +875,7 @@ class MonomerChainable(Monomer):
     @previous_monomer.setter
     def previous_monomer(self, value):
         """Property that returns monomer preceding current mer in its structure."""
-        self._previous_monomer = value     # pylint:disable=attribute-defined-outside-init
+        self._previous_monomer = value  # pylint:disable=attribute-defined-outside-init
         # same as in next_monomer.setter
 
     @previous_monomer.deleter
@@ -901,7 +908,6 @@ class MonomerChainable(Monomer):
 
 
 class Residue(MonomerChainable):
-
     """Representation of a residue."""
 
     @staticmethod
@@ -938,9 +944,9 @@ class Residue(MonomerChainable):
         nca = n - ca
         npc = n - pc
 
-        pl1 = numpy.cross(cca, cnn)    # vectors perpendicular to plane 1
-        pl2 = numpy.cross(nca, cca)    # vectors perpendicular to plane 2
-        pl3 = numpy.cross(npc, nca)    # vectors perpendicular to plane 3
+        pl1 = numpy.cross(cca, cnn)  # vectors perpendicular to plane 1
+        pl2 = numpy.cross(nca, cca)  # vectors perpendicular to plane 2
+        pl3 = numpy.cross(npc, nca)  # vectors perpendicular to plane 3
 
         with numpy.errstate(divide='ignore', invalid='ignore'):
             pl1, pl2, pl3 = (pl / numpy.sqrt(numpy.einsum('ij,ij->i', pl, pl)).reshape(-1, 1)
@@ -985,18 +991,20 @@ class Residue(MonomerChainable):
         self.calculate_cbx()
         self._check_name('residue')
 
-    def _finalize(self):
-        """Method called by structures to calculate and set attributes that need structural information to be calculated."""
-        super(Residue, self)._finalize()
+    def finalize(self):
+        """Method called by structures to calculate and set attributes that need structural
+        information to be calculated.
+        """
+        super(Residue, self).finalize()
         self.calculate_backbone_average()
 
     def calculate_backbone_average(self):
-        """Calculates coordinates of average ca pseudoatom and adds it to current residue pseudotaoms.
+        """Calculates coordinates of average ca pseudoatom and adds it to current residue pseudoatoms.
 
         Average ca is calculated as moving average for configurable number of residues around current residue.
         """
         steps = self.get_config(
-            'moving_average')     # pylint:disable=no-member
+            'moving_average')  # pylint:disable=no-member
         if not steps % 2 == 1:
             raise ValueError(
                 "Wrong Number of steps for moving average. Configure correnct length with ConfigManager")
@@ -1004,7 +1012,7 @@ class Residue(MonomerChainable):
         next_mer = last_mer = self
         cnt = 1
         try:
-            for step in range(steps / 2):     # pylint:disable=unused-variable
+            for step in range(steps / 2):  # pylint:disable=unused-variable
                 # step is a dummy
                 next_mer = next_mer.next_monomer
                 last_mer = last_mer.previous_monomer
@@ -1064,13 +1072,15 @@ class Residue(MonomerChainable):
         self.dynamic_properties['angles'] = (ang_psi, ang_phi)
 
     @property
-    def ca(self):     # pylint:disable=invalid-name
+    def ca(self):  # pylint:disable=invalid-name
         # 'ca' is valid for us
         """Property that returns current residue alpha carbon Atom object."""
         return self.atoms['CA']
 
     def calculate_cbx(self):
-        """Adds Pseudoatom containing coordinates of the point that lies 1A farther from carbon alfa, than does carbon beta; or carbon alfa coordinates for GLY."""
+        """Adds Pseudoatom containing coordinates of the point that lies 1A farther from carbon
+        alpha, than does carbon beta; or carbon alpha coordinates for GLY.
+        """
         if self.get_config('old_cbx_calculation'):
             self.calculate_cbx_legacy()
             return
@@ -1078,14 +1088,13 @@ class Residue(MonomerChainable):
             self.pseudoatoms['cbx'] = Pseudoatom(
                 numpy_vec=self.atoms['CA'].vector, name='cbx')
         else:
-            ca = self.atoms['CA'].vector
-            cb = self.atoms['CB'].vector
-            vec = cb - ca
             try:
-                nrm = norm(vec)
-            except:
-                import pdb
-                pdb.set_trace()
+                ca = self.atoms['CA'].vector
+                cb = self.atoms['CB'].vector
+            except KeyError:
+                raise IncompleteParticle("Mer lacks CA or CB, cannot calculate residue's cbx.")
+            vec = cb - ca
+            nrm = norm(vec)
             vec = vec * ((nrm + 1) / nrm)
 
             cbx = ca + vec
@@ -1108,7 +1117,7 @@ class Residue(MonomerChainable):
             coords = [self.atoms[i] for i in ("C", "CA", "CB", "N")]
         except KeyError:
             coords = (self.atoms['C'], self.atoms['CA'], (self.atoms['CA'] - self.atoms['C']) + (
-                self.atoms['CA'] - self.atoms['N']), self.atoms['N'])
+                    self.atoms['CA'] - self.atoms['N']), self.atoms['N'])
         bb_coords = [coord_obj.get_coord() for coord_obj in coords]
         #
 
@@ -1203,6 +1212,7 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
 
         self.calculate_ring_center()
         self.calculate_proximate_ring_center()
+        self.ring_plane = None
         self.calculate_ring_plane()
         self.calculate_nx()
         self.ion_neighbours = []
@@ -1210,17 +1220,18 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
 
     def calculate_ring_center(self):
         """Adds pseudoatom representing base ring center."""
-        vec = (
-            self.ring_atoms['N1'].vector + self.ring_atoms['C4'].vector) * 0.5
+        try:
+            vec = (self.ring_atoms['N1'].vector + self.ring_atoms['C4'].vector) * 0.5
+        except KeyError:
+            raise IncompleteParticle('Lacking N1 or C4, unable to create Nucleotide.')
         self.pseudoatoms['ring_center'] = Pseudoatom(
             numpy_vec=vec, name='ring_center')
 
     def calculate_ring_plane(self):
         """Adds pydesc.geometry.Plane object representing base to current nucleotide pseudoatom dictionary."""
-        at1, at2, at3 = self.ring_atoms[
-            'C2'], self.ring_atoms['C4'], self.ring_atoms['C6']
+        at1, at2, at3 = self.ring_atoms['C2'], self.ring_atoms['C4'], self.ring_atoms['C6']
         self.ring_plane = pydesc.geometry.Plane.build(
-            at1, at2, at3)     # pylint:disable=attribute-defined-outside-init
+            at1, at2, at3)  # pylint:disable=attribute-defined-outside-init
         # current method is called by init
 
     def calculate_proximate_ring_center(self):
@@ -1258,7 +1269,6 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
 
 
 class MonomerOther(Monomer):
-
     """Abstract class, representation for ligands.
 
     Subclasses:
@@ -1278,8 +1288,8 @@ class MonomerOther(Monomer):
         """
         Monomer.__init__(self, structure_obj, ind, name, chain, atoms)
 
-# pylint:disable=no-self-use
-# following methods are needed and should not be a function
+    # pylint:disable=no-self-use
+    # following methods are needed and should not be a function
     def _has_bond(self, monomer):
         """Returns False, as no mer is next for non-chainable monomers"""
         return False
@@ -1299,11 +1309,12 @@ class MonomerOther(Monomer):
         For monomers other then chainable this property cannot be set to any value other then None.
         """
         return None
+
+
 # pylint:enable=no-self-use
 
 
 class Ion(MonomerOther):
-
     """Representation of an ion ligand."""
 
     def __init__(self, structure_obj, ind, name, chain, atoms):
@@ -1317,7 +1328,7 @@ class Ion(MonomerOther):
         """
         super(Ion, self).__init__(structure_obj, ind, name, chain, atoms)
         if len(self.atoms) != 1:
-            raise ValueError(
+            raise WrongMerType(
                 "Failed to create Ion, given BioPython residue consists of to many atoms.")
 
     def get_radius(self):
@@ -1331,7 +1342,6 @@ class Ion(MonomerOther):
 
 
 class Ligand(MonomerOther):
-
     """Representation of any ligand except ions."""
 
     def __init__(self, structure_obj, ind, name, chain, atoms):

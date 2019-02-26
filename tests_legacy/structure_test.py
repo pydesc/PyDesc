@@ -114,7 +114,7 @@ def make_structure_basic_test(str_name, mer_type):
         mer_type = m1
 
         def test_init(self):
-            pdb_structure = Bio.PDB.PDBParser(
+            pdbV_structure = Bio.PDB.PDBParser(
                 QUIET=True).get_structure(self.name, os.path.join(data_dir,
                                                                   "%s_only" % self.mer_type,
                                                                   '%s.pdb' % self.name)

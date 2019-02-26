@@ -231,8 +231,8 @@ class Range(Selection):
         """
         if distinguish_chains is None:
             distinguish_chains = self._distinguish_chains
-        start = pydesc.numberconverter.PDB_id.from_string(str(self.start))
-        end = pydesc.numberconverter.PDB_id.from_string(str(self.end))
+        start = pydesc.numberconverter.PDB_id.create_from_string(str(self.start))
+        end = pydesc.numberconverter.PDB_id.create_from_string(str(self.end))
         inds = structure_obj.derived_from.converter.get_list_of_inds([start, end], distinguish_chains)
         start_ind, end_ind = inds[::2], inds[1::2]
         list_of_inds = []

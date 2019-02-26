@@ -165,7 +165,7 @@ class PDB_id(tuple):    # pylint: disable=invalid-name
         return self[2]
 
     @staticmethod
-    def from_string(pdb_id):
+    def create_from_string(pdb_id):
         """Returns PDB id tuple.
 
         Argument:

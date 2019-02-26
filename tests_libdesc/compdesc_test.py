@@ -191,7 +191,7 @@ def load_struct(str_name):
 def prep_desc(desc_name):
     str_name, pdb_num = desc_name.split('#')
 
-    pdb_id = numberconverter.PDB_id.from_string(pdb_num)
+    pdb_id = numberconverter.PDB_id.create_from_string(pdb_num)
 
     try:
         struct = loaded_structs[str_name]

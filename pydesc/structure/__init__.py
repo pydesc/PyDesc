@@ -163,7 +163,7 @@ class StructureLoader(object):
                 mers = []
                 hits = dict((klass, 0) for klass in self.mer_factory.chainable)
                 for pdb_residue in pdb_chain:
-                    mer = self.mer_factory.create_from_BioPDB(pdb_residue, warn_in_place=False)
+                    mer = self.mer_factory.create_from_biopdb(pdb_residue, warn_in_place=False)
                     if mer is None:
                         continue
                     mers.append(mer)
@@ -262,7 +262,7 @@ class AbstractStructure(object):
             """
             if isinstance(param, str):
                 # strings are converted to PDB_id
-                param = pydesc.numberconverter.PDB_id.from_string(param)
+                param = pydesc.numberconverter.PDB_id.create_from_string(param)
             if isinstance(param, pydesc.numberconverter.PDB_id) or isinstance(param, tuple):
                 # if given parameter already is a PDB_id or a coresponding tuple instance
                 param = self.derived_from.converter.get_ind(param)
@@ -849,7 +849,7 @@ class Chain(AbstractStructure):
         self.chain = chain_char
         self._monomers = mers
         for mer in self._monomers:
-            mer._finalize()
+            mer.finalize()
 
     def __repr__(self, mode=0):
         return '<Chain %s>' % self.name
