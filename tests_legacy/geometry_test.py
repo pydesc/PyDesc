@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for geometry.py.
+Unit tests_legacy for geometry.py.
 
 Usage:
     python geometry_test.py [-v]
@@ -26,8 +26,8 @@ Usage:
     python -m unittest [-v] geometry_test
 """
 
-import tests.syntax_check as syntax_check
-from tests.syntax_check import testing, notest
+import tests_legacy.syntax_check as syntax_check
+from tests_legacy.syntax_check import testing, notest
 import unittest
 
 import random

@@ -40,7 +40,11 @@ class StructureLoader(object):
 
     """Loads structures from the databases using a given designation."""
 
-    def __init__(self, handler=pydesc.dbhandler.MetaHandler(), parser=pydesc.dbhandler.MetaParser(QUIET=True), mer_factory=pydesc.monomer.MonomerFactory()):
+    def __init__(self,
+                 handler=pydesc.dbhandler.MetaHandler(),
+                 parser=pydesc.dbhandler.MetaParser(QUIET=True),
+                 mer_factory=pydesc.monomer.MonomerFactory(),
+                 ):
         """Structure loader constructor.
 
         Argument:
@@ -102,7 +106,8 @@ class StructureLoader(object):
                     chsll.append([map_chain_char(pdb_model, mapping, path.name)])
                 stcll[i].append(list(pdb_model.get_residues()))
         mrlst = [reduce(operator.add, mdls_tup) for mdls_tup in zip(*stcll)]
-        # list of lists of mers. each sublist contains mers from all pdb files from bundle (structure divided into separate pdb files) for one model.
+        # list of lists of mers. each sublist contains mers from all pdb files from bundle
+        # (structure divided into separate pdb files) for one model.
         numcon = pydesc.numberconverter.NumberConverter(pdb_mers_list=mrlst)
         return [Structure(TempMdl(*chs_tpl), numcon, [i.name for i in paths]) for chs_tpl in chsll]
 

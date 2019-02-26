@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for warnexcept.py.
+Unit tests_legacy for warnexcept.py.
 
 Usage:
     python warnexcept_test.py [-v]

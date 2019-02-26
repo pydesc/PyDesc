@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for structure.py.
+Unit tests_legacy for structure.py.
 
 Usage:
     python structure_test.py [-v] [--skip-slow] [--fast]
@@ -27,9 +27,9 @@ Usage:
 """
 
 import unittest
-import tests
-from tests.syntax_check import module_syntax
-from tests.syntax_check import parse_args
+import tests_legacy
+from tests_legacy.syntax_check import module_syntax
+from tests_legacy.syntax_check import parse_args
 
 import random
 import operator
@@ -53,8 +53,8 @@ config.ConfigManager.warnings_and_exceptions.class_filters.set("IncompleteChaina
 
 warnexcept.set_filters()
 
-data_dir = os.path.join(os.path.abspath(os.path.dirname(tests.__file__)), 'data/test_structures/')
-dcd_data_dir = os.path.join(os.path.abspath(os.path.dirname(tests.__file__)), 'data/dcd/')
+data_dir = os.path.join(os.path.abspath(os.path.dirname(tests_legacy.__file__)), 'data/test_structures/')
+dcd_data_dir = os.path.join(os.path.abspath(os.path.dirname(tests_legacy.__file__)), 'data/dcd/')
 
 
 class StructureLoaderTest(unittest.TestCase):
@@ -104,19 +104,26 @@ def make_trajectorytest(strname):
     return TrajectoryTest
 
 
-def make_structurebasictest(strname):
-    """Create and return a StructureBasicTest testcase for a given structure."""
+def make_structure_basic_test(str_name, mer_type):
+    """Create and return a StructureBasicTest test case for a given structure."""
+
+    m1 = mer_type
+
     class StructureBasicTest(unittest.TestCase):
-        name = strname
+        name = str_name
+        mer_type = m1
 
         def test_init(self):
             pdb_structure = Bio.PDB.PDBParser(
-                QUIET=True).get_structure(self.name, data_dir + '%s.pdb' % self.name)
+                QUIET=True).get_structure(self.name, os.path.join(data_dir,
+                                                                  "%s_only" % self.mer_type,
+                                                                  '%s.pdb' % self.name)
+                                          )
             converter = numberconverter.NumberConverter(pdb_structure)
             for model in pdb_structure:
                 with warnings.catch_warnings(record=True) as wlist:
                     warnings.simplefilter("always")
-                    structure.Structure(model, converter)
+                    structure.Structure(model, converter, )
                     syntax_check.warning_message(self, wlist)
 
     return StructureBasicTest
@@ -166,7 +173,7 @@ def make_structuretest(strname):
 
         def test_monomer_ind(self):
             for m in self.struct:
-                pdb_id = numberconverter.PDB_id.from_pdb_residue(m.pdb_residue)
+                pdb_id = numberconverter.PDB_id.create_from_pdb_residue(m.pdb_residue)
                 self.assertEqual(m.ind, self.converter.get_ind(tuple(pdb_id)))
 
         def test_getitem(self):
@@ -615,20 +622,30 @@ def make_descriptortest(strname):
 
 
 def load_tests(loader, standard_tests, pattern):
-    """ Add tests created by make_* functions for all structures. Return a complete TestSuite. """
-    structures = ['1asz', '1gax', '1no5', '1pxq', '2dlc', '2lp2',
-                  '3ftk', '3g88', '3lgb', '3m6x', '3npn', '3tk0', '3umy']
+    """ Add tests_legacy created by make_* functions for all structures. Return a complete TestSuite. """
+    structures = {
+        'dna': ['411D', '1EL2', '279D', '1X2Y', '1AG5', '2QEG', '400D', '1II1', '1EXL', '179D', '1DUF', '1D89',
+                  '1VT9', '2N0Q', '2K0V', '2LSZ', '1NAJ', '1ZYH', '1F6I'],
+        'prots': ['5MPV', '4ZTD', '5ERB', '5X55', '4ONK', '3NPU', '5IFH', '1A24', '3J96', '2JRM', '3PSC', '3G67',
+               '4NJ6', '2BLL', '3BIP', '4LTT', '4YYN', '2LJP', '5LF9', '3FV6', '1KAN'],
+        'rna': ['3J2E', '2H49', '1OW9', '2JXQ', '4A4S', '2MFD', '1FL8', '2KBP', '1KP7', '2MEQ', '2EUY', '2A0P', '1WKS', '2LPS', '2JYJ', '2AGN', '1KIS', '1A3M', '1SDR']
+    }
     dcd_structures = ['mdm2']
 
     if cla.fast:
-        structures = ['4jgn']
+        structures = {
+            'dna': ['411D', '1EL2', '279D', ],
+            'prots': ['5MPV', '4ZTD', '5ERB', ],
+            'rna': ['3J2E', '2H49', '1OW9', ]
+        }
 
     basic = unittest.TestSuite()
 
-    for name in structures:
-        basic.addTests(loader.loadTestsFromTestCase(make_structurebasictest(name)))
-        basic.addTests(loader.loadTestsFromTestCase(make_structuretest(name)))
-        basic.addTests(loader.loadTestsFromTestCase(make_descriptortest(name)))
+    for mer_type, files_lst in structures.items():
+        for file in files_lst:
+            basic.addTests(loader.loadTestsFromTestCase(make_structure_basic_test(file, mer_type)))
+            basic.addTests(loader.loadTestsFromTestCase(make_structuretest(file)))
+            basic.addTests(loader.loadTestsFromTestCase(make_descriptortest(file)))
 
     for name in dcd_structures:
         basic.addTests(loader.loadTestsFromTestCase(make_trajectorytest(name)))

@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for cydesc/compdesc.py.
+Unit tests_legacy for cydesc/compdesc.py.
 
 Usage:
     python compdesc_test.py [-v] [--fast]
@@ -34,15 +34,15 @@ import itertools
 import math
 
 
-import tests.syntax_check as syntax_check
-from tests.syntax_check import testing, test_name_append, notest
+import tests_legacy.syntax_check as syntax_check
+from tests_legacy.syntax_check import testing, test_name_append, notest
 
 import pydesc.structure as structure
 import pydesc.numberconverter as numberconverter
 import pydesc.cydesc as cydesc
 import pydesc.cydesc.compdesc as compdesc
 import pydesc.compat.dsc as dsc
-import tests
+import tests_legacy
 
 
 class t_compdesc_debug_libdesc(ctypes.Structure):  # pylint: disable=C0103
@@ -130,7 +130,7 @@ libcompdesc_test.unpack_pars(compdesc.t_compdesc_parameters())
 
 syntax_check.module = compdesc
 
-data_dir = tests.__path__[0] + '/data/dsc/'
+data_dir = tests_legacy.__path__[0] + '/data/dsc/'
 
 fast = False
 
@@ -317,7 +317,7 @@ def make_compdesctest(struct1, struct2):
 
 
 def load_tests(loader, standard_tests, pattern):
-    """ Add tests created by make_* functions for all structures. Return a complete TestSuite. """
+    """ Add tests_legacy created by make_* functions for all structures. Return a complete TestSuite. """
 
     pairs = [('d1nkla_', 'd1qdma1'),
              ('d1an9a1', 'd1npxa1'),

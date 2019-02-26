@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for cydesc/__init__.py.
+Unit tests_legacy for cydesc/__init__.py.
 
 Usage:
     python cydesc_test.py [-v] [--fast]
@@ -35,8 +35,8 @@ import operator
 
 from collections import defaultdict
 
-import tests.syntax_check as syntax_check
-from tests.syntax_check import testing, test_name_append, notest
+import tests_legacy.syntax_check as syntax_check
+from tests_legacy.syntax_check import testing, test_name_append, notest
 
 import Bio.PDB
 
@@ -46,7 +46,7 @@ import pydesc.structure as structure
 import pydesc.numberconverter as numberconverter
 import pydesc.cydesc as cydesc
 import pydesc.contacts as contacts
-import tests
+import tests_legacy
 
 # This is not a constant.
 libcydesc_test = cydesc.load_library('cydesc_test')  # pylint: disable=C0103
@@ -59,7 +59,7 @@ syntax_check.module = cydesc
 
 notest(cydesc.load_library)
 
-data_dir = tests.__path__[0] + '/data/test_structures/'
+data_dir = tests_legacy.__path__[0] + '/data/test_structures/'
 
 fast = False
 
@@ -496,7 +496,7 @@ def tearDownModule():
 
 
 def load_tests(loader, standard_tests, pattern):
-    """ Add tests created by make_* functions for all structures. Return a complete TestSuite. """
+    """ Add tests_legacy created by make_* functions for all structures. Return a complete TestSuite. """
     structures = ['1asz', '1gax', '1no5', '1pxq', '2dlc', '2lp2',
                   '3ftk', '3g88', '3lgb', '3m6x', '3npn', '3tk0', '3umy']
 

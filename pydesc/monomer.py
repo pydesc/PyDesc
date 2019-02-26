@@ -23,14 +23,11 @@ created: 11.07.2013 - 31.07.2013, Tymoteusz 'hert' Oleniecki
 
 import pydesc.geometry
 import numpy
-import operator
-import itertools
 
 import scipy.linalg
 
 from pydesc.config import ConfigManager as ConfigManager
 from pydesc.numberconverter import PDB_id
-from abc import ABCMeta
 from pydesc.warnexcept import warn as warn
 from pydesc.warnexcept import WarnManager as WarnManager
 from pydesc.warnexcept import IncompleteParticle as IncompleteParticle
@@ -98,7 +95,7 @@ ConfigManager.monomer.residue.set_default("residue_additional_code", {
     'ARM': 'R', 'ACL': 'R', 'HAR': 'R', 'HMR': 'R', 'AGM': 'R', 'DAR': 'R',
     'HIC': 'H', '3AH': 'H', 'NEM': 'H', 'NEP': 'H', 'DHI': 'H', 'MHS': 'H', 'HIP': 'H', })
 ConfigManager.monomer.residue.set_default("backbone_atoms", ('N', 'CA', 'C'))
-ConfigManager.monomer.residue.set_default("check_distances", False)
+ConfigManager.monomer.residue.set_default("check_distances", True)
 ConfigManager.monomer.residue.set_default(
     "crucial_atom_distances", (('C', 'CA', 1.35, 1.71), ('CA', 'N', 1.35, 1.75)))
 ConfigManager.monomer.residue.set_default("indicators", ('CA', 'cbx'))
@@ -110,7 +107,7 @@ ConfigManager.monomer.nucleotide.set_default(
     "backbone_atoms", ("P", "O5'", "C5'", "C4'", "C3'", "O3'"))
 ConfigManager.monomer.nucleotide.set_default(
     "ring_atoms", ("N1", "C2", "N3", "C4", "C5", "C6", "N7", "C8", "N9"))
-ConfigManager.monomer.nucleotide.set_default("check_distances", False)
+ConfigManager.monomer.nucleotide.set_default("check_distances", True)
 ConfigManager.monomer.nucleotide.set_default("crucial_atom_distances", (('P', "O5'", 1.54, 1.66), (
     "O5'", "C5'", 1.34, 1.54), ("C5'", "C4'", 1.44, 1.56), ("C4'", "C3'", 1.46, 1.58), ("C3'", "O3'", 1.37, 1.49)))
 ConfigManager.monomer.nucleotide.set_default(
@@ -223,7 +220,7 @@ class MonomerFactory(object):
     """Factory class for Monomer subclass instances."""
 
     def __init__(self, classes=None):
-        """Monomer factory initializator.
+        """Monomer factory initializer.
 
         Argument:
         classes -- list of classes to be used.
@@ -232,14 +229,26 @@ class MonomerFactory(object):
         """
         if classes is None:
             classes = [Residue, Nucleotide, Ion, Ligand]
-        self.chainable = [
-            i for i in classes if issubclass(i, MonomerChainable)]
-        self.other = [i for i in classes if issubclass(i, MonomerOther)]
+        self.classes = classes
 
-    def create_from_BioPDB(self, pdb_residue, structure_obj=None, warn_in_place=True, warnings_=None, base=None, dbg=False):
+    @property
+    def chainable(self):
+        return [i for i in self.classes if issubclass(i, MonomerChainable)]
+
+    @property
+    def other(self):
+        return [i for i in self.classes if issubclass(i, MonomerOther)]
+
+    def create_from_BioPDB(self,
+                           pdb_residue,
+                           structure_obj=None,
+                           warn_in_place=True,
+                           warnings_=None,
+                           base=None,
+                           dbg=False):
         """Class method, returns Monomer instances.
 
-        Returns dictionary of different monomer types as values, calls _create_monomers to create actual objects.
+        Returns dictionary of different monomer types as values, calls _create_possible_monomers to create actual objects.
         This method facilitates checks and routines common to all monomer creations.
 
         The returned dictionary contains two special entries:
@@ -248,13 +257,14 @@ class MonomerFactory(object):
 
         Arguments:
         pdb_residue -- instance of BioPython Bio.PDB.Residue based on which monomer is created.
-        structure_obj -- Structure instance to which the monomer belongs. Could be None for unbonded monomers.
+        structure_obj -- Structure instance to which the monomer belongs. Could be None for unbounded monomers.
         Initially set to None.
         warn_in_place -- True or False. Determines if warnings are to be raised immediately or returned as a result.
-        The former forces constructores to raise warning immediately.
+        The former forces constructors to raise warning immediately.
         The latter stores raised warnings in context manager delivered as value of 'warnings' key in returned dictionary.
         warnings_ -- context manager for catching warnings. Should be supplied when restarting monomer creation.
-        base -- an instance of Monomer class containing atoms from pdb_residue. Should be supplied when restarting monomer creation.
+        base -- an instance of Monomer class containing atoms from pdb_residue. Should be supplied when restarting
+        monomer creation.
         """
 
         name = self.get_pdb_residue_name(pdb_residue)
@@ -265,32 +275,33 @@ class MonomerFactory(object):
             warnings_ = WarnManager(pdb_residue)
 
         try:
-            ind = self.structure.converter.get_ind(
-                pydesc.numberconverter.PDB_id.from_pdb_residue(pdb_residue))
+            ind = structure_obj.converter.get_ind(PDB_id.create_from_pdb_residue(pdb_residue))
         except (AttributeError, KeyError):
             ind = None
 
         if base is None:
-            base = Monomer(
-                structure_obj, ind, *self.unpack_pdb_residue(pdb_residue, name))
+            base = Monomer(structure_obj,
+                           ind,
+                           *self.unpack_pdb_residue(pdb_residue, name)
+                           )
 
-        mers = self._create_monomers(
-            pdb_residue, structure_obj, base, warnings_, self.chainable + self.other, dbg)
+        mers = self._create_possible_monomers(
+            pdb_residue, structure_obj, base, warnings_, self.classes, dbg)
         if warn_in_place:
-            for class_ in self.chainable + self.other:  # TODO do we really need to keep them separately?
+            for class_ in self.classes:
                 warnings_.raise_all(class_)
-        else:
-            mers['warnings'] = warnings_
 
         mers[Monomer] = base
-        return mers
+        return mers, warnings_
 
-    def _create_monomers(self, pdb_residue, structure_obj, base_monomer, warnings_, classes, dbg=False):
-        """Return dictionary of different monomer types as values and subclasses of MonomerChainable and MonomerOther as keys.
+    def _create_possible_monomers(self, pdb_residue, structure_obj, base_monomer, warnings_, classes, dbg=False):
+        """Return dictionary of different monomer types as values and subclasses of MonomerChainable and MonomerOther
+        as keys.
 
         Arguments:
         pdb_residue -- instance of BioPython Bio.PDB.Residue based on which monomer is created.
-        structure_obj -- Structure instance to which the monomer belongs. Could be None for unbonded monomers.
+        structure_obj -- Structure instance to which the monomer belongs. Could be None for unbounded
+        monomers.
         base_monomer -- an instance of Monomer class containing atoms from pdb_residue.
         warnings_ -- context manager for catching warnings.
         classes -- list of classes to try to initialize.
@@ -326,15 +337,18 @@ class MonomerFactory(object):
                  for pdb_atom in pdb_residue}
         return name, chain, atoms
 
-    def create_atom_from_BioAtom(self, pdb_atom):
+    @staticmethod
+    def create_atom_from_BioAtom(pdb_atom):
         """Return Atom instance from given Bio.Atom instance."""
         return Atom(numpy.array(pdb_atom.get_coord()), pdb_atom.element)
 
-    def unpack_base(self, base):
+    @staticmethod
+    def unpack_base(base):
         """Return structure, PyDesc index, name, chain and atoms from given base (monomer.Monomer instance)."""
         return base.structure, base.ind, base.name, base.chain, base.atoms
 
-    def get_pdb_residue_name(self, pdb_residue):
+    @staticmethod
+    def get_pdb_residue_name(pdb_residue):
         """Get residue name from given *pdb_residue* (Bio.PDBResidue instance)."""
         return pdb_residue.get_resname().strip()
 
@@ -874,12 +888,12 @@ class MonomerChainable(Monomer):
 
     def iter_atomsnbb(self):
         """Returns iterator that iterates over monomer's all atoms except backbone."""
-        bb_atoms = self.get_config('backbone_atoms')
         return iter([i for i in self.atoms.values() if i not in self.backbone])
 
     def adjusted_length(self):
-        """Returns distance between backbone_average pseudoatoms of this and the next monomer or None if distance cannot be computed."""
-
+        """Returns distance between backbone_average pseudoatoms of this and the next monomer
+        or None if distance cannot be computed.
+        """
         try:
             return abs(self.backbone_average - self.next_monomer.backbone_average)
         except AttributeError:

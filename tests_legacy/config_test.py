@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for config.py.
+Unit tests_legacy for config.py.
 
 Usage:
     python config_test.py [-v]

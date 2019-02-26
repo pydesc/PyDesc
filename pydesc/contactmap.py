@@ -29,12 +29,13 @@ from pydesc.selection import Everything
 import numpy as np
 import scipy.spatial
 
+
 class ContactMap(object):
 
     """Map of contacts present in a given (sub)structure."""
 
     def __init__(self, structure_obj, contact_criterion_obj=None, select1=Everything(), select2=Everything()):
-        """ContactMap costructor.
+        """ContactMap constructor.
 
         Arguments:
         structure_obj -- instance of any pydesc.structure.AbstractStructure subclass for which contact map is to be created.
@@ -55,7 +56,7 @@ class ContactMap(object):
         self._sstr2 = None if [i.ind for i in sel2] == [i.ind for i in self._sstr1] else sel2
 
     def __iter__(self):
-        """Returns iterator thet runs over all contacts in contact map."""
+        """Returns iterator that runs over all contacts in contact map."""
         return iter([(i, j, v) for i, cs in self._contacts.items() for j, v in cs.items()])
 
     def calculate_rcdist(self):

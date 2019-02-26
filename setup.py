@@ -138,6 +138,6 @@ setup(name='PyDesc',
       url='http://trac.dw/trac',
       packages=['pydesc', 'pydesc.cydesc'],
       cmdclass=cmdclass,
-      test_suite='tests',
+      test_suite='tests_legacy',
       shlibs=shlibs
       )

@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for compat/dsc.py.
+Unit tests_legacy for compat/dsc.py.
 
 Usage:
     python compat_dsc_test.py [-v] [--fast]
@@ -37,8 +37,8 @@ import os.path
 
 from collections import defaultdict
 
-import tests.syntax_check as syntax_check
-from tests.syntax_check import testing, test_name_append, notest
+import tests_legacy.syntax_check as syntax_check
+from tests_legacy.syntax_check import testing, test_name_append, notest
 
 import Bio.PDB
 
@@ -46,13 +46,13 @@ import warnings
 
 import pydesc.compat.dsc as dsc
 import pydesc.structure as structure
-import tests
+import tests_legacy
 
 syntax_check.module = dsc
 
 notest(dsc.split_num)
 
-data_dir = tests.__path__[0] + '/data/dsc/'
+data_dir = tests_legacy.__path__[0] + '/data/dsc/'
 
 fast = False
 
@@ -297,7 +297,7 @@ def make_dscstructuretest(name):
 
 
 def load_tests(loader, standard_tests, pattern):
-    """ Add tests created by make_* functions for all structures. Return a complete TestSuite. """
+    """ Add tests_legacy created by make_* functions for all structures. Return a complete TestSuite. """
     files = ['d1nkla_.dsc', 'd1qdma1.dsc']
 
     basic = unittest.TestSuite()

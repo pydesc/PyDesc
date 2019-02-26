@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for dbhandler.py.
+Unit tests_legacy for dbhandler.py.
 
 Usage:
     python dbhandler_test.py [-v] [--fast]
@@ -37,7 +37,7 @@ from collections import defaultdict
 
 import pydesc.dbhandler as dbhandler
 from pydesc.config import ConfigManager
-import tests
+import tests_legacy
 
 syntax_check.module = dbhandler
 
@@ -48,7 +48,7 @@ notest(dbhandler.validate_id)
 notest(dbhandler.InvalidID)
 notest(dbhandler.DBHandler)
 
-data_dir = tests.__path__[0] + '/data/dbtest/'
+data_dir = tests_legacy.__path__[0] + '/data/dbtest/'
 
 fast = False
 

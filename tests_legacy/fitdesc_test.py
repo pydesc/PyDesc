@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for cydesc/fitdesc.py.
+Unit tests_legacy for cydesc/fitdesc.py.
 
 Usage:
     python fitdesc_test.py [-v] [--skip-slow] [--fast]
@@ -36,8 +36,8 @@ import operator
 import multiprocessing
 
 
-import tests.syntax_check as syntax_check
-from tests.syntax_check import notest, testing
+import tests_legacy.syntax_check as syntax_check
+from tests_legacy.syntax_check import notest, testing
 
 import Bio.PDB
 
@@ -48,7 +48,7 @@ import pydesc.numberconverter as numberconverter
 import pydesc.geometry as geometry
 #import pydesc.cydesc as cydesc
 import pydesc.cydesc.fitdesc as fitdesc
-import tests
+import tests_legacy
 
 
 syntax_check.module = fitdesc
@@ -56,7 +56,7 @@ syntax_check.module = fitdesc
 notest(fitdesc.FitDesc.motif)
 notest(fitdesc.FitDesc.structure)
 
-data_dir = tests.__path__[0] + '/data/test_structures/'
+data_dir = tests_legacy.__path__[0] + '/data/test_structures/'
 
 skip_slow = False
 fast = False

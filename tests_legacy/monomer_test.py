@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for monomer.py.
+Unit tests_legacy for monomer.py.
 
 Usage:
     python monomer_test.py [-v] [--fast]
@@ -31,8 +31,8 @@ Pawel, Tymoteusz
 import unittest
 import mock
 
-from tests.syntax_check import module_syntax
-from tests.syntax_check import parse_args
+from tests_legacy.syntax_check import module_syntax
+from tests_legacy.syntax_check import parse_args
 
 import sys
 import types
@@ -48,7 +48,7 @@ from argparse import ArgumentParser as AP
 import pydesc.structure as structure
 import pydesc.monomer as monomer
 import pydesc.config as config
-import tests
+import tests_legacy
 from pydesc.warnexcept import IncompleteChainableParticle
 from pydesc.warnexcept import set_filters
 
@@ -56,7 +56,7 @@ config.ConfigManager.warnings_and_exceptions.class_filters.set("UnknownParticleN
 config.ConfigManager.warnings_and_exceptions.class_filters.set("IncompleteChainableParticle", "always")
 set_filters()
 
-data_dir = os.path.join(os.path.abspath(os.path.dirname(tests.__file__)), 'data/test_structures/')
+data_dir = os.path.join(os.path.abspath(os.path.dirname(tests_legacy.__file__)), 'data/test_structures/')
 
 # pylint: disable=C0111
 
@@ -356,7 +356,7 @@ def make_monomerfactorytest(strname, test_structure_dir, cls_):
     return TestMonomerFactory
 
 def load_tests(loader, standard_tests, pattern):
-    """ Add tests created by make_* functions for all structures. Return a complete TestSuite. """
+    """ Add tests_legacy created by make_* functions for all structures. Return a complete TestSuite. """
 
     # selecting structures
     bio_stc = {}
@@ -384,12 +384,12 @@ def load_tests(loader, standard_tests, pattern):
              monomer.Nucleotide: nuc_ats,
              }
 
-    # making factory tests
+    # making factory tests_legacy
     for pth, tp in bio_stc:
         for stc in bio_stc[(pth, tp)]:
             factory.addTests(loader.loadTestsFromTestCase(make_monomerfactorytest(stc, pth, tp)))
 
-    # making init tests
+    # making init tests_legacy
     for pth, tp in bio_stc_sh:
         for stc in bio_stc_sh[(pth, tp)]:
             nms = names[tp]

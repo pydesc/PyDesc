@@ -32,9 +32,9 @@ def convert_to_id(pdb_residue):
     Argument:
     pdb_residue -- BioPython residue.
     """
-    warn("Function convert_to_id is deprecated. Use PDB_id.from_pdb_residue instead.", DeprecationWarning, 1)
+    warn("Function convert_to_id is deprecated. Use PDB_id.create_from_pdb_residue instead.", DeprecationWarning, 1)
 
-    return PDB_id.from_pdb_residue(pdb_residue)
+    return PDB_id.create_from_pdb_residue(pdb_residue)
 
 
 def perform_Smith_Waterman(models_ids):      # pylint: disable=invalid-name
@@ -181,7 +181,7 @@ class PDB_id(tuple):    # pylint: disable=invalid-name
         return PDB_id([tuple_[0], int(tuple_[1]), icode])
 
     @staticmethod
-    def from_pdb_residue(pdb_residue):
+    def create_from_pdb_residue(pdb_residue):
         """Returns PDB id tuple.
 
         Argument:
@@ -211,7 +211,7 @@ class NumberConverter(object):
         """ #TODO fix docstring
 
         is_not_water = lambda pdb_residue: False if pdb_residue.get_id()[0] == "W" else True
-        models_ids = [map(PDB_id.from_pdb_residue, filter(is_not_water, pdb_model.get_residues())) for pdb_model in pdb_models]
+        models_ids = [map(PDB_id.create_from_pdb_residue, filter(is_not_water, pdb_model.get_residues())) for pdb_model in pdb_models]
 
         if len(models_ids) > 1:
             models_ids = perform_Smith_Waterman(models_ids)

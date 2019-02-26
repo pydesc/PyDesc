@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for importing python modules.
+Unit tests_legacy for importing python modules.
 
 Should be updated each time a new module is added.
 
@@ -43,10 +43,10 @@ class ImportTest(unittest.TestCase):
                'pydesc.compat', 'pydesc.compat.dsc',
                'pydesc.dbhandler', 'pydesc.geometry', 'pydesc.monomer', 'pydesc.numberconverter', 'pydesc.selection',
                'pydesc.structure', 'pydesc.warnexcept',
-               'tests', 'tests.compat_dsc_test', 'tests.config_test', 'tests.contacts_test', 'tests.cydesc_test',
-               'tests.dbhandler_test', 'tests.fitdesc_test', 'tests.geometry_test',  # 'tests.import_test',
-               'tests.monomer_test', 'tests.numberconverter_test', 'tests.overfit_test', 'tests.selection_test',
-               'tests.structure_test', 'tests.syntax_check', 'tests.warnexcept_test']
+               'tests_legacy', 'tests_legacy.compat_dsc_test', 'tests_legacy.config_test', 'tests_legacy.contacts_test', 'tests_legacy.cydesc_test',
+               'tests_legacy.dbhandler_test', 'tests_legacy.fitdesc_test', 'tests_legacy.geometry_test',  # 'tests_legacy.import_test',
+               'tests_legacy.monomer_test', 'tests_legacy.numberconverter_test', 'tests_legacy.overfit_test', 'tests_legacy.selection_test',
+               'tests_legacy.structure_test', 'tests_legacy.syntax_check', 'tests_legacy.warnexcept_test']
 
     def try_import(self, name):
         if '.' in name:

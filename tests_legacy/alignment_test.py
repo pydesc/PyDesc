@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for alignment.py.
+Unit tests_legacy for alignment.py.
 
 Usage:
     python alignment_test.py [-v] [--fast]
@@ -36,7 +36,7 @@ import pydesc.monomer as monomer
 import pydesc.structure as structure
 import pydesc.config as config
 import pydesc.warnexcept as warnexcept
-import tests
+import tests_legacy
 
 config.ConfigManager.warnings_and_exceptions.class_filters.set("LocalCopyAccess", "ignore")
 config.ConfigManager.warnings_and_exceptions.class_filters.set("UnknownParticleName", "ignore")
@@ -44,7 +44,7 @@ config.ConfigManager.warnings_and_exceptions.class_filters.set("IncompleteChaina
 config.ConfigManager.warnings_and_exceptions.class_filters.set("Info", "ignore")
 
 
-data_dir = tests.__path__[0] + '/data/test_alignments/'
+data_dir = tests_legacy.__path__[0] + '/data/test_alignments/'
 file_extensions = ['csv', 'fasta', 'pal', 'xml']
 
 syntax_check.module = alignment

@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for contacts.py.
+Unit tests_legacy for contacts.py.
 
 Usage:
     python contacts_test.py [-v] [--fast]
@@ -43,7 +43,7 @@ import pydesc.structure as structure
 import pydesc.contacts as contacts
 import pydesc.config as config
 import pydesc.numberconverter as numberconverter
-import tests
+import tests_legacy
 from pydesc.warnexcept import WrongMonomerType
 
 config.ConfigManager.warnings_and_exceptions.class_filters.set("LocalCopyAccess", "ignore")
@@ -76,7 +76,7 @@ notest(contacts.ContactsExclusiveDisjunction)
 
 #~ notest(contacts.ContactMap)
 
-data_dir = tests.__path__[0] + '/data/test_structures/'
+data_dir = tests_legacy.__path__[0] + '/data/test_structures/'
 
 # pylint: disable=C0111,R0912
 
@@ -336,7 +336,7 @@ def make_desctest(str_name):
 
 
 def load_tests(loader, standard_tests, pattern):
-    """ Add tests created by make_* functions for all structures. Returns a complete TestSuite. """
+    """ Add tests_legacy created by make_* functions for all structures. Returns a complete TestSuite. """
 
     structures = ['1asz', '1gax', '1no5', '1pxq', '2dlc', '2lp2',
                   '3ftk', '3g88', '3lgb', '3m6x', '3npn', '3tk0', '3umy']
@@ -364,7 +364,7 @@ def load_tests(loader, standard_tests, pattern):
     test(contacts.CaCbxSubtractionCriterion)
     test(contacts.CaCbxSubtractionCriterion.__init__)
     test(contacts.CaCbxSubtractionCriterion.is_in_contact)
-    # TO these are tested during tests added above while CaCbxContact finction calls CaCbxSubtractionCriterion methods
+    # TO these are tested during tests_legacy added above while CaCbxContact finction calls CaCbxSubtractionCriterion methods
     test(contacts.VectorDistanceCriterion)
     test(contacts.VectorDistanceCriterion.__init__)
     # TO tested for subclass

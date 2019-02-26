@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for selection.py.
+Unit tests_legacy for selection.py.
 
 Usage:
     python selection_test.py [-v] [--fast]
@@ -39,7 +39,7 @@ import warnings
 import pydesc.selection as selection
 import pydesc.structure as structure
 import pydesc.numberconverter as numberconverter
-import tests
+import tests_legacy
 
 import operator
 #TO
@@ -60,7 +60,7 @@ notest(selection.Selection.distinguish_chains)
 
 random_generators = {}
 
-data_dir = tests.__path__[0] + '/data/test_structures/'
+data_dir = tests_legacy.__path__[0] + '/data/test_structures/'
 
 
 def reg_ran(sel_cls):
@@ -273,7 +273,7 @@ def make_combinedselectiontest(strname, sel_cls):
     return CombinedSelectionsTest
 
 def load_tests(loader, standard_tests, pattern):
-    """ Add tests created by make_* functions for all structures. Returns a complete TestSuite. """
+    """ Add tests_legacy created by make_* functions for all structures. Returns a complete TestSuite. """
     structures = ['1asz', '1gax', '1no5', '1pxq', '2dlc', '2lp2',
                   '3ftk', '3g88', '3lgb', '3m6x', '3npn', '3tk0', '3umy']
 

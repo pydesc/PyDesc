@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for cydesc/overfit.py.
+Unit tests_legacy for cydesc/overfit.py.
 
 Usage:
     python overfit_test.py [-v] [--skip-slow] [--fast]
@@ -48,14 +48,14 @@ import pydesc.numberconverter as numberconverter
 import pydesc.geometry as geometry
 import pydesc.cydesc as cydesc
 import pydesc.cydesc.overfit as overfit
-import tests
+import tests_legacy
 
 syntax_check.module = overfit
 
 notest(overfit.c_float_4)
 notest(overfit.Overfit.token_context)
 
-data_dir = tests.__path__[0] + '/data/test_structures/'
+data_dir = tests_legacy.__path__[0] + '/data/test_structures/'
 
 skip_slow = False
 fast = False

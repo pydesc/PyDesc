@@ -298,7 +298,7 @@ def module_syntax(mod=None):  # pylint: disable=R0912
 
     class TestSyntax(unittest.TestCase):
 
-        """ Various syntax tests."""
+        """ Various syntax tests_legacy."""
 
         def __str__(self):
             return unittest.TestCase.__str__(self).replace(__name__, calling_mod)
@@ -392,7 +392,7 @@ def variants_tested(tests_performed):
     calling_mod = inspect.getmodule(inspect.currentframe().f_back).__name__
 
     class VariantsTested(unittest.TestCase):
-        """ Testcase checking if all tests were performed (in case it depends on random or outside data. """
+        """ Testcase checking if all tests_legacy were performed (in case it depends on random or outside data. """
 
         def __str__(self):
             return unittest.TestCase.__str__(self).replace(__name__, calling_mod)

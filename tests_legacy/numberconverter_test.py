@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests for numberconverter.py.
+Unit tests_legacy for numberconverter.py.
 
 Usage:
     python numberconverter_test.py [-v]
@@ -32,7 +32,7 @@ import unittest
 
 import Bio.PDB
 
-import tests
+import tests_legacy
 import pydesc.numberconverter as numberconverter
 
 # pylint: disable=C0111
@@ -44,7 +44,7 @@ TestSyntax = syntax_check.module_syntax()
 notest(numberconverter.convert_to_id)
 notest(numberconverter.NumberConverter.get_list_of_inds)
 
-data_dir = tests.__path__[0] + '/data/test_structures/'
+data_dir = tests_legacy.__path__[0] + '/data/test_structures/'
 
 
 @testing(numberconverter.NumberConverter)
@@ -72,7 +72,7 @@ class NumberConverterTest(unittest.TestCase):
     @testing(numberconverter.go_backwards)
     @testing(numberconverter.PDB_id)
     @testing(numberconverter.PDB_id.__init__)
-    @testing(numberconverter.PDB_id.from_pdb_residue)
+    @testing(numberconverter.PDB_id.create_from_pdb_residue)
     def test_init_file(self):
         for s in self.structures:
             #~ numberconverter.NumberConverter(s)
