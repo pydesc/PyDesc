@@ -3,32 +3,24 @@ import os.path
 import Bio.PDB
 
 from pydesc.monomer import MonomerFactory
-from pydesc.monomer import Nucleotide
-from pydesc.monomer import Residue
 
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_STRUCTURES = os.path.join(BASE_DIR, 'data', 'test_structures')
-
-PDB_FILES_WITH_TYPE = [(type_, struc_file) for type_ in os.listdir(TEST_STRUCTURES) for struc_file in os.listdir(os.path.join(TEST_STRUCTURES, type_))]
+from conftest import PDB_FILES_WITH_TYPE
+from conftest import TEST_STRUCTURES_DIR
+from conftest import TYPE_DICT
 
 
 @pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_TYPE)
-def test_default_monomer_factory(type_, struc_file):
+def test_default_monomer_factory_create_from_pdbres(type_, struc_file):
 
     factory = MonomerFactory()
 
-    types_dict = {'dna_only': Nucleotide,
-                  'rna_only': Nucleotide,
-                  'prots_only': Residue}
-
     pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(struc_file,
-                                                                os.path.join(TEST_STRUCTURES,
+                                                                os.path.join(TEST_STRUCTURES_DIR,
                                                                              type_,
                                                                              struc_file)
                                                                 )
 
-    expected_type = types_dict[type_]
+    expected_type = TYPE_DICT[type_]
 
     points = {True: 0, False: 1}
     length = 0
@@ -45,4 +37,4 @@ def test_default_monomer_factory(type_, struc_file):
                     length += 1
                     points[expected_type in result] += 1
 
-    assert length - points[True] < 10, '%i out of %i residues are of expected type' % (points[True], length)
+    assert length - points[True] < 5, '%i out of %i residues are of expected type' % (points[True], length)
