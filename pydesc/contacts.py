@@ -23,7 +23,7 @@ created: 18.07.2013 - , Tymoteusz 'hert' Oleniecki, Agnieszka Mykowiecka
 
 import pydesc.monomer
 from pydesc.config import ConfigManager
-from pydesc.warnexcept import WrongMonomerType
+from pydesc.warnexcept import WrongMerType
 from pydesc.warnexcept import CannotCalculateContact
 
 import scipy.spatial
@@ -171,7 +171,7 @@ def check_type(ory_mth):
                 return ory_mth(self, monomer_2, monomer_1, *args, **kwargs)
 
         msg_tup = (monomer_1, monomer_2, self.type_1, self.type_2, self.__class__)
-        raise WrongMonomerType(*msg_tup)
+        raise WrongMerType(*msg_tup)
 
     new_mth.__doc__ = ory_mth.__doc__ + "\n\nThis method checks monomer types and calls proper method which does actual job."
 
@@ -1300,7 +1300,7 @@ class ContactsConjunction(CombinedContact):
             try:
                 value = contact_criterion._is_in_contact(
                     monomer_1_obj, monomer_2_obj, lazy=lazy, **kwargs)
-            except WrongMonomerType:
+            except WrongMerType:
                 value = 0
             values.append(value)
             if lazy and value == 0:
@@ -1374,7 +1374,7 @@ class ContactsAlternative(ContactsDisjunction):
         for contact_criterion in self.criteria:
             try:
                 value = contact_criterion.is_in_contact(monomer_1_obj, monomer_2_obj, lazy=lazy, **kwargs)
-            except WrongMonomerType:
+            except WrongMerType:
                 value = 0
             values.append(value)
             if lazy and value == 2:
@@ -1402,7 +1402,7 @@ class ContactsAlternative(ContactsDisjunction):
                 try:
                     if contact_criterion.is_in_contact(mer_1, mer_2):
                         return contact_criterion
-                except WrongMonomerType:
+                except WrongMerType:
                     continue
             except ValueError:
                 continue
@@ -1429,7 +1429,7 @@ class ContactsExclusiveDisjunction(ContactsDisjunction):
         for contact_criterion in self.criteria:
             try:
                 value = contact_criterion.is_in_contact(monomer_1_obj, monomer_2_obj, lazy=lazy, **kwargs)
-            except WrongMonomerType:
+            except WrongMerType:
                 value = 0
             values.append(value)
             if lazy and values.count(2) > 1:

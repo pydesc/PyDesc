@@ -23,7 +23,7 @@ created: 28.04.2014 - , Tymoteusz 'hert' Oleniecki
 
 import pydesc.monomer
 import pydesc.contacts
-from pydesc.warnexcept import WrongMonomerType
+from pydesc.warnexcept import WrongMerType
 from pydesc.selection import Everything
 
 import numpy as np
@@ -93,7 +93,7 @@ class ContactMap(object):
 
                 try:
                     value = iic(monomer_1, monomer_2, rcdist=self._rcdist[i][j])
-                except WrongMonomerType:
+                except WrongMerType:
                     pass
                 else:
                     if value > 0:
@@ -106,7 +106,7 @@ class ContactMap(object):
                     # attribute is not protected from contact_map
                     try:
                         value = iic(monomer_1, monomer_2, rcdist=self._rcdist[i][j])
-                    except WrongMonomerType:
+                    except WrongMerType:
                         pass
                     else:
                         if value > 0:

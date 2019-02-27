@@ -5,24 +5,29 @@ Classes that represents molecular structures and their substructures.
 created: 10.07.2013 - , Tymoteusz 'hert' Oleniecki
 """
 
+import operator
+import math
+import os.path
+
+from abc import ABCMeta
+from abc import abstractmethod
+from Bio.PDB import DSSP
+from StringIO import StringIO
+
 import pydesc.dbhandler
 import pydesc.geometry
 import pydesc.monomer
 import pydesc.numberconverter
 import pydesc.selection
 import pydesc.contactmap
-import operator
-import math
-from abc import ABCMeta
-from abc import abstractmethod
-from Bio.PDB import DSSP
-from StringIO import StringIO
+
 from pydesc.config import ConfigManager
 from pydesc.warnexcept import warn
 from pydesc.warnexcept import set_filters
 from pydesc.warnexcept import DiscontinuityError
-from pydesc.warnexcept import WrongMonomerType
+from pydesc.warnexcept import WrongMerType
 from pydesc.warnexcept import Info
+
 try:
     import prody
 except ImportError:
@@ -111,7 +116,109 @@ class StructureLoader(object):
         numcon = pydesc.numberconverter.NumberConverter(pdb_mers_list=mrlst)
         return [Structure(TempMdl(*chs_tpl), numcon, [i.name for i in paths]) for chs_tpl in chsll]
 
-    def load_structure(self, code=None, path=None):
+    def _get_files_and_path(self, code, path):
+        """Return path and list of open handlers to pdb files to be read.
+
+        Arguments:
+            code -- code passed by user (str or None if local file was passed).
+            path -- path to local file.
+        """
+        open_files = self.handler.get_file(code) if path is None else [open(path)]
+        path = open_files[0].name
+        return path, open_files
+
+    @staticmethod
+    def _get_code(code, path):
+        """Return PDB structure code.
+
+        Arguments:
+            code -- None is it should be read from path, code otherwise.
+            path -- path to a file or None.
+        """
+        if code is None:
+            code, dummy_ext = os.path.splitext(os.path.basename(path))
+        if code.find("://") != -1:
+            dummy_db, code = code.split("://")
+        return code
+
+    def _get_models(self, files, code):
+        """Return list of models read from PDB files in given list.
+
+        Argument:
+            files -- list of open PDB file handlers.
+            code -- code to be passed to parser.
+        """
+        models = []
+        for handler in files:
+            with handler:
+                pdb_structure = self.parser.get_structure(code, handler)
+            models.extend([pdb_model for pdb_model in pdb_structure])
+        return models
+
+    def _create_chain(self, pdb_chain, structure):
+        """Return Chain instance.
+
+        Arguments:
+            pdb_chain -- Bio.PDB chain.
+            structure -- Structure object, for which Chain is to be created.
+        """
+        def pick_mer(dct, most_frequent, others):
+            """Try to pick *most_frequent* key from given dict *dct*, otherwise pick first from list of *others*."""
+            try:
+                return dct[most_frequent]
+            except KeyError:
+                for key in others:
+                    try:
+                        return dct[key]
+                    except KeyError:
+                        continue
+            raise ValueError('Got empty dict.')
+
+        mers = []
+
+        hits = dict((klass, 0) for klass in self.mer_factory.chainable)
+
+        for pdb_residue in pdb_chain:
+            mer_dct, warns = self.mer_factory.create_from_biopdb(pdb_residue,
+                                                                 structure_obj=structure,
+                                                                 warn_in_place=False)
+            if mer_dct is None:
+                continue
+
+            mers.append((mer_dct, warns))
+
+            for mer_class in hits:
+                hits[mer_class] += int(mer_class in mer_dct)
+
+        winner = max(hits, key=lambda hit: hits[hit])
+
+        others = self.mer_factory.other
+
+        chain_mers = []
+        for mer_dct, warns in mers:
+            accepted_mer = pick_mer(mer_dct, winner, others)
+            chain_mers.append(accepted_mer)
+            warns.raise_all(type(accepted_mer))
+
+        return Chain(structure, pdb_chain.get_id(), chain_mers)
+
+    def _create_structure(self, model, path, converter):
+        """Return structure for given model
+
+        Argument:
+            model -- Bio.PDB model.
+            path -- path to pdb file storing the structure.
+            converter -- id converter for structure to be created.
+        """
+        name = model.get_full_id()[0]
+        structure = Structure(name, path, converter)
+
+        chains = [self._create_chain(pdb_chain, structure) for pdb_chain in model]
+
+        structure.finalize(chains)
+        return structure
+
+    def load_structures(self, code=None, path=None):
         """Returns a list of Structure instances and the NumberConverter instance.
 
         Arguments:
@@ -128,62 +235,22 @@ class StructureLoader(object):
         in case of UnitHandler.
         """
 
-        def pick_mer(dct, most_frequent, others):
-            """Try to pick *most_frequent* key from given dict *dct*, otherwise pick first from list of *others*."""
-            try:
-                return dct[most_frequent]
-            except KeyError:
-                for key in others:
-                    try:
-                        return dct[key]
-                    except KeyError:
-                        continue
-            raise ValueError('Got empty dict.')
-
         set_filters()
-        files = self.handler.get_file(code) if path is None else open(path)
-        if code.find("://") != -1:
-            dummy_db, code = code.split("://")
-        models = []
-        for handler in files:
-            with handler:
-                pdb_structure = self.parser.get_structure(code, handler)
-            models.extend([pdb_model for pdb_model in pdb_structure])
+
+        path, open_files = self._get_files_and_path(code, path)
+
+        code = self._get_code(code, path)
+
+        models = self._get_models(open_files, code)
+
         try:
             converter = pydesc.numberconverter.NumberConverter(models)
         except IndexError:
             raise ValueError('Failed to load %s -- file seems to be empty.' % code)
         
-        structures_list = []
-        for pdb_model in models:
-            name = pdb_model.get_full_id()[0]
-            structure = Structure(name, files[0].name, converter)
-            chains = []
-            for pdb_chain in pdb_model:
-                mers = []
-                hits = dict((klass, 0) for klass in self.mer_factory.chainable)
-                for pdb_residue in pdb_chain:
-                    mer = self.mer_factory.create_from_biopdb(pdb_residue, warn_in_place=False)
-                    if mer is None:
-                        continue
-                    mers.append(mer)
-                    for mer_class in hits:
-                        hits[mer_class] = hits.get(mer_class, 0) + int(mer_class in mer)
+        structures = [self._create_structure(pdb_model, path, converter) for pdb_model in models]
 
-                winner = max(hits.items(), key=lambda hit: hit[1])[0]
-
-                chain_mers = []
-                for mer_dct in mers:
-                    accepted_mer = pick_mer(mer_dct, winner, self.mer_factory.other)
-                    chain_mers.append(accepted_mer)
-                    mer_dct['warnings'].raise_all(type(accepted_mer))
-
-                chains.append(Chain(structure, pdb_chain.get_id(), chain_mers))
-
-            structure._finalize(chains)
-            structures_list.append(structure)
-
-        return structures_list
+        return structures
 
 
 class AbstractStructure(object):
@@ -210,6 +277,7 @@ class AbstractStructure(object):
         derived_form -- structure, which self is derived from. Structures loaded from files and user structures are derived from themselvs.
         """
         self.derived_from = derived_from
+        self._mers = []
         if self == derived_from:
             self.trt_matrix = pydesc.geometry.TRTMatrix()
         else:
@@ -224,7 +292,7 @@ class AbstractStructure(object):
         If given mers contained in two added structures are subsequent mers - Segment is returned.
         """
         mers = sorted(
-            set(self._monomers + list(structure_obj)), key=operator.attrgetter('ind'))  # pylint: disable=no-member
+            set(self._mers + list(structure_obj)), key=operator.attrgetter('ind'))  # pylint: disable=no-member
         # _monomer attr is not set by __init__, but it is required for all AbstractStructure objects
         try:
             return Segment(mers=mers)
@@ -250,11 +318,11 @@ class AbstractStructure(object):
 
         # pylint: disable=no-member
         def get_hash_if_possible(param):
-            """Returns _monomers index for given slice parameter.
+            """Returns _mers index for given slice parameter.
 
             Slice parameter can be monomer ind (PyDesc integer), negative index,
             string convertable to PDB_id or PDB_id itself.
-            For monomer inds - monomer's index on _monomers list is returned.
+            For monomer inds - monomer's index on _mers list is returned.
             Negative values and 0 are not changed.
             Other values raise IndexError.
             Strings are converted to PDB_id.
@@ -267,7 +335,7 @@ class AbstractStructure(object):
                 # if given parameter already is a PDB_id or a coresponding tuple instance
                 param = self.derived_from.converter.get_ind(param)
             if isinstance(param, pydesc.monomer.Monomer):
-                return self._monomers.index(param)
+                return self._mers.index(param)
             try:
                 # if parameter is an integer - it is probably monomer ind
                 return self._hash(param)
@@ -282,35 +350,35 @@ class AbstractStructure(object):
             if key.step is not None:
                 raise TypeError("AbstractStructure does not support steps")
             if key.start is None:
-                key = slice(self._monomers[0].ind, key.stop, None)
+                key = slice(self._mers[0].ind, key.stop, None)
             if key.stop is None:
-                key = slice(key.start, self._monomers[-1].ind, None)
+                key = slice(key.start, self._mers[-1].ind, None)
             start, end = map(get_hash_if_possible, [key.start, key.stop])
             try:
-                segment = Segment(self._monomers[start], self._monomers[end])
+                segment = Segment(self._mers[start], self._mers[end])
                 if not all(mer in self for mer in segment):
                     raise DiscontinuityError()
                 return segment
             except (DiscontinuityError, ValueError):
                 end = end + 1 if end != -1 else None
-                return UserStructure(self._monomers[start: end], self.derived_from.converter)
+                return UserStructure(self._mers[start: end], self.derived_from.converter)
         else:
-            return self._monomers[get_hash_if_possible(key)]
+            return self._mers[get_hash_if_possible(key)]
         # pylint: enable=no-member
-        # _monomers is surely set outside init
+        # _mers is surely set outside init
 
     def __iter__(self):
         """Returns iterator that iterates over structure monomers."""
-        return iter(self._monomers)     # pylint: disable=no-member
-        # _monomers is required for AbstractStructure instances
+        return iter(self._mers)     # pylint: disable=no-member
+        # _mers is required for AbstractStructure instances
 
     def __len__(self):
         """Returns number of mers present in current structure."""
-        return len(self._monomers)  # pylint: disable=no-member
-        # _monomers is required for AbstractStructure instances
+        return len(self._mers)  # pylint: disable=no-member
+        # _mers is required for AbstractStructure instances
 
     def _hash(self, ind):
-        """Returns index on _monomers list corespoding to given PyDesc integer (ind).
+        """Returns index on _mers list corespoding to given PyDesc integer (ind).
 
         Argument:
         ind -- PyDesc integer.
@@ -322,11 +390,11 @@ class AbstractStructure(object):
     def _set_hash(self):
         """Sets _has_monomers attribute.
 
-        _has_monomers is dictionary containing all monomers inds as keys and their indexes on _monomers list as values.
+        _has_monomers is dictionary containing all monomers inds as keys and their indexes on _mers list as values.
         It is used by __getitem__ as hashlist.
         """
-        self._hash_monomers = dict((monomer_obj.ind, index) for index, monomer_obj in enumerate(self._monomers))   # pylint: disable=no-member, attribute-defined-outside-init
-        # _monomers is required for AbstractStructure instances
+        self._hash_monomers = dict((monomer_obj.ind, index) for index, monomer_obj in enumerate(self._mers))   # pylint: disable=no-member, attribute-defined-outside-init
+        # _mers is required for AbstractStructure instances
         # this method needs to be able to be called any time, not only during initialization
 
     def create_pdbstring(self, enumerate_atoms=False, transformed=True):
@@ -375,8 +443,8 @@ class AbstractStructure(object):
         You can also iterate over AbstractStructure subclasses instances.
         ConfigManager.warnings_and_exceptions.deprecation_filter set to "ignore" turn this message off.""",
              DeprecationWarning)
-        return self._monomers   # pylint: disable=no-member
-        # _monomers is required for AbstractStructure instances
+        return self._mers   # pylint: disable=no-member
+        # _mers is required for AbstractStructure instances
 
     def get_contact_map(self):
         """Returns the ContactMap of the (sub)structure and the criterion under which it was created."""
@@ -511,9 +579,9 @@ class Structure(AbstractStructure):
         self.converter = converter_obj
         self.chains = None
 
-    def _finalize(self, chains):
+    def finalize(self, chains):
         self.chains = chains
-        self._monomers = [mer for chain in chains for mer in chain]
+        self._mers = [mer for chain in chains for mer in chain]
         self._set_hash()
 
     def __repr__(self):
@@ -682,7 +750,7 @@ class UserStructure(AbstractStructure):
                 derived_from = self
             if not hasattr(self, 'converter'):
                 self.converter = derived_from.converter
-            self._monomers = sorted(list_of_monomers, key=lambda mer: mer.ind)
+            self._mers = sorted(list_of_monomers, key=lambda mer: mer.ind)
             try:
                 self._set_segments()
             except IndexError:
@@ -701,7 +769,7 @@ class UserStructure(AbstractStructure):
 
         Sets next/previous_monomer attributes.
         """
-        for pair in zip(self._monomers[:-1], self._monomers[1:]):
+        for pair in zip(self._mers[:-1], self._mers[1:]):
             if pair[0]._has_bond(pair[1]):  # pylint: disable=protected-access
                 # method is protected from users, not from cooperating class init
                 pair[0].next_monomer = pair[1]
@@ -710,8 +778,8 @@ class UserStructure(AbstractStructure):
     def _set_segments(self):
         """Sets segments attribute."""
         self.segments = []  # pylint: disable=attribute-defined-outside-init
-        start = self._monomers[0]
-        for pair in zip(self._monomers, self._monomers[1:]):
+        start = self._mers[0]
+        for pair in zip(self._mers, self._mers[1:]):
             set_start = True
             try:
                 if self.next_monomer(pair[0]) == pair[1]:
@@ -725,7 +793,7 @@ class UserStructure(AbstractStructure):
                 if set_start:
                     start = pair[1]
         try:
-            self.segments.append(Segment(start, self._monomers[-1]))
+            self.segments.append(Segment(start, self._mers[-1]))
         except DiscontinuityError:
             pass
 
@@ -769,17 +837,17 @@ class Segment(AbstractStructure):
             raise DiscontinuityError()
         AbstractStructure.__init__(self, start.structure)
         if building_from_list:
-            self._monomers = mers
+            self._mers = mers
         else:
-            self._monomers = self.derived_from._monomers[self.derived_from._hash(start.ind): self.derived_from._hash(end.ind) + 1]  # pylint: disable=protected-access
+            self._mers = self.derived_from._monomers[self.derived_from._hash(start.ind): self.derived_from._hash(end.ind) + 1]  # pylint: disable=protected-access
             # Segment is tightly bound with its monomer derived_from structure
         self._check_continuity()
-        if len(self._monomers) == 0:
+        if len(self._mers) == 0:
             raise ValueError("Failed to create segment, wrong monomers given.")
 
     def _check_continuity(self):
         """Raises DiscontinuityError if segment is not continous."""
-        for (monomer1, monomer2) in zip(self._monomers, self._monomers[1:]):
+        for (monomer1, monomer2) in zip(self._mers, self._mers[1:]):
             if monomer1.next_monomer == monomer2:
                 continue
             raise DiscontinuityError(monomer1, monomer2)
@@ -790,12 +858,12 @@ class Segment(AbstractStructure):
     @property
     def start(self):
         """Returns first segment monomer."""
-        return self._monomers[0]
+        return self._mers[0]
 
     @property
     def end(self):
         """Returns last segment monomer."""
-        return self._monomers[-1]
+        return self._mers[-1]
 
     def select(self):
         """Overridden select method.
@@ -814,7 +882,7 @@ class Segment(AbstractStructure):
         """
 
         try:
-            length = sum(m.adjusted_length() for m in self._monomers[2:-2])
+            length = sum(m.adjusted_length() for m in self._mers[2:-2])
         except (AttributeError, TypeError):
             # TO AttributeError seems unrised while adjusted_length returns None is something is wrong
             # instead sum() raises TypeError since cannot add number to None
@@ -824,7 +892,7 @@ class Segment(AbstractStructure):
             return 1
 
         try:
-            return int(math.ceil(length / self._monomers[0].get_config('adjusted_segment_length')))
+            return int(math.ceil(length / self._mers[0].get_config('adjusted_segment_length')))
         except AttributeError:
             return 1
 
@@ -847,8 +915,8 @@ class Chain(AbstractStructure):
         """ # TODO fix docstring
         AbstractStructure.__init__(self, structure_obj)
         self.chain = chain_char
-        self._monomers = mers
-        for mer in self._monomers:
+        self._mers = mers
+        for mer in self._mers:
             mer.finalize()
 
     def __repr__(self, mode=0):
@@ -883,7 +951,7 @@ class Element(AbstractStructure):
         """
         AbstractStructure.__init__(self, monomer_obj.structure)
         self.central_monomer = monomer_obj
-        self._monomers = [self.central_monomer]
+        self._mers = [self.central_monomer]
 
     def __repr__(self, mode=0):
         return '<%s of %s>' % (str(self.__class__.__name__), str(self.derived_from.converter.get_pdb_id(self.central_monomer.ind)))
@@ -899,7 +967,7 @@ class Element(AbstractStructure):
         """
         try:
             return ElementChainable(monomer_obj)
-        except WrongMonomerType:
+        except WrongMerType:
             try:
                 return ElementOther(monomer_obj)
             except TypeError:
@@ -922,17 +990,17 @@ class ElementChainable(Element, Segment):
         Sets ElementChainable's list of Monomers.
         """
         if not isinstance(monomer_obj, pydesc.monomer.MonomerChainable):
-            raise WrongMonomerType("Cannot create chainable element using given mer: %i." % monomer_obj.ind)
+            raise WrongMerType("Cannot create chainable element using given mer: %i." % monomer_obj.ind)
         Element.__init__(self, monomer_obj)
         length = ConfigManager.element.element_chainable_length     # pylint: disable=no-member
         if not length % 2 == 1:
             raise ValueError("Wrong element chainable length. Length should be odd. Configure correnct length with ConfigManager")
         for dummy_step in range(length / 2):
             # instead of Segment init
-            start = self._monomers[0]
-            end = self._monomers[-1]
-            self._monomers = [start.previous_monomer] + self._monomers + [end.next_monomer]
-            if self._monomers.count(None) != 0:
+            start = self._mers[0]
+            end = self._mers[-1]
+            self._mers = [start.previous_monomer] + self._mers + [end.next_monomer]
+            if self._mers.count(None) != 0:
                 raise ValueError("Given monomer (%i) is to close to polymer terminus, cannot create ElementChainable" % monomer_obj.ind)
 
 
@@ -970,7 +1038,7 @@ class Contact(AbstractStructure):
             raise ValueError("Impossible to create contact instance with elements derived from different structures")
         if element1.central_monomer.ind == element2.central_monomer.ind:
             raise ValueError("Impossible to create contact using one element")
-        self._monomers = list(operator.add(*self.elements))
+        self._mers = list(operator.add(*self.elements))
         AbstractStructure.__init__(self, element1.derived_from)
 
     def __sub__(self, val):
@@ -1032,13 +1100,13 @@ class AbstractDescriptor(AbstractStructure):
         AbstractStructure.__init__(self, element_obj.derived_from)
         self.central_element = element_obj
         self.contacts = list_of_contact_objs
-        self._monomers = [monomer_obj for monomer_obj in list(element_obj)]
+        self._mers = [monomer_obj for monomer_obj in list(element_obj)]
         for contact_obj in self.contacts:
-            self._monomers += [monomer_obj for element in contact_obj.elements for monomer_obj in element if monomer_obj not in self._monomers]
-            # self._monomers += [monomer_obj for element in contact_obj.elements for monomer_obj in element if monomer_obj not in self._monomers]
-        # self._monomers = sorted(set(self._monomers), key = lambda monomer_obj: monomer_obj.ind)
+            self._mers += [monomer_obj for element in contact_obj.elements for monomer_obj in element if monomer_obj not in self._mers]
+            # self._mers += [monomer_obj for element in contact_obj.elements for monomer_obj in element if monomer_obj not in self._mers]
+        # self._mers = sorted(set(self._mers), key = lambda monomer_obj: monomer_obj.ind)
         # ??? albo if w liscie merow, albo set
-        self._monomers = sorted(self._monomers, key=lambda monomer_obj: monomer_obj.ind)
+        self._mers = sorted(self._mers, key=lambda monomer_obj: monomer_obj.ind)
         self.segments = []
         self._set_segments()
         self.elements = [self.central_element]
@@ -1067,8 +1135,8 @@ class AbstractDescriptor(AbstractStructure):
             add_segment(*presegment_1)
             return presegment_2
 
-        switch = lambda mer: (mer, mer.next_monomer) if mer.next_monomer in self._monomers else False
-        last_segment = reduce(check_segments, filter(bool, map(switch, self._monomers)))
+        switch = lambda mer: (mer, mer.next_monomer) if mer.next_monomer in self._mers else False
+        last_segment = reduce(check_segments, filter(bool, map(switch, self._mers)))
         add_segment(*last_segment)
 
     def _set_elements(self):
@@ -1158,7 +1226,7 @@ class AbstractDescriptor(AbstractStructure):
         """
         monomer_types = sorted([mon_type for mon_class in pydesc.monomer.Monomer.__subclasses__() for mon_type in mon_class.__subclasses__()], key=lambda x: x.__name__)    # pylint: disable=no-member
         # subclasses are avalible
-        locations = [[0, monomer_obj.ind, 0] for monomer_obj in self._monomers]
+        locations = [[0, monomer_obj.ind, 0] for monomer_obj in self._mers]
         i_num = 1
         for item in locations:
             item[2] = i_num
@@ -1167,7 +1235,7 @@ class AbstractDescriptor(AbstractStructure):
                     item[0] = i
                     break
             i_num += len(self.derived_from[item[1]].indicators)
-        coords = [coord.get_coord() for monomer_obj in self._monomers for coord in monomer_obj if coord.name.lower() in monomer_obj.indicators]
+        coords = [coord.get_coord() for monomer_obj in self._mers for coord in monomer_obj if coord.name.lower() in monomer_obj.indicators]
         loc = open(
             "./desc" + str(self.central_element.central_monomer.ind) + ".loc", "w")
         coo = open(

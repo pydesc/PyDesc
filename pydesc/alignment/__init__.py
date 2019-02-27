@@ -242,9 +242,9 @@ class AlignmentLoader(object):
         except KeyError:
             model = 0
         if path is None:
-            self.structures[structure_code] = self.structure_loader.load_structure(structure_code)[model]
+            self.structures[structure_code] = self.structure_loader.load_structures(structure_code)[model]
         else:
-            self.structures[structure_code] = self.structure_loader.load_structure(structure_code, path=path)[model]
+            self.structures[structure_code] = self.structure_loader.load_structures(structure_code, path=path)[model]
         return self.structures[structure_code]
 
     def load_xml(self, file_name):

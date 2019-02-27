@@ -183,17 +183,17 @@ class SupportingStructure(structure.AbstractStructure):
 
 
 def load_structure_decorator(current_load_structure):
-    """Returns wrapped load_structure if given method is not already wrapped.
+    """Returns wrapped load_structures if given method is not already wrapped.
 
     Wrapped method returns list of PyDesc structures and creates PyMOL objects.
     Argument:
-    current_load_structure -- structure loader's method load_structure from PyDesc structure module.
+    current_load_structure -- structure loader's method load_structures from PyDesc structure module.
     """
     if current_load_structure.__name__ == "wrapped_load_structure":
         return current_load_structure
 
     def wrapped_load_structure(self, code, *args, **kwargs):
-        """Wrapped load_structure method: loads structures from databases or from local copy of PDB file.
+        """Wrapped load_structures method: loads structures from databases or from local copy of PDB file.
 
         Creates PyMOL objects and returns a list of PyDesc structures connected with those objects.
         Arguments:
@@ -485,11 +485,11 @@ def transform_object(self, trtm):
 
 
 def w_load(app):
-    """Creates structure loader and calls load_structure method with parameters given by user in dialog window."""
+    """Creates structure loader and calls load_structures method with parameters given by user in dialog window."""
     loader = structure.StructureLoader()
     pdb_code = tkSimpleDialog.askstring("PyDesc", "Please enter a 4-char pdb code:", parent=app.root)
     try:
-        loader.load_structure(pdb_code)
+        loader.load_structures(pdb_code)
     except:
         tkMessageBox.showerror("Invalid code", "The code you entered is incorrect:" + pdb_code)
         raise
@@ -515,7 +515,7 @@ if __name__ == "pydesc.descmol":
     structure.AbstractStructure.translate = translate_decorator(structure.AbstractStructure.translate)
     structure.AbstractStructure.transform_object = transform_object
     # LOAD STRUCTURE
-    structure.StructureLoader.load_structure = load_structure_decorator(structure.StructureLoader.load_structure)
+    structure.StructureLoader.load_structures = load_structure_decorator(structure.StructureLoader.load_structures)
     # DESCRIPTOR
     structure.AbstractDescriptor.show = show
     structure.AbstractDescriptor.color_segments = color_segments

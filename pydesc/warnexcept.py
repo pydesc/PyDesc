@@ -79,7 +79,7 @@ def set_filters():
 
     # TODO: Scan for warnings and exceptions automatically. Add checks for
     # warnings without entries in ConfigManager.
-    for wrn_cls in (IncompleteChainableParticle, Info, DeprecationWarning, NoConfiguration, UnknownParticleName, UserWarning):
+    for wrn_cls in (Info, DeprecationWarning, NoConfiguration, UnknownParticleName, UserWarning):
         filter_ = getattr(ConfigManager.warnings_and_exceptions.class_filters, wrn_cls.__name__)  # pylint: disable=no-member
         warnings.filterwarnings(filter_, category=wrn_cls)
 
@@ -156,7 +156,7 @@ class WarnManager(warnings.catch_warnings):
         Method use pydesc.warnexcept.warn function to throw warnings, therefore pydesc configuration affects warnings filtering.
         """
         for warning in self.exceptions.get(context, []):
-            warn(warning, 0)
+            warn(warning, 4)
 
 
 class DiscontinuityError(Exception):
@@ -239,6 +239,3 @@ class NoConfiguration(Warning):
 class UnknownParticleName(Warning):
 
     """Class of warnings. Information about particles that have unknown names. Printed by default."""
-
-    def __str__(self):
-        return "Particle %s has unknown name %s." % (str(self.args[0].get_pdb_id()), self.args[0].name)

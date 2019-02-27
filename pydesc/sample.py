@@ -24,4 +24,4 @@ from pydesc.structure import StructureLoader
 
 def get(stc_name="1no5", ind=0):
     sl = StructureLoader()
-    return sl.load_structure(stc_name)[ind]
+    return sl.load_structures(stc_name)[ind]

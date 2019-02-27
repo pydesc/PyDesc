@@ -103,7 +103,7 @@ ConfigManager.monomer.residue.set_default("indicators", ('CA', 'cbx'))
 ConfigManager.monomer.residue.set_default("old_cbx_calculation", False)
 ConfigManager.monomer.residue.set_default("adjusted_segment_length", 18.0)
 ConfigManager.monomer.nucleotide.set_default("nucleotide_code", {
-    '  G': 'G', '  C': 'C', '  U': 'U', '  A': 'A', ' DG': 'G', ' DA': 'A', ' DT': 'T', ' DC': 'C'})
+    'G': 'G', 'C': 'C', 'U': 'U', 'A': 'A', 'DG': 'G', 'DA': 'A', 'DT': 'T', 'DC': 'C'})
 ConfigManager.monomer.nucleotide.set_default(
     "backbone_atoms", ("P", "O5'", "C5'", "C4'", "C3'", "O3'"))
 ConfigManager.monomer.nucleotide.set_default(
@@ -786,21 +786,23 @@ class MonomerChainable(Monomer):
         Extends superclass method.
         """
         Monomer.__init__(self, structure_obj, ind, name, chain, atoms)
+
         try:
             backbone_atoms = dict((atom_name, None)
                                   for atom_name in self.get_config('backbone_atoms'))
-        except AttributeError:
-            raise IncompleteParticle(self.pid)
+            self._check_bbatoms()
+        except (AttributeError, KeyError):
+            data = type(self).__name__, self.get_pdb_id()
+            msg = "Backbone atoms lacking, unable to create %s from residue %s" % data
+            raise IncompleteParticle(msg)
 
         if self.get_config('check_distances'):
             for atom_pair in self.get_config("crucial_atom_distances"):
-                try:
-                    self._check_distance(backbone_atoms, *atom_pair)
-                except AttributeError:
-                    atom_names = atom_pair[:2]
-                    msg = 'Crucial atoms are lacking (%s), unable to create %s' % (atom_names, type(self))
-                    raise IncompleteParticle(msg)
+                self._check_distance(backbone_atoms, *atom_pair)
         self._asa = None
+        self._next_monomer = None
+        self._previous_monomer = None
+        self._check_name()
 
     def _has_bond(self, monomer):
         """Returns True if the Monomer is followed by a given Monomer.
@@ -821,12 +823,20 @@ class MonomerChainable(Monomer):
         except UnboundLocalError:
             return False
 
-    def _check_name(self, afix):
+    def _check_name(self):
         """Method that raises warning if unknown particle name was found in pdb file."""
         try:
             self.seq_3to1(self.name)
         except KeyError:
-            warn(UnknownParticleName(self))
+            data = type(self).__name__.capitalize(),\
+                   str(self.get_pdb_id()), \
+                   self.ind or 0, \
+                   str(self.structure), \
+                   self.name
+            warn(UnknownParticleName("%s %s (no. %i) from %s has incorrect name: %s." % data))
+
+    def _check_bbatoms(self):
+        tuple(self.iter_atomsbb())
 
     def _check_distance(self, atoms, name_1, name_2, min_dist, max_dist):
         """Raises WrongAtomDistances if atoms distance doesn't meet class criteria.
@@ -857,7 +867,6 @@ class MonomerChainable(Monomer):
     def next_monomer(self, value):
         """Property that returns monomer following current mer in its structure."""
         self._next_monomer = value  # pylint:disable=attribute-defined-outside-init
-        # there is no other way to complet property setter
 
     @next_monomer.deleter
     def next_monomer(self):
@@ -989,7 +998,6 @@ class Residue(MonomerChainable):
         """
         MonomerChainable.__init__(self, structure_obj, ind, name, chain, atoms)
         self.calculate_cbx()
-        self._check_name('residue')
 
     def finalize(self):
         """Method called by structures to calculate and set attributes that need structural
@@ -1216,7 +1224,6 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
         self.calculate_ring_plane()
         self.calculate_nx()
         self.ion_neighbours = []
-        self._check_name('nucleotide')
 
     def calculate_ring_center(self):
         """Adds pseudoatom representing base ring center."""

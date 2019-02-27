@@ -92,10 +92,10 @@ structure_loader = StructureLoader()
 \begin{lstlisting}
 from pydesc.structure import StructureLoader
 structure_loader = StructureLoader()
-structures1 = structure_loader.load_structure("2dlc")
-structures2 = structure_loader.load_structure(code="2dlc")
-structures3 = structure_loader.load_structure("pdb://2dlc")
-structures4 = structure_loader.load_structure("2dlc", path="my/directory/2dlc.pdb")
+structures1 = structure_loader.load_structures("2dlc")
+structures2 = structure_loader.load_structures(code="2dlc")
+structures3 = structure_loader.load_structures("pdb://2dlc")
+structures4 = structure_loader.load_structures("2dlc", path="my/directory/2dlc.pdb")
 \end{lstlisting}
 
     In most cases file contains only one structure, but structures from NMR experiments or trajectories stored in \texttt{pdb} files are also able to be loaded using PyDesc.
@@ -139,7 +139,7 @@ structure_loader = StructureLoader(handler=PDBHandler())
 from pydesc.structure import StructureLoader
 from pydesc.dbhandler import PDBHandler
 structure_loader = StructureLoader(PDBHandler(mode=[1,2,3]))
-structures = structure_loader.load_structure("2DLC")
+structures = structure_loader.load_structures("2DLC")
 \end{lstlisting}
     
     which is equivalent to default setting, will 1) check local cache for \texttt{2dlc.pdb} file and load it if possible; otherwise it will 2) try to copy it from local DB copy to cache and load it again, but if that will end in failure, it will 3) download file from online DB to cache. Paths to local copy od DB and cache are stored in configuration manager (see chapter \ref{CONFIGsec}).
@@ -209,7 +209,7 @@ Let us assume that one has already loaded a structure:
 \begin{lstlisting}
 from pydesc.structure import StructureLoader
 structure_loader = StructureLoader()
-structures = structure_loader.load_structure("2dlc")
+structures = structure_loader.load_structures("2dlc")
 structure = structures[0]
 \end{lstlisting}
 
@@ -408,7 +408,7 @@ from pydesc.structure import StructureLoader
 from pydesc.structure import Element
 from pydesc.structure import ProteinDescriptor
 
-structure = StructureLoader().load_structure('2dlc')[0]
+structure = StructureLoader().load_structures('2dlc')[0]
 structure.set_contact_map()
 
 element90 = Element(structure[90])
@@ -422,7 +422,7 @@ from pydesc.structure import StructureLoader
 from pydesc.structure import Element
 from pydesc.structure import AbstractDescriptor
 
-structure = StructureLoader().load_structure('2dlc')[0]
+structure = StructureLoader().load_structures('2dlc')[0]
 structure.set_contact_map()
 
 element90 = Element.build(structure[90])  #residue
@@ -446,7 +446,7 @@ Often it is necessary to create all possible DLSs for given structure, which can
 from pydesc.structure import StructureLoader
 from pydesc.structure import AstractDescriptor
 
-structure = StructureLoader().load_structure('2dlc')[0]
+structure = StructureLoader().load_structures('2dlc')[0]
 structure.set_contact_map()
 DLSgen = AbstractDescriptor.create_descriptors(structure)
 DLSs = list(DLSgen)
@@ -482,8 +482,8 @@ Selections are classes that allows users to apply set theory operations to struc
 \begin{lstlisting}
 from pydesc.structure import StructureLoader
 
-stc_1sfd = StructureLoader().load_structure('1sfd')[0]
-stc_2gb1 = StructureLoader().load_structure('2gb1')[0]
+stc_1sfd = StructureLoader().load_structures('1sfd')[0]
+stc_2gb1 = StructureLoader().load_structures('2gb1')[0]
 \end{lstlisting}
 
 Proteins are mutated, therefore they differ in positions 52 and 94. What is more -- \texttt{1sfd} consists of two chains. Let us pick the whole loop and $\beta$-strand containing mutated residue 94 in \texttt{1sfd}:
@@ -555,7 +555,7 @@ Contact map contains information about contacts between mers in structure. To cr
 \begin{lstlisting}
 from pydesc.structure import StructureLoader
 
-structure = StructureLoader().load_structure('2dlc')[0]
+structure = StructureLoader().load_structures('2dlc')[0]
 structure.set_contact_map()
 
 print structure.contact_map
@@ -612,7 +612,7 @@ All pre-defined contact criteria and abstract classes are implemented in \texttt
 from pydesc.structure import StructureLoader
 from pydesc.contacts import CaContact
 
-structure = StructureLoader().load_structure('2dlc')[0]
+structure = StructureLoader().load_structures('2dlc')[0]
 structure.set_contact_map(CaContact())
 print structure.contact_map.get_monomer_contacts(90)
 \end{lstlisting}
@@ -850,8 +850,8 @@ Corresponding substructures in \texttt{1n3l}, residues A181-A212 and \texttt{2dl
 from pydesc.structure import StructureLoader
 from pydesc.cydesc.overfit import Overfit
 
-stc_1n3l = StructureLoader().load_structure('1n3l')[0]
-stc_2dlc = StructureLoader().load_structure('2dlc')[0]
+stc_1n3l = StructureLoader().load_structures('1n3l')[0]
+stc_2dlc = StructureLoader().load_structures('2dlc')[0]
 
 ovf = Overfit()
 ovf.add_structure(stc_1n3l['A181': 'A212'], stc_2dlc['X185': 'X216'])
@@ -873,7 +873,7 @@ stc_1n3l.trt_matrix = stc_1n3l.trt_matrix.combine(results[1])
 Comarping multiple structures is possible thanks to \texttt{Multifit} object, for which principles are the same:
 
 \begin{lstlisting}
-stc_5thl = StructureLoader().load_structure('5thl')[0]
+stc_5thl = StructureLoader().load_structures('5thl')[0]
 
 mft = Multifit()
 mft.add_structure(stc_1n3l['A181': 'A212'], stc_2dlc['X185': 'X216'], stc_5thl['A181': 'A212'])

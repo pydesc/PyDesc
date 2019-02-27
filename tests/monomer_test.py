@@ -3,10 +3,19 @@ import os.path
 import Bio.PDB
 
 from pydesc.monomer import MonomerFactory
+from pydesc.monomer import Nucleotide
+from pydesc.monomer import Residue
+from pydesc.monomer import Ion
 
 from conftest import PDB_FILES_WITH_TYPE
 from conftest import TEST_STRUCTURES_DIR
 from conftest import TYPE_DICT
+
+
+TYPE_THRESHOLDS = {Nucleotide: .25,
+                   Residue: .01,
+                   Ion: .0,
+                   }
 
 
 @pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_TYPE)
@@ -21,6 +30,7 @@ def test_default_monomer_factory_create_from_pdbres(type_, struc_file):
                                                                 )
 
     expected_type = TYPE_DICT[type_]
+    type_threshold = TYPE_THRESHOLDS[expected_type]
 
     points = {True: 0, False: 1}
     length = 0
@@ -37,4 +47,5 @@ def test_default_monomer_factory_create_from_pdbres(type_, struc_file):
                     length += 1
                     points[expected_type in result] += 1
 
-    assert length - points[True] < 5, '%i out of %i residues are of expected type' % (points[True], length)
+    assert (length - points[True]) / float(length) <= type_threshold, \
+        '%i out of %i residues are of expected type' % (points[True], length)
