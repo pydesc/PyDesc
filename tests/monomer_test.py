@@ -18,34 +18,42 @@ TYPE_THRESHOLDS = {Nucleotide: .25,
                    }
 
 
-@pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_TYPE)
-def test_default_monomer_factory_create_from_pdbres(type_, struc_file):
+class TestMonomerFactory(object):
 
-    factory = MonomerFactory()
+    @pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_TYPE)
+    def test_default_monomer_factory_create_from_pdbres(self, type_, struc_file):
 
-    pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(struc_file,
-                                                                os.path.join(TEST_STRUCTURES_DIR,
-                                                                             type_,
-                                                                             struc_file)
-                                                                )
+        factory = MonomerFactory()
 
-    expected_type = TYPE_DICT[type_]
-    type_threshold = TYPE_THRESHOLDS[expected_type]
+        pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(struc_file,
+                                                                    os.path.join(TEST_STRUCTURES_DIR,
+                                                                                 type_,
+                                                                                 struc_file)
+                                                                    )
 
-    points = {True: 0, False: 1}
-    length = 0
+        expected_type = TYPE_DICT[type_]
+        type_threshold = TYPE_THRESHOLDS[expected_type]
 
-    for model in pdb_structure:
-        for chain in model:
-            for residue in chain:
-                result, warns = factory.create_from_biopdb(residue, warn_in_place=False)
+        points = {True: 0, False: 1}
+        length = 0
 
-                if result is None:
-                    assert warns is None
-                    assert residue.get_id()[0] == 'W'
-                else:
-                    length += 1
-                    points[expected_type in result] += 1
+        for model in pdb_structure:
+            for chain in model:
+                for residue in chain:
+                    result, warns = factory.create_from_biopdb(residue, warn_in_place=False)
 
-    assert (length - points[True]) / float(length) <= type_threshold, \
-        '%i out of %i residues are of expected type' % (points[True], length)
+                    if result is None:
+                        assert warns is None
+                        assert residue.get_id()[0] == 'W'
+                    else:
+                        length += 1
+                        points[expected_type in result] += 1
+
+        assert (length - points[True]) / float(length) <= type_threshold, \
+            '%i out of %i residues are of expected type' % (points[True], length)
+
+
+class TestResidue(object):
+
+    def test_calculate_cbx(self):
+        assert 0

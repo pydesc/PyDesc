@@ -144,7 +144,7 @@ def find_sequence(sequence, structure, nucleotide=False, **kwargs):
     kwargs -- all other key-word arguments to be passed to blast.
 
     To run this method NCBI+ has to be installed.
-    Returns list of tuples containing two elements: substructure and NCBI BLAST result parsed by BioPython.
+    Returns list of tuples containing two elements: structure and NCBI BLAST result parsed by BioPython.
     See BioPython help to read more about BLAST result.
     """
     seqmers = pydesc.selection.MonomerType(pydesc.monomer.MonomerChainable).create_structure(structure)

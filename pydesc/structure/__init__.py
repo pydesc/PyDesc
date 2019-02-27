@@ -19,7 +19,7 @@ import pydesc.geometry
 import pydesc.monomer
 import pydesc.numberconverter
 import pydesc.selection
-import pydesc.contactmap
+import pydesc.contacts.contactmap
 
 from pydesc.config import ConfigManager
 from pydesc.warnexcept import warn
@@ -262,7 +262,7 @@ class AbstractStructure(object):
 
     Subclasses:
     Structure -- molecular strucutre of a protein or a nucleic acid.
-    Segment -- any continuous substructure of a structure.
+    Segment -- any continuous structure of a structure.
     Element -- central mer with two following and two preceding mers.
     Contact -- two Elements in contact.
     Descriptor -- all Contacts containing central Element.
@@ -460,7 +460,7 @@ class AbstractStructure(object):
         Returns ContactMap instance as an attribute of (sub)structure and calculates contacts for the ContactMap.
         """
         set_filters()
-        self.contact_map = pydesc.contactmap.ContactMap(self, contact_criterion_obj, select1, select2)    # pylint: disable=attribute-defined-outside-init
+        self.contact_map = pydesc.contacts.contactmap.ContactMap(self, contact_criterion_obj, select1, select2)    # pylint: disable=attribute-defined-outside-init
         # contact_map will be set here because that is why its setter was established
         self.contact_map.calculate_contacts()
 
@@ -936,7 +936,7 @@ class Element(AbstractStructure):
     """Abstract class, representation of substructures from the Descriptor.
 
     Subclasses:
-    ElementChainable -- continuous five-mer substructure.
+    ElementChainable -- continuous five-mer structure.
     ElementOther -- Element settled by Ion or Ligand.
     """
 

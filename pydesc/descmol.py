@@ -30,7 +30,7 @@ from pydesc import structure
 from pydesc import monomer
 from pydesc import selection
 from pydesc import geometry
-from pydesc import contactmap
+from pydesc.contacts import contactmap
 
 
 def fmt(string):

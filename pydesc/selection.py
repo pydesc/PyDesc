@@ -226,7 +226,7 @@ class Range(Selection):
         Returns an empty structure if it is impossible to identify first or last monomer in given structure.
 
         Arguments:
-        structure_obj -- a structure to be base for new substructure.
+        structure_obj -- a structure to be base for new structure.
         distinguish_chains -- True or False; changes the behaviour of a new set in such a way that if the value of a chain is set to False, then the chain's character is ignored. Initially set to None, if so default value set by constructor is used.
         """
         if distinguish_chains is None:
@@ -273,7 +273,7 @@ class ChainSelection(Selection):
         Extended superclass method.
 
         Arguments:
-        structure_obj -- a structure to be base for new substructure.
+        structure_obj -- a structure to be base for new structure.
         distinguish_chains -- always set to True.
         """
         chain = [chain for chain in structure_obj.chains if self.chain == chain.chain_char]
@@ -307,7 +307,7 @@ class MonomerName(Selection):
         Extended superclass method.
 
         Arguments:
-        structure_obj -- a structure to be base for new substructure.
+        structure_obj -- a structure to be base for new structure.
         distinguish_chains -- always set to False.
         """
         list_of_inds = [monomer.ind for monomer in structure_obj if monomer.name == self.monomer_name]
@@ -344,7 +344,7 @@ class MonomerType(Selection):
         Extended superclass method.
 
         Arguments:
-        structure_obj -- a structure to be base for new substructure.
+        structure_obj -- a structure to be base for new structure.
         distinguish_chains -- always set to False.
         """
         list_of_inds = [monomer.ind for monomer in structure_obj if isinstance(monomer, self.monomer_subclass)]
@@ -365,7 +365,7 @@ class Everything(Selection):
         Extended superclass method.
 
         Arguments:
-        structure_obj -- a structure to be base for new substructure.
+        structure_obj -- a structure to be base for new structure.
         distinguish_chains -- always set to True.
         """
         list_of_inds = map(operator.attrgetter('ind'), structure_obj)
@@ -394,7 +394,7 @@ class Nothing(Selection):
         """Returns empty (containing 0 monomers) user structure instance.
 
         Arguments:
-        structure_obj -- a structure to be base for new substructure.
+        structure_obj -- a structure to be base for new structure.
         distinguish_chains -- always set to True.
         """
         return Set([])
@@ -458,7 +458,7 @@ class SelectionsUnion(CombinedSelection):
         """Creates user structure instance made of monomers that meet any criteria given by subselections.
 
         Arguments:
-        structure_obj -- a structure to be base for new substructure.
+        structure_obj -- a structure to be base for new structure.
         distinguish_chains -- True or False; changes the behaviour of a new set in such a way that if the value of a chain is set to False, then the chain's character is ignored. Initially set to None, if so default values set by selections' constructors are used.
         """
         if distinguish_chains is None:
@@ -482,7 +482,7 @@ class SelectionsIntersection(CombinedSelection):
         """Creates user structure instance made of monomers that meet all criteria given by subselections.
 
         Arguments:
-        structure_obj -- a structure to be base for new substructure.
+        structure_obj -- a structure to be base for new structure.
         distinguish_chains -- True or False; changes the behaviour of a new set in such a way that if the value of a chain is set to False, then the chain's character is ignored. Initially set to None, if so default values set by selections' constructors are used.
         """
         if distinguish_chains is None:
@@ -507,7 +507,7 @@ class SelectionsRelativeComplement(CombinedSelection):
         """Creates user structure instance made of monomers that meet first given selection criteria, but do not meet criteria given by secound selection.
 
         Arguments:
-        structure_obj -- a structure to be base for new substructure.
+        structure_obj -- a structure to be base for new structure.
         distinguish_chains -- True or False; changes the behaviour of a new set in such a way that if the value of a chain is set to False, then the chain's character is ignored. Initially set to None, if so default values set by selections' constructors are used.
         """
         if distinguish_chains is None:
