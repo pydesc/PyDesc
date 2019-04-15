@@ -26,7 +26,6 @@ import pydesc.contacts.contacts
 from pydesc.warnexcept import WrongMerType
 from pydesc.selection import Everything
 
-from operator import add
 import numpy as np
 import scipy.spatial
 

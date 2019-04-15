@@ -21,7 +21,7 @@ TYPE_THRESHOLDS = {Nucleotide: .25,
 class TestMonomerFactory(object):
 
     @pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_TYPE)
-    def test_default_monomer_factory_create_from_pdbres(self, type_, struc_file):
+    def test_default_monomer_factory_create_from_pdb_res(self, type_, struc_file):
 
         factory = MonomerFactory()
 

@@ -19,8 +19,7 @@ import pydesc.geometry
 import pydesc.monomer
 import pydesc.numberconverter
 import pydesc.selection
-import pydesc.contacts.contactmap
-
+import pydesc.contacts
 from pydesc.config import ConfigManager
 from pydesc.warnexcept import warn
 from pydesc.warnexcept import set_filters
@@ -42,7 +41,6 @@ ConfigManager.structure.set_default("dssp_path", "dssp")
 
 
 class StructureLoader(object):
-
     """Loads structures from the databases using a given designation."""
 
     def __init__(self,
@@ -54,7 +52,7 @@ class StructureLoader(object):
 
         Argument:
         handler -- an instance of handler.
-        """ #TODO fix docstring
+        """  # TODO fix docstring
         self.handler = handler
         self.parser = parser
         self.mer_factory = mer_factory
@@ -162,6 +160,7 @@ class StructureLoader(object):
             pdb_chain -- Bio.PDB chain.
             structure -- Structure object, for which Chain is to be created.
         """
+
         def pick_mer(dct, most_frequent, others):
             """Try to pick *most_frequent* key from given dict *dct*, otherwise pick first from list of *others*."""
             try:
@@ -247,14 +246,13 @@ class StructureLoader(object):
             converter = pydesc.numberconverter.NumberConverter(models)
         except IndexError:
             raise ValueError('Failed to load %s -- file seems to be empty.' % code)
-        
+
         structures = [self._create_structure(pdb_model, path, converter) for pdb_model in models]
 
         return structures
 
 
 class AbstractStructure(object):
-
     """Abstract class, representation of all the structures and their derivatives.
 
     NOTE:
@@ -369,7 +367,7 @@ class AbstractStructure(object):
 
     def __iter__(self):
         """Returns iterator that iterates over structure monomers."""
-        return iter(self._mers)     # pylint: disable=no-member
+        return iter(self._mers)  # pylint: disable=no-member
         # _mers is required for AbstractStructure instances
 
     def __len__(self):
@@ -393,7 +391,8 @@ class AbstractStructure(object):
         _has_monomers is dictionary containing all monomers inds as keys and their indexes on _mers list as values.
         It is used by __getitem__ as hashlist.
         """
-        self._hash_monomers = dict((monomer_obj.ind, index) for index, monomer_obj in enumerate(self._mers))   # pylint: disable=no-member, attribute-defined-outside-init
+        self._hash_monomers = dict((monomer_obj.ind, index) for index, monomer_obj in
+                                   enumerate(self._mers))  # pylint: disable=no-member, attribute-defined-outside-init
         # _mers is required for AbstractStructure instances
         # this method needs to be able to be called any time, not only during initialization
 
@@ -443,14 +442,15 @@ class AbstractStructure(object):
         You can also iterate over AbstractStructure subclasses instances.
         ConfigManager.warnings_and_exceptions.deprecation_filter set to "ignore" turn this message off.""",
              DeprecationWarning)
-        return self._mers   # pylint: disable=no-member
+        return self._mers  # pylint: disable=no-member
         # _mers is required for AbstractStructure instances
 
     def get_contact_map(self):
         """Returns the ContactMap of the (sub)structure and the criterion under which it was created."""
         return self.contact_map
 
-    def set_contact_map(self, contact_criterion_obj=None, select1=pydesc.selection.Everything(), select2=pydesc.selection.Everything()):
+    def set_contact_map(self, contact_criterion_obj=None, select1=pydesc.selection.Everything(),
+                        select2=pydesc.selection.Everything()):
         """Creates ContactMap instance under a given criterion and calculates contacts.
 
         Argument:
@@ -460,7 +460,8 @@ class AbstractStructure(object):
         Returns ContactMap instance as an attribute of (sub)structure and calculates contacts for the ContactMap.
         """
         set_filters()
-        self.contact_map = pydesc.contacts.contactmap.ContactMap(self, contact_criterion_obj, select1, select2)    # pylint: disable=attribute-defined-outside-init
+        self.contact_map = pydesc.contacts.contactmap.ContactMap(self, contact_criterion_obj, select1,
+                                                                 select2)  # pylint: disable=attribute-defined-outside-init
         # contact_map will be set here because that is why its setter was established
         self.contact_map.calculate_contacts()
 
@@ -560,7 +561,6 @@ class AbstractStructure(object):
 
 
 class Structure(AbstractStructure):
-
     """Representation of molecular structure of the protein or the nucleotide acids."""
 
     def __init__(self, name, path, converter_obj):
@@ -571,7 +571,7 @@ class Structure(AbstractStructure):
         Sets Structure's list of monomers and list of chains.
         Sets monomers' next_monomer attribute and creates their elements.
         Extended AbstractStructure method.
-        """ # TODO fix docstring
+        """  # TODO fix docstring
 
         AbstractStructure.__init__(self, self)
         self.path = path
@@ -690,6 +690,7 @@ class Structure(AbstractStructure):
 
     def refresh(self):
         """Forces recalculation of all dynamic properties of mers (usually after frame change in trajectory)."""
+
         def reset_dynamic_prop(mer):
             """Resets all dynamic properties."""
             mer.dynamic_properties.reset_all_values()
@@ -732,7 +733,6 @@ class Structure(AbstractStructure):
 
 
 class UserStructure(AbstractStructure):
-
     """Representation of substructures generated by users."""
 
     def __init__(self, list_of_monomers, numberconverter=None, name=None):
@@ -758,7 +758,8 @@ class UserStructure(AbstractStructure):
                 pass
             AbstractStructure.__init__(self, derived_from)
         else:
-            warn("Not implemented: UserStructure made of mers from %i different structures: %s" % (len(derived_from.keys()), ", ".join(derived_from.keys())), Info)
+            warn("Not implemented: UserStructure made of mers from %i different structures: %s" % (
+                len(derived_from.keys()), ", ".join(derived_from.keys())), Info)
             # ??? tu bedzie sanfracisco
 
     def __repr__(self):
@@ -812,7 +813,6 @@ class UserStructure(AbstractStructure):
 
 
 class Segment(AbstractStructure):
-
     """Representation of continuous substructures of DNA, RNA or protein structure."""
 
     def __init__(self, start=None, end=None, mers=None):
@@ -839,7 +839,8 @@ class Segment(AbstractStructure):
         if building_from_list:
             self._mers = mers
         else:
-            self._mers = self.derived_from._monomers[self.derived_from._hash(start.ind): self.derived_from._hash(end.ind) + 1]  # pylint: disable=protected-access
+            self._mers = self.derived_from._monomers[self.derived_from._hash(start.ind): self.derived_from._hash(
+                end.ind) + 1]  # pylint: disable=protected-access
             # Segment is tightly bound with its monomer derived_from structure
         self._check_continuity()
         if len(self._mers) == 0:
@@ -853,7 +854,9 @@ class Segment(AbstractStructure):
             raise DiscontinuityError(monomer1, monomer2)
 
     def __repr__(self):
-        return '<Segment %s-%s>' % (self.derived_from.converter.get_pdb_id(self.start.ind), self.derived_from.converter.get_pdb_id(self.end.ind))
+        return '<Segment %s-%s>' % (
+            self.derived_from.converter.get_pdb_id(self.start.ind),
+            self.derived_from.converter.get_pdb_id(self.end.ind))
 
     @property
     def start(self):
@@ -898,7 +901,6 @@ class Segment(AbstractStructure):
 
 
 class Chain(AbstractStructure):
-
     """Representation of a polymer chain.
 
     As in PDB file, chains contain both: chainable mers and ligands.
@@ -912,7 +914,7 @@ class Chain(AbstractStructure):
 
         Sets Chain's list of Monomers.
         Extended Segment method.
-        """ # TODO fix docstring
+        """  # TODO fix docstring
         AbstractStructure.__init__(self, structure_obj)
         self.chain = chain_char
         self._mers = mers
@@ -932,7 +934,6 @@ class Chain(AbstractStructure):
 
 
 class Element(AbstractStructure):
-
     """Abstract class, representation of substructures from the Descriptor.
 
     Subclasses:
@@ -954,7 +955,8 @@ class Element(AbstractStructure):
         self._mers = [self.central_monomer]
 
     def __repr__(self, mode=0):
-        return '<%s of %s>' % (str(self.__class__.__name__), str(self.derived_from.converter.get_pdb_id(self.central_monomer.ind)))
+        return '<%s of %s>' % (
+            str(self.__class__.__name__), str(self.derived_from.converter.get_pdb_id(self.central_monomer.ind)))
 
     @staticmethod
     def build(monomer_obj):
@@ -975,13 +977,12 @@ class Element(AbstractStructure):
 
 
 class ElementChainable(Element, Segment):
-
     """Representation of a five-mer Segment.
 
     It consists of five Residues or five Nucleotides: a central mer, two preceding and two following mers.
     """
 
-    def __init__(self, monomer_obj):    # pylint: disable=super-init-not-called
+    def __init__(self, monomer_obj):  # pylint: disable=super-init-not-called
         """ElementChainable constructor.
 
         Argument:
@@ -992,20 +993,21 @@ class ElementChainable(Element, Segment):
         if not isinstance(monomer_obj, pydesc.monomer.MonomerChainable):
             raise WrongMerType("Cannot create chainable element using given mer: %i." % monomer_obj.ind)
         Element.__init__(self, monomer_obj)
-        length = ConfigManager.element.element_chainable_length     # pylint: disable=no-member
+        length = ConfigManager.element.element_chainable_length  # pylint: disable=no-member
         if not length % 2 == 1:
-            raise ValueError("Wrong element chainable length. Length should be odd. Configure correnct length with ConfigManager")
+            raise ValueError(
+                "Wrong element chainable length. Length should be odd. Configure correnct length with ConfigManager")
         for dummy_step in range(length / 2):
             # instead of Segment init
             start = self._mers[0]
             end = self._mers[-1]
             self._mers = [start.previous_monomer] + self._mers + [end.next_monomer]
             if self._mers.count(None) != 0:
-                raise ValueError("Given monomer (%i) is to close to polymer terminus, cannot create ElementChainable" % monomer_obj.ind)
+                raise ValueError(
+                    "Given monomer (%i) is to close to polymer terminus, cannot create ElementChainable" % monomer_obj.ind)
 
 
 class ElementOther(Element):
-
     """Class corresponding to the ElementChainable, but consisting of a single Ion or Ligand instance."""
 
     def __init__(self, monomer_obj):
@@ -1020,7 +1022,6 @@ class ElementOther(Element):
 
 
 class Contact(AbstractStructure):
-
     """Representation of two close-Element instances."""
 
     def __init__(self, element1, element2):
@@ -1081,7 +1082,6 @@ class Contact(AbstractStructure):
 
 
 class AbstractDescriptor(AbstractStructure):
-
     """Representation of PyDesc spatial unit.
 
     It consists of the central Element and all Elements it is in contact with, according to a given ContactMap ContactCriterion.
@@ -1102,7 +1102,8 @@ class AbstractDescriptor(AbstractStructure):
         self.contacts = list_of_contact_objs
         self._mers = [monomer_obj for monomer_obj in list(element_obj)]
         for contact_obj in self.contacts:
-            self._mers += [monomer_obj for element in contact_obj.elements for monomer_obj in element if monomer_obj not in self._mers]
+            self._mers += [monomer_obj for element in contact_obj.elements for monomer_obj in element if
+                           monomer_obj not in self._mers]
             # self._mers += [monomer_obj for element in contact_obj.elements for monomer_obj in element if monomer_obj not in self._mers]
         # self._mers = sorted(set(self._mers), key = lambda monomer_obj: monomer_obj.ind)
         # ??? albo if w liscie merow, albo set
@@ -1120,12 +1121,13 @@ class AbstractDescriptor(AbstractStructure):
 
     def _set_segments(self):
         """Fills initial attr segments."""
+
         def add_segment(start, end):
             """Adds ElementChainible to segments list, or Segment if start and end are distant more then proper segment lenght."""
-            element_length = ConfigManager.element.element_chainable_length      # pylint: disable=no-member
+            element_length = ConfigManager.element.element_chainable_length  # pylint: disable=no-member
             segment = Segment(start, end)
             if len(segment) == element_length:
-                segment = ElementChainable(segment._monomers[element_length / 2])      # pylint: disable=protected-access
+                segment = ElementChainable(segment._monomers[element_length / 2])  # pylint: disable=protected-access
             self.segments.append(segment)
 
         def check_segments(presegment_1, presegment_2):
@@ -1172,7 +1174,8 @@ class AbstractDescriptor(AbstractStructure):
         dfs(neighbours[self.central_element.central_monomer])
 
         for element in self.elements:
-            self.elements_values[element.central_monomer.ind] = pydesc.PropertiesRecord({'optional': False if element.central_monomer in connected else True})
+            self.elements_values[element.central_monomer.ind] = pydesc.PropertiesRecord(
+                {'optional': False if element.central_monomer in connected else True})
 
     def __repr__(self):
         return '<%s of %s:%s>' % (self.__class__.__name__, str(self.derived_from), self.cpid)
@@ -1211,7 +1214,7 @@ class AbstractDescriptor(AbstractStructure):
                 descs.append(None)
         return descs
 
-    def create_coord_vector(self):      # pylint: disable=too-many-locals
+    def create_coord_vector(self):  # pylint: disable=too-many-locals
         # temorary method
         """Creates files containing information for C++ part of library.
 
@@ -1224,7 +1227,8 @@ class AbstractDescriptor(AbstractStructure):
 
         NOTE: First number in a file is always a number of its lines and num of central monomer
         """
-        monomer_types = sorted([mon_type for mon_class in pydesc.monomer.Monomer.__subclasses__() for mon_type in mon_class.__subclasses__()], key=lambda x: x.__name__)    # pylint: disable=no-member
+        monomer_types = sorted([mon_type for mon_class in pydesc.monomer.Monomer.__subclasses__() for mon_type in
+                                mon_class.__subclasses__()], key=lambda x: x.__name__)  # pylint: disable=no-member
         # subclasses are avalible
         locations = [[0, monomer_obj.ind, 0] for monomer_obj in self._mers]
         i_num = 1
@@ -1235,7 +1239,8 @@ class AbstractDescriptor(AbstractStructure):
                     item[0] = i
                     break
             i_num += len(self.derived_from[item[1]].indicators)
-        coords = [coord.get_coord() for monomer_obj in self._mers for coord in monomer_obj if coord.name.lower() in monomer_obj.indicators]
+        coords = [coord.get_coord() for monomer_obj in self._mers for coord in monomer_obj if
+                  coord.name.lower() in monomer_obj.indicators]
         loc = open(
             "./desc" + str(self.central_element.central_monomer.ind) + ".loc", "w")
         coo = open(
@@ -1258,13 +1263,17 @@ class AbstractDescriptor(AbstractStructure):
             coo.write("\n")
         coo.close()
         con.write(str(len(self.contacts) + 1) + "\n")
-        self.contacts = sorted(self.contacts, key=lambda contact: contact.elements[1].central_monomer.ind if contact.elements[0] == self.central_element else contact.elements[0].central_monomer.ind)
+        self.contacts = sorted(self.contacts,
+                               key=lambda contact: contact.elements[1].central_monomer.ind if contact.elements[
+                                                                                                  0] == self.central_element else
+                               contact.elements[0].central_monomer.ind)
         for contact in self.contacts:
             # when it grows up it will be contact classification
             con.write("1 ")
             con.write("%3i" % self.central_element.central_monomer.ind + " ")
             con.write("%3i" % [mer for mer in contact if mer != self.central_element.central_monomer][0].ind + " ")
-            con.write(str(contact.derived_from.contact_map.get_contact_value([x.central_monomer.ind for x in contact.elements])) + "\n")
+            con.write(str(contact.derived_from.contact_map.get_contact_value(
+                [x.central_monomer.ind for x in contact.elements])) + "\n")
         con.close()
         seg.write(str(len(self.segments) + 1) + "\n")
         self.segments = sorted(self.segments, key=lambda segment: segment.start.ind)
@@ -1286,7 +1295,6 @@ class AbstractDescriptor(AbstractStructure):
 
 
 class ProteinDescriptor(AbstractDescriptor):
-
     """AbstractDescriptor subclass.
 
     Representation of descriptors settled by protein mers.
@@ -1334,7 +1342,6 @@ class ProteinDescriptor(AbstractDescriptor):
 
 
 class NucleotideDescriptor(AbstractDescriptor):
-
     """Class that represents nucleotide descriptors."""
 
     def __init__(self, element_obj, list_of_contact_objs):
@@ -1349,6 +1356,7 @@ class NucleotideDescriptor(AbstractDescriptor):
     @staticmethod
     def build(element_obj, contact_map=None):
         """Static NucleotideDescriptor builder."""
+
         def bld_con(der, *args):
             """Builds a contact."""
             return pydesc.structure.Contact(Element.build(der[args[0]]), Element.build(der[args[1]]))
