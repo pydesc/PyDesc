@@ -291,7 +291,7 @@ class CStructure(ctypes.Structure):
 
     _fields_ = [('name', ctypes.c_char_p),
                 ('n_monomers', ctypes.c_int),
-                ('monomers', ctypes.POINTER(CMer)),
+                ('mers', ctypes.POINTER(CMer)),
                 ('n_segs', ctypes.c_int),
                 ('segs', ctypes.POINTER(CSeg)),
                 ('adjusted_number_p', _adjusted_number_ftype)]
@@ -325,7 +325,7 @@ class CStructure(ctypes.Structure):
             self.name = ""
 
         def adjusted_number(start, end):
-            """ Returns an adjusted number of segments between given monomers."""
+            """ Returns an adjusted number of segments between given mers."""
             res = struct[start:end].adjusted_number()
             return res
 
@@ -357,7 +357,7 @@ class CContact(ctypes.Structure):
         # __init__ supplied by ctypes.Structure should not be called, if there
         # is an __init__ supplied in a subclass.
         """
-        Accepts PyDesc indices of monomers, contact value and type.
+        Accepts PyDesc indices of mers, contact value and type.
 
         Type does not exist in PyDesc directly but may be used to transfer information to CyDesc.
         """

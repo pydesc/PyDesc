@@ -161,7 +161,7 @@ class WarnManager(warnings.catch_warnings):
 
 class DiscontinuityError(Exception):
 
-    """Class of exceptions raised due to disnotinuity between chainable monomers.
+    """Class of exceptions raised due to disnotinuity between chainable mers.
 
     Arguments:
     arg1 -- pydesc.monomer.Monomer subclass instance 1.

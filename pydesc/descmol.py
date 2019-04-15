@@ -201,7 +201,7 @@ def load_structure_decorator(current_load_structure):
         """
         list_of_structures = current_load_structure(self, code, *args, **kwargs)
         for structure_index, structure_obj in enumerate(list_of_structures):
-            cmd.read_pdbstr(structure_obj.create_pdbstring(transformed=False).read(), structure_obj.name, state=structure_index + 1)  # pylint: disable=protected-access
+            cmd.read_pdbstr(structure_obj.create_pdb_string(transformed=False).read(), structure_obj.name, state=structure_index + 1)  # pylint: disable=protected-access
             Registry.add(structure_obj, structure_obj.name, structure_index + 1, structure_flag=True)
             cmd.set_title(structure_obj.name, structure_index + 1, "PD")
         return list_of_structures
@@ -239,7 +239,7 @@ def create_model(self, name=None):
             self.__class__.__name__[
                 :4].lower() + str(Registry.get_next_number())
     Registry.add(self, name, 0, structure_flag=True)
-    cmd.read_pdbstr(self.create_pdbstring(enumerate_atoms=True, transformed=True).read(), name, state=1)    # pylint: disable=protected-access
+    cmd.read_pdbstr(self.create_pdb_string(enumerate_atoms=True, transformed=True).read(), name, state=1)    # pylint: disable=protected-access
     cmd.set_title(name, 0, "PD")
 
 

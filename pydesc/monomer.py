@@ -227,7 +227,7 @@ class MonomerFactory(object):
         Argument:
         classes -- list of classes to be used.
 
-        This class tries to build monomers classes from given.
+        This class tries to build mers classes from given.
         """
         if classes is None:
             classes = [Residue, Nucleotide, Ion, Ligand]
@@ -259,7 +259,7 @@ class MonomerFactory(object):
 
         Arguments:
         pdb_residue -- instance of BioPython Bio.PDB.Residue based on which monomer is created.
-        structure_obj -- Structure instance to which the monomer belongs. Could be None for unbounded monomers.
+        structure_obj -- Structure instance to which the monomer belongs. Could be None for unbounded mers.
         Initially set to None.
         warn_in_place -- True or False. Determines if warnings are to be raised immediately or returned as a result.
         The former forces constructors to raise warning immediately.
@@ -300,7 +300,7 @@ class MonomerFactory(object):
         as keys.
 
         Arguments:
-        monomers.
+        mers.
         base_monomer -- an instance of Monomer class containing atoms from pdb_residue.
         warnings_ -- context manager for catching warnings.
         classes -- list of classes to try to initialize.
@@ -520,7 +520,7 @@ class Monomer(object):
         Sets attributes:
         name -- mer or ligand name, up to three letters, according to PDB file.
         structure -- the Structure instance to which the monomer belongs.
-        my_chain -- character of the chain that the monomers belong to, according to PDB file.
+        my_chain -- character of the chain that the mers belong to, according to PDB file.
         atoms - dict of atoms building current monomer represented by Atom instances.
         ind -- PyDesc integer.
         pseudoatoms -- dict of Pseudoatoms.
@@ -1028,7 +1028,7 @@ class Residue(MonomerChainable):
                 cnt += 2
         except AttributeError:
             # AttributeError is raised by mers at the beginning and at the end of chain
-            # they have no next/previous monomers
+            # they have no next/previous mers
             pass
 
         self.pseudoatoms['backbone_average'] = Pseudoatom(
@@ -1298,14 +1298,14 @@ class MonomerOther(Monomer):
     # pylint:disable=no-self-use
     # following methods are needed and should not be a function
     def _has_bond(self, monomer):
-        """Returns False, as no mer is next for non-chainable monomers"""
+        """Returns False, as no mer is next for non-chainable mers"""
         return False
 
     @property
     def previous_monomer(self):
         """Returns None.
 
-        For monomers other then chainable this property cannot be set to any value other then None.
+        For mers other then chainable this property cannot be set to any value other then None.
         """
         return None
 
@@ -1313,7 +1313,7 @@ class MonomerOther(Monomer):
     def next_monomer(self):
         """Returns None.
 
-        For monomers other then chainable this property cannot be set to any value other then None.
+        For mers other then chainable this property cannot be set to any value other then None.
         """
         return None
 

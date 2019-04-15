@@ -80,7 +80,7 @@ def CaCbxContact():     # pylint: disable=invalid-name
 
 
 def for_monomer_type_only(type_1, type_2=None):
-    """Class decorator used to assert correct type of monomers for subsequent contact evaluation.
+    """Class decorator used to assert correct type of mers for subsequent contact evaluation.
 
     This decorator sets type_1 and type_2 class attributes to provided values. It is implemented mostly for backward
     compatibility.
@@ -242,7 +242,7 @@ class ContactCriterion(object):
 
         Arguments:
         monomer_1 -- first monomer instance.
-        monomer_2 -- second monomers instance.
+        monomer_2 -- second mers instance.
         lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
         """
 
@@ -295,7 +295,7 @@ class ContactCriterion(object):
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
         """
         pass
@@ -392,13 +392,13 @@ class PointsDistanceCriterion(ContactCriterion):
         return '%s distance criterion' % (self.monomer_hallmark,)
 
     def _calculate_distance(self, monomer1obj, monomer2obj):
-        """Calculates the distance between two given monomers.
+        """Calculates the distance between two given mers.
 
         Arguments:
         monomer1obj -- first monomer instacne.
-        monomer2obj -- second monomers instacne.
+        monomer2obj -- second mers instacne.
 
-        Returns the distance between monomers' points in a given unit.
+        Returns the distance between mers' points in a given unit.
         Returns None if given Monomers do not have appropriate attribute.
         """
         try:
@@ -411,7 +411,7 @@ class PointsDistanceCriterion(ContactCriterion):
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         """
         distance = self._calculate_distance(monomer_1_obj, monomer_2_obj)
         min_value = self.criterion_distance - self.undecidable_range
@@ -585,7 +585,7 @@ class VectorDistanceCriterion(ContactCriterion):    # pylint: disable=abstract-c
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
         """
         pass
@@ -626,7 +626,7 @@ class CaCbxSubtractionCriterion(VectorDistanceCriterion):
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
         """
         distances = [(getattr(monomer_1, hallmark) - getattr(monomer_2, hallmark)).calculate_length() for hallmark in self.monomer_hallmarks]
@@ -676,13 +676,13 @@ class SetDistanceCriterion(ContactCriterion):
 
     # @profile
     def _calculate_distance(self, monomer_1_obj, monomer_2_obj):
-        """Calculates the distance between two given monomers.
+        """Calculates the distance between two given mers.
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
 
-        Returns the distance between monomers' points in a given unit.
+        Returns the distance between mers' points in a given unit.
         Takes all atoms into consideration if monomer_hallmarks are none
         """
 
@@ -716,7 +716,7 @@ class SetDistanceCriterion(ContactCriterion):
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
         """
         if not self._precheck(monomer_1_obj, monomer_2_obj):
@@ -955,7 +955,7 @@ class DihedralAngleCriterion(ContactCriterion):
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- ignored. See CombinedCriteria._is_in_contact to get more information.
         """
         # pylint: disable=no-member
@@ -994,7 +994,7 @@ class HorizontalBisectorDistanceCriterion(ContactCriterion):
 
     Methods:
     _is_in_contact - returns contact value of a given contact distance.
-    calculate_distance - calculates distance between two given monomers.
+    calculate_distance - calculates distance between two given mers.
     """
 
     __metaclass__ = ABCMeta
@@ -1019,11 +1019,11 @@ class HorizontalBisectorDistanceCriterion(ContactCriterion):
         # monomer_hallmark_x is an abstract attr
 
     def _calculate_distance(self, monomer_1_obj, monomer_2_obj):
-        """Calculates the distance between two given monomers.
+        """Calculates the distance between two given mers.
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         """
         # pylint: disable=no-member
         bisector = (getattr(monomer_1_obj, self.monomer_hallmark_plane)).bisection_plane(getattr(monomer_2_obj, self.monomer_hallmark_plane))
@@ -1038,7 +1038,7 @@ class HorizontalBisectorDistanceCriterion(ContactCriterion):
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- ignored. See CombinedCriteria._is_in_contact to get more information.
         """
         distance = self._calculate_distance(monomer_1_obj, monomer_2_obj)
@@ -1094,7 +1094,7 @@ class VerticalBisectorDistanceCriterion(ContactCriterion):
 
     Methods:
     _is_in_contact - returns contact value of a given contact distance.
-    calculate_distance - calculates distance between two given monomers.
+    calculate_distance - calculates distance between two given mers.
     """
 
     __metaclass__ = ABCMeta
@@ -1119,11 +1119,11 @@ class VerticalBisectorDistanceCriterion(ContactCriterion):
         # monomer_hallmark_x is abstract attr
 
     def _calculate_distance(self, monomer_1_obj, monomer_2_obj):
-        """Calculates the distance between two given monomers.
+        """Calculates the distance between two given mers.
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         """
         # pylint: disable=no-member
         bisector = (getattr(monomer_1_obj, self.monomer_hallmark_plane)).bisection_plane(getattr(monomer_2_obj, self.monomer_hallmark_plane))
@@ -1138,7 +1138,7 @@ class VerticalBisectorDistanceCriterion(ContactCriterion):
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- ignored. See CombinedCriteria._is_in_contact to get more information.
         """
         distance = self._calculate_distance(monomer_1_obj, monomer_2_obj)
@@ -1223,7 +1223,7 @@ class CombinedContact(ContactCriterion):
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- True or False, initially set to True. Deremines if subcriteria values are to be calculated lazy or not.
         Lazy calculation means that if program is able to assume that criterion is not satisfied during calculation subcriterion - further subcriteria are not calculated.
         """
@@ -1281,7 +1281,7 @@ class ContactsConjunction(CombinedContact):
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- True or False, initially set to True. Deremines if subcriteria values are to be calculated lazy or not.
         Lazy calculation means that if program is able to assume that criterion is not satisfied during calculation subcriterion - further subcriteria are not calculated.
         """
@@ -1356,7 +1356,7 @@ class ContactsAlternative(ContactsDisjunction):
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- True or False, initially set to True. Deremines if subcriteria values are to be calculated lazy or not.
         Lazy calculation means that if program is able to assume that criterion is not satisfied during calculation subcriterion - further subcriteria are not calculated.
         """
@@ -1411,7 +1411,7 @@ class ContactsExclusiveDisjunction(ContactsDisjunction):
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- True or False, initially set to True. Deremines if subcriteria values are to be calculated lazy or not.
         Lazy calculation means that if program is able to assume that criterion is not satisfied during calculation subcriterion - further subcriteria are not calculated.
         """
@@ -1450,13 +1450,13 @@ class DescriptorCriterion(ContactCriterion):
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
         """Returns value of contact if given mers have their Contact instance in criterion desc attr.
 
-        Returns contact value if both given mers are central monomers for elements in
+        Returns contact value if both given mers are central mers for elements in
         any pydesc.structure.Contact stored in current criterion desc.contacts. Otherwise
         returns zero.
 
         Arguments:
         monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second monomers instacne.
+        monomer_2_obj -- second mers instacne.
         lazy -- always set to None.
         """
         for contact in self.desc.contacts:

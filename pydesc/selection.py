@@ -29,7 +29,7 @@ import pydesc.structure
 
 class Selection(object):
 
-    """A selections of monomers of a (sub)structures."""
+    """A selections of mers of a (sub)structures."""
 
     __metaclass__ = ABCMeta
 
@@ -39,7 +39,7 @@ class Selection(object):
         Creates a registry of selected structures as a dictionary, which keys are (sub)structures and values are instances of user structures.
 
         Argumnet:
-        distinguish_chains -- True, False or None; if True chain character is considered while selecting (sub)structure, otherwise selection includes all monomers with given number and insertion code regardless of chain character.
+        distinguish_chains -- True, False or None; if True chain character is considered while selecting (sub)structure, otherwise selection includes all mers with given number and insertion code regardless of chain character.
         None is for complex selections only; in that case all subselections use their own distinguish chains setup.
         """
         self._distinguish_chains = distinguish_chains        # get and set provided by property
@@ -86,7 +86,7 @@ class Selection(object):
     def distinguish_chains(self):
         """Property that takes boolian values; describes selection ability to distinguish chain character.
 
-        If this property is set to True chain character is considered while selecting (sub)structure, otherwise selection includes all monomers with given number and insertion code regardless of chain character.
+        If this property is set to True chain character is considered while selecting (sub)structure, otherwise selection includes all mers with given number and insertion code regardless of chain character.
         """
         return self._distinguish_chains
 
@@ -104,12 +104,12 @@ class Selection(object):
 
     def _finalize_specify(self, list_of_inds, converter):   # pylint: disable=no-self-use
         # current method may need to use self in future
-        """Creates an instance of set of given (sub)structure monomers.
+        """Creates an instance of set of given (sub)structure mers.
 
         Abstract method, should be override and called by every subclass of Selection.
 
         Arguments:
-        list_of_inds -- a list of PyDesc integers of monomers that are to be changed into pdb-id tuples.
+        list_of_inds -- a list of PyDesc integers of mers that are to be changed into pdb-id tuples.
         converter -- an instance of number converter to be used to convert PyDesc integers to pdb-id tuples.
         """
         list_of_pdb_ids = map(converter.get_pdb_id, list_of_inds)
@@ -119,7 +119,7 @@ class Selection(object):
 # =========== Simple selections
 class Set(Selection):
 
-    """Set of monomers PyDesc inds."""
+    """Set of mers PyDesc inds."""
 
     def __init__(self, list_of_pdb_ids, distinguish_chains=True):
         """Set selection constructor.
@@ -156,7 +156,7 @@ class Set(Selection):
         return substructure
 
     def create_new_structure(self, structure_obj, distinguish_chains=None):
-        """Creates new user structure based on given set of PDB-ids with copied monomers.
+        """Creates new user structure based on given set of PDB-ids with copied mers.
 
         Arguments:
         structure_obj -- an instance of any abstract structure subclass.
@@ -201,7 +201,7 @@ class Range(Selection):
         Extended superclass method.
         Stores PDB-id tuples of first and last monomer from range to be selected.
         NOTE: last monomer WILL be selected.
-        Selections lenghts made on different structures may differ due to monomers with insertion code.
+        Selections lenghts made on different structures may differ due to mers with insertion code.
         It is not possible to select range if first or last monomer is not present in given structure.
         To learn about PDB-id tuples see number converter docstring.
 
@@ -220,7 +220,7 @@ class Range(Selection):
         return "<Selection: range %s - %s>" % (str(self.start), str(self.end))
 
     def specify(self, structure_obj, distinguish_chains=None):
-        """Creates user structure instance made of monomers from range.
+        """Creates user structure instance made of mers from range.
 
         Extended superclass method.
         Returns an empty structure if it is impossible to identify first or last monomer in given structure.
@@ -250,7 +250,7 @@ class Range(Selection):
 
 class ChainSelection(Selection):
 
-    """Selection of all monomers signed with given chain character."""
+    """Selection of all mers signed with given chain character."""
 
     def __init__(self, chain_char):
         """Chain selection constructor.
@@ -268,7 +268,7 @@ class ChainSelection(Selection):
         return "<Selection: chain %s>" % str(self.chain)
 
     def specify(self, structure_obj, distinguish_chains=True):
-        """Creates user structure instance made of monomers belonging to one chain according to PDB file.
+        """Creates user structure instance made of mers belonging to one chain according to PDB file.
 
         Extended superclass method.
 
@@ -283,7 +283,7 @@ class ChainSelection(Selection):
 
 class MonomerName(Selection):
 
-    """Selection of all monomers with given name."""
+    """Selection of all mers with given name."""
 
     def __init__(self, monomer_name):
         """Monomer name selection constructor.
@@ -302,7 +302,7 @@ class MonomerName(Selection):
         return "<Selection: mers called %s>" % self.monomer_name.lstrip()
 
     def specify(self, structure_obj, distinguish_chains=False):
-        """Creates user structure instance made of monomers with given name.
+        """Creates user structure instance made of mers with given name.
 
         Extended superclass method.
 
@@ -316,7 +316,7 @@ class MonomerName(Selection):
 
 class MonomerType(Selection):
 
-    """Selection of monomers of given type."""
+    """Selection of mers of given type."""
 
     def __init__(self, monomer_subclass):
         """Monomer type selection constructor.
@@ -326,7 +326,7 @@ class MonomerType(Selection):
         NOTE: to learn about monomer subclasses see monomer module documentation.
 
         Argument:
-        monomer_subclasses -- a class of monomers to be selected.
+        monomer_subclasses -- a class of mers to be selected.
         """
         Selection.__init__(self, False)
         self.monomer_subclass = monomer_subclass
@@ -339,7 +339,7 @@ class MonomerType(Selection):
         return "<Selection: all %s>" % (operation + "s")
 
     def specify(self, structure_obj, distinguish_chains=False):
-        """Creates user structure instance made of monomers of given type.
+        """Creates user structure instance made of mers of given type.
 
         Extended superclass method.
 
@@ -353,7 +353,7 @@ class MonomerType(Selection):
 
 class Everything(Selection):
 
-    """Selection of all possible monomers created by PyDesc."""
+    """Selection of all possible mers created by PyDesc."""
 
     def __init__(self):
         """Overall selection constructor (extended superclass method)."""
@@ -391,7 +391,7 @@ class Nothing(Selection):
         return substructure
 
     def specify(self, structure_obj, distinguish_chains=True):
-        """Returns empty (containing 0 monomers) user structure instance.
+        """Returns empty (containing 0 mers) user structure instance.
 
         Arguments:
         structure_obj -- a structure to be base for new structure.
@@ -455,7 +455,7 @@ class SelectionsUnion(CombinedSelection):
     """
 
     def specify(self, structure_obj, distinguish_chains=None):
-        """Creates user structure instance made of monomers that meet any criteria given by subselections.
+        """Creates user structure instance made of mers that meet any criteria given by subselections.
 
         Arguments:
         structure_obj -- a structure to be base for new structure.
@@ -465,7 +465,7 @@ class SelectionsUnion(CombinedSelection):
             distinguish_chains = self._distinguish_chains
         list_of_pdb_ids = reduce(operator.add, [list(selection.specify(structure_obj, distinguish_chains)) for selection in self.selections])
         list_of_pdb_ids = dict((list_of_pdb_ids.index(pdb_id), pdb_id) for pdb_id in list_of_pdb_ids)
-        # removing repeated monomers by assigning them to the same key in dictionary
+        # removing repeated mers by assigning them to the same key in dictionary
         list_of_pdb_ids = [list_of_pdb_ids[key] for key in list_of_pdb_ids.keys()]
         return Set(list_of_pdb_ids, distinguish_chains)
 
@@ -479,7 +479,7 @@ class SelectionsIntersection(CombinedSelection):
     """
 
     def specify(self, structure_obj, distinguish_chains=None):
-        """Creates user structure instance made of monomers that meet all criteria given by subselections.
+        """Creates user structure instance made of mers that meet all criteria given by subselections.
 
         Arguments:
         structure_obj -- a structure to be base for new structure.
@@ -489,7 +489,7 @@ class SelectionsIntersection(CombinedSelection):
             distinguish_chains = self._distinguish_chains
         try:
             list_of_pdb_ids = list(set.intersection(*map(set, map(operator.methodcaller('specify', structure_obj, distinguish_chains), self.selections))))
-            # only monomers present in all structures connected wiht selections are in list above; they are stored in order imposed by first selection
+            # only mers present in all structures connected wiht selections are in list above; they are stored in order imposed by first selection
         except (TypeError, KeyError):
             raise ValueError("Not enough selections to intersect")
         return Set(list_of_pdb_ids, distinguish_chains)
@@ -504,7 +504,7 @@ class SelectionsRelativeComplement(CombinedSelection):
     """
 
     def specify(self, structure_obj, distinguish_chains=None):
-        """Creates user structure instance made of monomers that meet first given selection criteria, but do not meet criteria given by secound selection.
+        """Creates user structure instance made of mers that meet first given selection criteria, but do not meet criteria given by secound selection.
 
         Arguments:
         structure_obj -- a structure to be base for new structure.
@@ -513,5 +513,5 @@ class SelectionsRelativeComplement(CombinedSelection):
         if distinguish_chains is None:
             distinguish_chains = self._distinguish_chains
         list_of_pdb_ids = [pdb_id for pdb_id in self.selections[0].specify(structure_obj, distinguish_chains) if pdb_id not in self.selections[1].specify(structure_obj, distinguish_chains)]
-        # adding monomers to list, if they are not present in structure created under second selection contidions
+        # adding mers to list, if they are not present in structure created under second selection contidions
         return Set(list_of_pdb_ids, distinguish_chains)

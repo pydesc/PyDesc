@@ -248,7 +248,7 @@ def make_structuretest(strname):
                 res = reduce(operator.add, sample)
                 resset = reduce(operator.or_, map(set, sample))
 
-                self.assertEqual(len(set(res)), len(list(res)), "Duplicate monomers after add.")
+                self.assertEqual(len(set(res)), len(list(res)), "Duplicate mers after add.")
                 self.assertSetEqual(set(res), resset)
 
                 seg = True
@@ -423,7 +423,7 @@ def make_structuretest(strname):
 
                 def check(c, v, crit):
                     #~ self.assertEqual((tuple(map(lambda x: x.central_monomer, c.elements)), c.value, c.criterion), ((r1, r2), v, crit))
-                    # TO contact no longer have criterion attr, and value property doesn't work in this test due to lack of monomers' derived_from attr named contact_map
+                    # TO contact no longer have criterion attr, and value property doesn't work in this test due to lack of mers' derived_from attr named contact_map
                     # which is coused by test design
                     self.assertEqual(sorted(map(operator.attrgetter('central_monomer'), c.elements)), sorted([r1, r2]))
 
@@ -464,10 +464,10 @@ def make_structuretest(strname):
                     self.assertTrue(conts <= slc.adjusted_number())
 
         def test_pdbstring(self):
-            stg = self.struct.create_pdbstring()
+            stg = self.struct.create_pdb_string()
             self.struct.save_pdb('stc_test.pdb')
             nstc = structure.StructureLoader().load_structure('test', path='stc_test.pdb')[0]
-            stg2 = nstc.create_pdbstring()
+            stg2 = nstc.create_pdb_string()
             self.assertEqual(stg.read(), stg2.read())
 
     return StructureTest

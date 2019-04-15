@@ -341,7 +341,7 @@ class AbstractStructure(object):
                 # if not - only negative indexes and 0 are supported
                 if not param < 1:
                     raise IndexError(
-                        "%s out of monomers list range" % str(param))
+                        "%s out of mers list range" % str(param))
                 return param
 
         if isinstance(key, slice):
@@ -366,7 +366,7 @@ class AbstractStructure(object):
         # _mers is surely set outside init
 
     def __iter__(self):
-        """Returns iterator that iterates over structure monomers."""
+        """Returns iterator that iterates over structure mers."""
         return iter(self._mers)  # pylint: disable=no-member
         # _mers is required for AbstractStructure instances
 
@@ -388,7 +388,7 @@ class AbstractStructure(object):
     def _set_hash(self):
         """Sets _has_monomers attribute.
 
-        _has_monomers is dictionary containing all monomers inds as keys and their indexes on _mers list as values.
+        _has_monomers is dictionary containing all mers inds as keys and their indexes on _mers list as values.
         It is used by __getitem__ as hashlist.
         """
         self._hash_monomers = dict((monomer_obj.ind, index) for index, monomer_obj in
@@ -396,7 +396,7 @@ class AbstractStructure(object):
         # _mers is required for AbstractStructure instances
         # this method needs to be able to be called any time, not only during initialization
 
-    def create_pdbstring(self, enumerate_atoms=False, transformed=True):
+    def create_pdb_string(self, enumerate_atoms=False, transformed=True):
         """Returns an StringIO pdb-like object.
 
         Argument:
@@ -431,19 +431,6 @@ class AbstractStructure(object):
         components = [pdb_line % v for v in sorted(components, key=lambda vals: vals[0])]
         components.append("END")
         return StringIO("\n".join(components))
-
-    @property
-    def monomers(self):
-        """Deprecated attribute.
-        """
-        warn("""
-        Attribute "monomers" is deprecated.
-        Please, use __getitem__ method to get specific monomers from list.
-        You can also iterate over AbstractStructure subclasses instances.
-        ConfigManager.warnings_and_exceptions.deprecation_filter set to "ignore" turn this message off.""",
-             DeprecationWarning)
-        return self._mers  # pylint: disable=no-member
-        # _mers is required for AbstractStructure instances
 
     def get_contact_map(self):
         """Returns the ContactMap of the (sub)structure and the criterion under which it was created."""
@@ -549,7 +536,7 @@ class AbstractStructure(object):
         enumerate_atoms -- boolean; False by default. If so, oryginal atoms indexes are used, otherwise atoms gets new indexes.
         """
         with open(path, "w") as file_:
-            file_.write(self.create_pdbstring(enumerate_atoms).read())
+            file_.write(self.create_pdb_string(enumerate_atoms).read())
 
     @property
     def frame(self):
@@ -568,8 +555,8 @@ class Structure(AbstractStructure):
 
         Arguments:
 
-        Sets Structure's list of monomers and list of chains.
-        Sets monomers' next_monomer attribute and creates their elements.
+        Sets Structure's list of mers and list of chains.
+        Sets mers' next_monomer attribute and creates their elements.
         Extended AbstractStructure method.
         """  # TODO fix docstring
 
@@ -766,7 +753,7 @@ class UserStructure(AbstractStructure):
         return "<UserStructure: %s>" % self.name
 
     def _fill_monomers_attrs(self):
-        """Sets monomers attributes normally set by init.
+        """Sets mers attributes normally set by init.
 
         Sets next/previous_monomer attributes.
         """
@@ -844,7 +831,7 @@ class Segment(AbstractStructure):
             # Segment is tightly bound with its monomer derived_from structure
         self._check_continuity()
         if len(self._mers) == 0:
-            raise ValueError("Failed to create segment, wrong monomers given.")
+            raise ValueError("Failed to create segment, wrong mers given.")
 
     def _check_continuity(self):
         """Raises DiscontinuityError if segment is not continous."""
@@ -1327,7 +1314,7 @@ class ProteinDescriptor(AbstractDescriptor):
 
             Argument:
             tuple containing:
-            ind_1, ind_2 -- monomers inds.
+            ind_1, ind_2 -- mers inds.
             value -- contact value.
             """
             try:

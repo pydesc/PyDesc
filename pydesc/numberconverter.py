@@ -225,7 +225,7 @@ class NumberConverter(object):
         PDB-id tuple consist of:
         - chain character (index 0) - could be any ASCII alphabetic character. NOTE: case sensitive!
         - PDB number (index 1) - int!
-        - insertion code (index 2) - additional alphabetic character that distinguishes monomers described with the same PDB number.
+        - insertion code (index 2) - additional alphabetic character that distinguishes mers described with the same PDB number.
 
         Argument:
         ind -- PyDesc integer.
@@ -233,7 +233,7 @@ class NumberConverter(object):
         return self.dict_ind_to_pdb[ind]
 
     def get_list_of_inds(self, pdb_id_tuples, distinguish_chains=True):
-        """Returns list of PyDesc integers (inds) of monomers corresponding to given list of PDB_id
+        """Returns list of PyDesc integers (inds) of mers corresponding to given list of PDB_id
         or tuples containing chain character (string), monomer integer (ind) and insertion code (string; ' ' if none).
 
         None is returned for any key absent in structure.

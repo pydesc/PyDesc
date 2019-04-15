@@ -216,7 +216,7 @@ class Overfit(object):
     @_ensure_token
     def add_mer(self, mer1, mer2):
         """
-        Adds a pair of monomers to overfit accumulator.
+        Adds a pair of mers to overfit accumulator.
         """
         lmer1 = mer1.representation
         lmer2 = mer2.representation

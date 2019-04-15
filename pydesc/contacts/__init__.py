@@ -21,13 +21,14 @@ Classes that deal with contacts among mers present in PyDesc (sub)structures.
 created: 28.04.2014 - , Tymoteusz 'hert' Oleniecki
 """
 
+import numpy as np
+import scipy.spatial
+from scipy.sparse import dok_matrix
+
 import pydesc.monomer
 import pydesc.contacts.contacts
 from pydesc.warnexcept import WrongMerType
 from pydesc.selection import Everything
-
-import numpy as np
-import scipy.spatial
 
 
 class ContactMapCalculator(object):
@@ -57,35 +58,38 @@ class ContactMapCalculator(object):
         self.derived_from = structure_obj.derived_from
         self.contact_criterion = contact_criterion_obj
         self.structure = structure_obj
-        self.frame = None
-        self._contacts = None
+        structure_length = structure_obj.derived_from[-1].ind
+        self._contacts = dok_matrix((structure_length, structure_length), dtype=int)
         self.sel1 = select1.create_structure(structure_obj)
         self.sel2 = select2.create_structure(structure_obj)
         sel12 = select1 * select2
         self.sel12 = sel12.create_structure(structure_obj)
         self.sel1uni = (select1 - sel12).create_structure(structure_obj)
         self.sel2uni = (select2 - sel12).create_structure(structure_obj)
-        self._rc_dist = None
+        self._rc_distC = None
+        self._rc_dist1C = None
+        self._rc_dist2C = None
+        self._rc_dist12 = None
 
     def __iter__(self):
-        """Returns iterator thet runs over all contacts in contact map."""
+        """Returns iterator that runs over all contacts in contact map."""
         return iter([(i, j, v) for i, cs in self._contacts.items() for j, v in cs.items()])
 
     def calculate_rc_dist(self):
         items = (
-            (self.sel12, self.sel12, '_rcdistC'),
-            (self.sel1uni, self.sel12, '_rcdist1C'),
-            (self.sel2uni, self.sel12, '_rcdist2C'),
-            (self.sel1uni, self.sel2uni, '_rcdist12'),
-            )
-        for sel1, sel2, attrn in items:
+            (self.sel12, self.sel12, '_rc_distC'),
+            (self.sel1uni, self.sel12, '_rc_dist1C'),
+            (self.sel2uni, self.sel12, '_rc_dist2C'),
+            (self.sel1uni, self.sel2uni, '_rc_dist12'),
+        )
+        for sel1, sel2, attr_name in items:
             points1 = np.array([i.rc.vector for i in sel1])
             points2 = np.array([i.rc.vector for i in sel2])
             try:
                 res = scipy.spatial.distance.cdist(points1, points2)
-            except Exception as e:
+            except Exception as e:  # TODO: determine what exceptions
                 res = None
-            setattr(self, attrn, res)
+            setattr(self, attr_name, res)
 
     def calculate_contact_map(self):
         """Return ContactMap for structure set during initialization.
@@ -93,85 +97,85 @@ class ContactMapCalculator(object):
         Contact is a tuple containing first and second Monomer, distance(s) between them and a contact value under the ContactMap criterion.
         """
 
-        def cmp(mer1, mer2):
+        def compare_mers(mer_1, mer_2):
             try:
-                value = iic(mer1, mer2)
+                value = iic(mer_1, mer_2)
             except WrongMerType:
                 return
             if value > 0:
-                self._contacts[mer1.ind][mer2.ind] = value
-                self._contacts[mer2.ind][mer1.ind] = value
+                self._contacts[mer_1.ind, mer_2.ind] = value
+                self._contacts[mer_2.ind, mer_1.ind] = value
 
-        self.calculate_rc_dist()
+        if None in (self._rc_dist1C, self._rc_dist2C, self._rc_dist12, self._rc_distC):
+            self.calculate_rc_dist()
         iic = self.contact_criterion.is_in_contact
-        self._contacts = dict((monomer_obj.ind, {})
-                              for monomer_obj in self.structure)
         max_rc_dist = getattr(self.contact_criterion, "max_rc_dist", None)
 
+        mer_tuple_12 = tuple(self.sel12)
         if max_rc_dist:
             # common(C) vs C
             try:
-                indexes = np.transpose(np.where(self._rcdistC <= max_rc_dist))
+                indexes = np.transpose(np.where(self._rc_distC <= max_rc_dist))
                 indexes = indexes[indexes[:, 0] < indexes[:, 1]]
 
                 for (i, j) in indexes:
-                    mer1 = self.sel12._monomers[i]
-                    mer2 = self.sel12._monomers[j]
-                    cmp(mer1, mer2)
+                    mer1 = mer_tuple_12[i]
+                    mer2 = mer_tuple_12[j]
+                    compare_mers(mer1, mer2)
 
             except (ValueError, IndexError):
                 pass
         else:
             for i, mer1 in enumerate(self.sel12):
-                for mer2 in self.sel12._monomers[i + 1:]:
-                    cmp(mer1, mer2)
+                for mer2 in mer_tuple_12[i + 1:]:
+                    compare_mers(mer1, mer2)
 
         items = (
-            (self.sel1uni, self.sel12, '_rcdist1C'),  # uniA vs C
-            (self.sel2uni, self.sel12, '_rcdist2C'),  # uniB vs C
-            (self.sel1uni, self.sel2uni, '_rcdist12'),  # uniA vs uniB
+            (self.sel1uni, self.sel12, '_rc_dist1C'),  # uniA vs C
+            (self.sel2uni, self.sel12, '_rc_dist2C'),  # uniB vs C
+            (self.sel1uni, self.sel2uni, '_rc_dist12'),  # uniA vs uniB
         )
-        for sel1, sel2, rcname in items:
+        for sel1, sel2, rc_name in items:
+            mer_tuple_1 = tuple(sel1)
+            mer_tuple_2 = tuple(sel2)
             if max_rc_dist:
                 try:
-                    rcmtx = getattr(self, rcname)
-                    indexes = np.transpose(np.where(rcmtx <= max_rc_dist))
+                    rc_mtx = getattr(self, rc_name)
+                    indexes = np.transpose(np.where(rc_mtx <= max_rc_dist))
                     for (i, j) in indexes:
-                        mer1 = sel1._monomers[i]
-                        mer2 = sel2._monomers[j]
-                        cmp(mer1, mer2)
+                        mer1 = mer_tuple_1[i]
+                        mer2 = mer_tuple_2[j]
+                        compare_mers(mer1, mer2)
                 except ValueError:
                     pass
             else:
-                for sel1, sel2 in items:
-                    for mer1 in sel1:
-                        for mer2 in sel2:
-                            cmp(mer1, mer2)
+                for mer1 in mer_tuple_1:
+                    for mer2 in mer_tuple_2:
+                        compare_mers(mer1, mer2)
+
+        return ContactMap(self._contacts, self.structure)
 
 
 class ContactMap(object):
-
     """Map of contacts present in a given (sub)structure."""
 
-    def __init__(self, contacts, structure):
+    def __init__(self, contacts_mtx, structure):
         """ContactMap constructor.
 
         Arguments:
-        structure_obj -- instance of any pydesc.structure.AbstractStructure subclass for which contact map is to be created.
-        contact_criterion_obj -- instance of pydesc.contacts.ContactCriterion determinion how to calculate contacts. Initailly set to None.
-        If so, contact for residues is based on ca-cbx criterion, and contact for nucleotides is based on ion contact or ring center contact.
-        select1, select2 -- pydesc.selection.Selection subclass instances to be used in contact map calculation against each other.
-        By default Everything selection is used.
+        contacts_mtx -- sparse dict-like contact matrix representing contacts in biopolymer. 2 indicates contact,
+        1 -- plausible contact.
+        structure -- instance of any pydesc.structure.AbstractStructure subclass for which contact map is to be created.
         """
         self.structure = structure
         self.frame = None
-        self._contacts = contacts
+        self._contacts = contacts_mtx
 
     def __iter__(self):
         """Returns iterator that runs over all contacts in contact map."""
         return iter([(i, j, v) for i, cs in self._contacts.items() for j, v in cs.items()])
 
-    def get_monomer_contacts(self, monomer_id, raw_numbering=False, internal=False):
+    def get_monomer_contacts(self, monomer_id, raw_numbering=False):
         """Returns list of given monomer contacts.
 
         Contact is a tuple containing given monomer ind, ind of monomer that stays in contacts with it and
@@ -179,14 +183,11 @@ class ContactMap(object):
 
         Arguments:
         monomer_id -- monomer instance, PDB_id instance (or tuple containing proper values; see number converter
-        docstring for more information), PyDesc ind or monomer index on a list of structure monomers.
+        docstring for more information), PyDesc ind or monomer index on a list of structure mers.
         raw_numbering -- True or False. Idicates if monomer_id is a PyDesc ind (False) or a monomer list index (True).
-        internal -- True or False. Indicates if method was called by other method.
         """
         ind = self._convert_to_ind(monomer_id, raw_numbering)
-        if internal:
-            return self.contacts[ind]
-        return [(ind,) + i for i in self.contacts[ind].items()]
+        return self._contacts[ind].items()
 
     def get_contact_value(self, monomer_id_1, monomer_id_2, raw_numbering=False):
         """Returns value of contact between two given mers according to three-valued logic.
@@ -194,39 +195,13 @@ class ContactMap(object):
         Arguments:
         monomer_id_1 -- reference to first monomer in concatc which value is to be checked. Reference could be:
         monomer instance itself, its PyDesc ind, its PDB_id instance (or tuple containing proper values; see number
-        converter docstring for more information) or monomer index on a list of structure monomers.
+        converter docstring for more information) or monomer index on a list of structure mers.
         monomer_id_2 -- reference to second monomer corresponding to monomer_id_1.
         raw_numbering -- True or False. Idicates if given ids are PyDesc inds (False) or a monomer list indexes (True).
         """
-        contacts_1 = self.get_monomer_contacts(monomer_id_1, raw_numbering, True)
-        ind_2 = self._convert_to_ind(monomer_id_2, raw_numbering)
-        try:
-            return contacts_1[ind_2]
-        except KeyError:
-            return 0
-
-    def get_contact_criterion(self, monomer_id_1, monomer_id_2, raw_numbering=False):
-        """Returns criterion of contact between two given mers.
-
-        If contact map criterion is an alternative of contacts - returns first matching subcriterion.
-        If subcriterions are ContactsAlternative instance - their subcriterion are considered subcriterion of top level alternative.
-        Otherwise contact map criterion is returned if given mers are in contact.
-        None is returned if given mers are not in contact.
-
-        Arguments:
-        monomer_id_1 -- reference to first monomer in concatc which value is to be checked. Reference could be:
-        monomer instance itself, its PyDesc ind, its PDB_id instance (or tuple containing proper values; see number
-        converter docstring for more information) or monomer index on a list of structure monomers.
-        monomer_id_2 -- reference to second monomer corresponding to monomer_id_1.
-        raw_numbering -- True or False. Idicates if given ids are PyDesc inds (False) or a monomer list indexes (True).
-        """
-        if not self.get_contact_value(monomer_id_1, monomer_id_2, raw_numbering):
-            return None
-        mers = [self.structure[self._convert_to_ind(mer_id, raw_numbering)] for mer_id in (monomer_id_1, monomer_id_2)]
-        try:
-            return self.contact_criterion.get_validating_subcriterion(*mers)
-        except AttributeError:
-            return self.contact_criterion
+        ind1 = self._convert_to_ind(monomer_id_1, raw_numbering=raw_numbering)
+        ind2 = self._convert_to_ind(monomer_id_2, raw_numbering=raw_numbering)
+        return self._contacts[ind1, ind2]
 
     def _convert_to_ind(self, monomer_id, raw_numbering=False):
         """Returns PyDesc ind based on any given reference to monomer.
@@ -234,72 +209,35 @@ class ContactMap(object):
         Arguments:
         monomer_id -- reference that could be monomer instance itself, its PyDesc ind, its PDB_id instance (or tuple
         containing proper values; see numberconverter docstring for more information) or monomer index on a list
-        of structure monomers.
+        of structure mers.
         raw_numbering -- True or False. Indicates if given ids are PyDesc inds (False) or a monomer list indexes (True).
         """
         if raw_numbering:
-            monomer_id = self.structure._mers[monomer_id]    # pylint: disable=protected-access
+            monomer_id = tuple(self.structure)[monomer_id]
 
-        if type(monomer_id) is int:
-            return monomer_id
         try:
             return monomer_id.ind
         except AttributeError:
-            return self.structure.derived_from.converter.get_ind(monomer_id)
+            try:
+                return self.structure.derived_from.converter.get_ind(monomer_id)
+            except Exception as e:  # TODO: what error is raised?
+                return monomer_id  # should be int in that case
 
-    def dump(self, fobj):
+    def to_string(self, stream_out):
         """Dumps pairs of mers in contacts to a given file-like object in CSV format."""
-        with fobj:
-            for k1 in self.contacts:
+        with stream_out:
+            for (k1, k2), value in self._contacts:
                 m1 = self.structure[k1]
-                for k2 in self.contacts[k1]:
-                    m2 = self.structure[k2]
-                    line = "%s\t%s\t%i\n" % (str(m1.pid), str(m2.pid), self.contacts[k1][k2])
-                    fobj.write(line)
-
-    @property
-    def contact_criterion(self):
-        """Property returning contact map contact criterion."""
-        return self._contact_criterion
-
-    @property
-    def contacts(self):
-        """Property returning contacts.
-
-        Contacts are stored in nested dicts containing indexes of all mers as keys of 1st level dict,
-        and indexes of all mers in contact with given mer as values of 2nd level dict.
-        Contact values are values of 2nd level dicts. Mers that are not with contact with given mer
-        have no entry in 2nd level dicts.
-        """
-        str_frame = self.derived_from.frame
-
-        if self.frame != str_frame:
-            self.calculate_contacts()
-            self.frame = str_frame
-
-        return self._contacts
-
-    def to_string(self, fobj):
-        """Writes pairs of mers in contacts to a given file-like object in CSV format."""
-        with fobj:
-            for k1 in self.contacts:
-                m1 = self.structure[k1]
-                for k2 in self.contacts[k1]:
-                    m2 = self.structure[k2]
-                    line = "%s\t%s\t%i\n" % (
-                        str(m1.pid), str(m2.pid), self.contacts[k1][k2])
-                    fobj.write(line)
-
-    def reset(self):
-        """Erases stored contacts."""
-        self._contacts = None
+                m2 = self.structure[k2]
+                line = "%s\t%s\t%i\n" % (str(m1.pid), str(m2.pid), value)
+                stream_out.write(line)
 
 
 class FrequencyContactMap(object):
-
     """Class representing maps of contact frequencies in trajectories or NMR structures."""
 
-    def __init__(self, structures, contact_criterion_obj=None, ignore1=True, select1=Everything(), select2=Everything()):
+    def __init__(self, structures, contact_criterion_obj=None, ignore1=True, select1=Everything(),
+                 select2=Everything()):
         """ContactMap costructor.
 
         Arguments:
