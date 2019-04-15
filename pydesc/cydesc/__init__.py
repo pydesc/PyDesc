@@ -248,8 +248,8 @@ class CMer(ctypes.Structure):
         point_names = [a.name for a in atoms]
         self.n_points = len(points)
 
-        if m.next_monomer:
-            self.next_ind = m.next_monomer.ind
+        if m.next_mer:
+            self.next_ind = m.next_mer.ind
         else:
             self.next_ind = 0
 
@@ -308,7 +308,7 @@ class CStructure(ctypes.Structure):
         start = 0
 
         for (i, (mer1, mer2)) in enumerate(zip(mers, mers[1:])):
-            if not mer1.next_monomer == mer2:
+            if not mer1.next_mer == mer2:
                 cmers[i].next_ind = 0
                 segs.append((cmers[start].ind, cmers[i].ind))
                 start = i + 1

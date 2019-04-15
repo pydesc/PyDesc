@@ -81,8 +81,8 @@ def assert_monomers_equal(self, m, cm):
     self.assertEqual(cm.type, cm.types_dict[type(m)])
     self.assertEqual(cm.type_name, type(m).__name__)
 
-    if m.next_monomer:
-        self.assertEqual(cm.next_ind, m.next_monomer.ind)
+    if m.next_mer:
+        self.assertEqual(cm.next_ind, m.next_mer.ind)
     else:
         self.assertEqual(cm.next_ind, 0)
 
@@ -272,7 +272,7 @@ def make_cstructuretest(strname):
                 end1 = s1.end
                 start2 = s2.start
                 frag = self.struct[end1:start2]
-                self.assertIsInstance(frag, structure.UserStructure)
+                self.assertIsInstance(frag, structure.PartialStructure)
 
             repr(cs)
 

@@ -183,10 +183,10 @@ def make_structuretest(strname):
         def test_continuity(self):
             for mer in self.struct:
                 if isinstance(mer, monomer.MonomerChainable):
-                    if mer.next_monomer:
-                        self.assertEqual(mer, mer.next_monomer.previous_monomer)
-                    if mer.previous_monomer:
-                        self.assertEqual(mer, mer.previous_monomer.next_monomer)
+                    if mer.next_mer:
+                        self.assertEqual(mer, mer.next_mer.previous_mer)
+                    if mer.previous_mer:
+                        self.assertEqual(mer, mer.previous_mer.next_mer)
 
         def test_getsliceunbound(self):
             whole = list(self.struct)
@@ -218,18 +218,18 @@ def make_structuretest(strname):
                         with warnings.catch_warnings(record=True):
                             #~ if not m1.is_next(m2):
                                 #~ seg = False
-                                #~ self.assertIsNone(slc.next_monomer(m1))
+                                #~ self.assertIsNone(slc.next_mer(m1))
                             #~ else:
-                                #~ self.assertEqual(slc.next_monomer(m1), m2)
+                                #~ self.assertEqual(slc.next_mer(m1), m2)
                             # TO is_next is deprecated, so:
                             if len(slc) == 1:
                                 seg = True if isinstance(slc[0], monomer.MonomerChainable) else False
                                 break
-                            if m1.next_monomer == m2:
-                                self.assertEqual(slc.next_monomer(m1), m2)
+                            if m1.next_mer == m2:
+                                self.assertEqual(slc.next_mer(m1), m2)
                             else:
                                 seg = False
-                                self.assertIsNone(slc.next_monomer(m1))
+                                self.assertIsNone(slc.next_mer(m1))
                     if seg:
                         self.assertIsInstance(slc, structure.Segment, "Slice is Userstructure, should be Segment: structure %s, slice: from %s to %s" % (str(self.struct), str(slc[0]), str(slc[-1])))
 
@@ -258,7 +258,7 @@ def make_structuretest(strname):
                             #~ seg = False
                             #~ break
                         # TO is_next is deprecated
-                        if not m1.next_monomer == m2:
+                        if not m1.next_mer == m2:
                             seg = False
                             break
                 if seg:
@@ -281,7 +281,7 @@ def make_structuretest(strname):
 
             for ind1 in inds:
                 for ind2 in inds:
-                    if ind1 == ind2 or self.struct[ind1].next_monomer == None or self.struct[ind2].next_monomer == None or self.struct[ind1].previous_monomer == None or self.struct[ind2].previous_monomer == None:
+                    if ind1 == ind2 or self.struct[ind1].next_mer == None or self.struct[ind2].next_mer == None or self.struct[ind1].previous_mer == None or self.struct[ind2].previous_mer == None:
                         continue
                     c = structure.Contact(*[structure.ElementChainable(self.struct[i]) for i in (ind1, ind2)])
                     if ind2 in self.struct.contact_map.contacts[ind1]:
@@ -343,7 +343,7 @@ def make_structuretest(strname):
                         else:
                             for m1, m2 in zip(mer_ch[(index - 2):(index + 2)], mer_ch[(index - 1):(index + 3)]):
                                 with warnings.catch_warnings(record=True):
-                                    if m1.next_monomer == m2:
+                                    if m1.next_mer == m2:
                                         continue
                                     willfail = True
                                     break
@@ -457,7 +457,7 @@ def make_structuretest(strname):
                 else:
                     conts = 0
                     for i, j in zip(slc[:-2], slc[-len(slc) + 1:]):
-                        if i.next_monomer == j:
+                        if i.next_mer == j:
                             continue
                         if isinstance(i, monomer.MonomerChainable):
                             conts += 1

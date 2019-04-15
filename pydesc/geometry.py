@@ -21,19 +21,18 @@ Classes that let PyDesc deal with coordinates calculations.
 created: 10.07.2013, Agnieszka Mykowiecka, Tymoteusz 'hert' Oleniecki
 """
 
-import math
 import numpy
 import scipy.linalg
 
 # pylint: disable=no-member, invalid-name
 norm = scipy.linalg.get_blas_funcs('nrm2')
 axpy = scipy.linalg.get_blas_funcs('axpy')
+
+
 # pylint: enable=no-member, invalid-name
 
-# norm = numpy.linalg.norm
 
 class TRTMatrix(object):
-
     """Translation-Rotation-Translation matrices class.
 
     Stores prerotational translation vector, rotation matrix and postrotational translation vector.
@@ -43,18 +42,18 @@ class TRTMatrix(object):
     translation_vector -- postrotational translation vector, list of three floats.
     """
 
-# pylint: disable=no-member
+    # pylint: disable=no-member
     def __init__(self):
         """Translation-Rotation-Translation matrix objects' constructor.
 
         Takes no arguments. Sets three attributes:
         prerotational_translation_vector -- numpy.array of three floats; by default [.0, .0, .0].
         translation_vector -- numpy array as above. Represents postrotational vector.
-        rotationa_matrix -- numpy.matrix. diagonal identity matrix 3x3 by default.
+        rotationa_matrix -- numpy.array. diagonal identity matrix 3x3 by default.
         """
-        self.prerotational_translation_vector = numpy.array([0.0, 0.0, 0.0])    # pylint: disable=invalid-name
+        self.prerotational_translation_vector = numpy.array([0.0, 0.0, 0.0])  # pylint: disable=invalid-name
         # this attr has very informative name
-        self.rotation_matrix = numpy.matrix([
+        self.rotation_matrix = numpy.array([
             [1.0, 0.0, 0.0],
             [0.0, 1.0, 0.0],
             [0.0, 0.0, 1.0]])
@@ -64,8 +63,8 @@ class TRTMatrix(object):
         """Adds rotation to stored rotation matrix.
 
         Argument:
-        rotation_matrix -- numpy.matrix of floats 3x3 shape."""
-        rotation_matrix = numpy.matrix(rotation_matrix).reshape(3, 3)
+        rotation_matrix -- numpy.array of floats 3x3 shape."""
+        rotation_matrix = numpy.array(rotation_matrix).reshape(3, 3)
         self.rotation_matrix = rotation_matrix * self.rotation_matrix
 
     def add_translation(self, vector):
@@ -86,7 +85,7 @@ class TRTMatrix(object):
         vector = numpy.array(vector)
         self.prerotational_translation_vector += vector
 
-# pylint: disable=invalid-name
+    # pylint: disable=invalid-name
     def transform(self, x=None, y=None, z=None, vec=None):
         """Returns transformed coordinates.
 
@@ -104,8 +103,9 @@ class TRTMatrix(object):
         prerotationally_translated_vector = self.prerotational_translation_vector + vec
         rotated_vector = numpy.squeeze(self.rotation_matrix.dot(prerotationally_translated_vector).A)
         return rotated_vector + self.translation_vector
-# pylint: enable=invalid-name
-# names x, y and z are the best possible here
+
+    # pylint: enable=invalid-name
+    # names x, y and z are the best possible here
 
     def reset_translation(self):
         """Resets translation vector to zero vector."""
@@ -113,7 +113,7 @@ class TRTMatrix(object):
 
     def reset_rotation(self):
         """Resets rotation matrix to diagonal identity matrix."""
-        self.rotation_matrix = numpy.matrix([
+        self.rotation_matrix = numpy.array([
             [1.0, 0.0, 0.0],
             [0.0, 1.0, 0.0],
             [0.0, 0.0, 1.0]])
@@ -127,18 +127,20 @@ class TRTMatrix(object):
         self.reset_translation()
         self.reset_rotation()
         self.reset_prerotational_translation()
-# pylint: enable=no-member
-# matrix and array are present among numpy attrs
+
+    # pylint: enable=no-member
+    # matrix and array are present among numpy attrs
 
     def combine(self, other):
         ret = TRTMatrix()
         ret.add_rotation(numpy.dot(other.rotation_matrix, self.rotation_matrix))
         ret.add_translation(self.translation_vector + other.translation_vector)
-        ret.add_prerotational_translation(self.prerotational_translation_vector + other.prerotational_translation_vector)
+        ret.add_prerotational_translation(
+            self.prerotational_translation_vector + other.prerotational_translation_vector)
         return ret
 
-class Coord(object):
 
+class Coord(object):
     """Stores coordinates as position vector.
 
     Note, that addition and subtraction of coord instances can be performed.
@@ -155,8 +157,9 @@ class Coord(object):
         if numpy_vec is not None:
             self.vector = numpy_vec
         else:
-            self.vector = numpy.array((float(x), float(y), float(z)))   # pylint: disable=no-member
-# numpy.array exists
+            self.vector = numpy.array((float(x), float(y), float(z)))  # pylint: disable=no-member
+
+    # numpy.array exists
 
     def __add__(self, coord_obj):
         """Returns result of addition of two vectors represented by Coord instances as new Coord instance.
@@ -228,7 +231,7 @@ class Coord(object):
     def get_versor(self):
         return self.vector / self.calculate_length()
 
-# pylint: disable=invalid-name
+    # pylint: disable=invalid-name
     @property
     def x(self):
         """Returns x coord."""
@@ -258,33 +261,33 @@ class Coord(object):
     def z(self, value):
         """Sets z coord."""
         self.vector[2] = value
+
+
 # pylint: enable=invalid-name
 # names x, y and z are the best possible here
 
 
 class Plane(object):
-
     """Stores coordinates as position vector.
 
     Methods:
-    ort_projection -- returns object of class Coord with coordinates of the orthogonal projection of given point onto plane.
-    dihedral_angle_cos -- returns cosinus of the angle between two planes.
+    ort_projection -- returns object of class Coord with coordinates of the orthogonal projection of given point
+     onto plane.
+    dihedral_angle_cos -- returns cosines of the angle between two planes.
     bisection_plane -- returns the bisection plane for two given planes.
     """
 
     @staticmethod
     def build(v1, v2, v3):
-        vec=numpy.cross((v1.vector - v2.vector), (v3.vector - v2.vector))
+        vec = numpy.cross((v1.vector - v2.vector), (v3.vector - v2.vector))
 
-        (a, b, c) = vec
-
-        d = -numpy.dot(vec, v1.vector) # (a * v1.x + b * v1.y + c * v1.z)     # pylint:disable=invalid-name
-        # D, a, b, c and d are good names for points and determinat calculated here
-        plane = Plane(numpy_vec=vec, d=d)     # pylint:disable=attribute-defined-outside-init
+        d = -numpy.dot(vec, v1.vector)  # pylint:disable=invalid-name
+        # D, a, b, c and d are good names for points and determinant calculated here
+        plane = Plane(numpy_vec=vec, d=d)  # pylint:disable=attribute-defined-outside-init
 
         return plane
 
-# pylint: disable=invalid-name
+    # pylint: disable=invalid-name
     def __init__(self, a=0, b=0, c=0, d=0, numpy_vec=None):
         """Plane constructor.
 
@@ -322,19 +325,19 @@ class Plane(object):
         return self.norm_vec[2]
 
     @property
-    def perp_x(self):
+    def perpendicular_x(self):
         return self.norm_vec[0]
 
     @property
-    def perp_y(self):
+    def perpendicular_y(self):
         return self.norm_vec[1]
 
     @property
-    def perp_z(self):
+    def perpendicular_z(self):
         return self.norm_vec[2]
 
     @property
-    def perp_vec(self):
+    def perpendicular_vec(self):
         return self.norm_vec
 
     def ort_projection(self, point):
@@ -345,21 +348,21 @@ class Plane(object):
         point -- object of class Coord.
         """
 
-        r = numpy.dot(self.perp_vec, point.vector) + self.d
+        r = numpy.dot(self.perpendicular_vec, point.vector) + self.d
 
         res = point.vector - self.norm_vec * r
 
         return Coord(numpy_vec=res)
 
-    def dihedral_angle(self, plane2, cvec=None):
+    def dihedral_angle(self, plane2):
         """
         """
-        nrm = 1 # numpy.linalg.norm(self.perp_vec) * numpy.linalg.norm(plane2.perp_vec)
-        cos = numpy.dot(self.perp_vec, plane2.perp_vec) / nrm
-        cprod = numpy.cross(self.perp_vec, plane2.perp_vec)
-        cpnorm = norm(cprod)
-        sin = cpnorm / nrm
-        angle = numpy.arctan2(sin,cos)
+        nrm = 1
+        cos = numpy.dot(self.perpendicular_vec, plane2.perpendicular_vec) / nrm
+        c_prod = numpy.cross(self.perpendicular_vec, plane2.perpendicular_vec)
+        c_p_norm = norm(c_prod)
+        sin = c_p_norm / nrm
+        angle = numpy.arctan2(sin, cos)
 
         return angle
 
@@ -370,7 +373,7 @@ class Plane(object):
         Argument:
         plane2 -- object of class Plane.
         """
-        return numpy.dot(self.perp_vec, plane2.perp_vec)
+        return numpy.dot(self.perpendicular_vec, plane2.perpendicular_vec)
 
     def bisection_plane(self, plane2):
         """
@@ -379,23 +382,21 @@ class Plane(object):
         Argument:
         plane2 -- object of class Plane.
         """
-        vprim, dprim = self.norm_vec, self.d
+        v_prim, d_prim = self.norm_vec, self.d
         v1prim, d1prim = plane2.norm_vec, plane2.d
 
-        cos3 = numpy.dot(vprim, v1prim)
+        cos3 = numpy.dot(v_prim, v1prim)
 
-        if cos3<0:
-            v = vprim - v1prim
-            d = dprim - d1prim
+        if cos3 < 0:
+            v = v_prim - v1prim
+            d = d_prim - d1prim
         else:
-            v = vprim + v1prim
-            d = dprim + d1prim
+            v = v_prim + v1prim
+            d = d_prim + d1prim
 
         res = Plane(numpy_vec=v, d=d)
 
         return res
 
-
 # pylint: enable=invalid-name
 # arguments and localc names are informative here
-

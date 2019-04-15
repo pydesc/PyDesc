@@ -616,7 +616,7 @@ class Monomer(object):
         Adds pydesc.geometry.Coord instance representing the geometrical center of a mer to mers pseudoatoms dict.
         If possible, only sidechain atoms are taken into account.
         """
-        nbbcrds = [a.vector for a in self.iter_atomsnbb()]
+        nbbcrds = [a.vector for a in self.iter_nbb_atoms()]
 
         if nbbcrds != []:
             vector = numpy.average(nbbcrds, 0)
@@ -631,11 +631,11 @@ class Monomer(object):
         """Returns iterator that iterates over monomer's atoms."""
         return iter(self.atoms.values())
 
-    def iter_atomsbb(self):
+    def iter_bb_atoms(self):
         """Returns iterator that iterates over monomer's backbone atoms."""
         return iter([])
 
-    def iter_atomsnbb(self):
+    def iter_nbb_atoms(self):
         """Returns iterator that iterates over monomer's all atoms except backbone."""
         return self.iter_atoms()
 
@@ -762,7 +762,7 @@ class Monomer(object):
     def is_next(self, monomer):
         """Deprecated method. Returns True if given mer follows current mer."""
         warn(
-            DeprecationWarning("is_next method is deprecated, use attribute next_monomer instead."))
+            DeprecationWarning("is_next method is deprecated, use attribute next_mer instead."))
         return self.next_monomer == monomer
 
     def is_prev(self, monomer):
@@ -836,7 +836,7 @@ class MonomerChainable(Monomer):
             warn(UnknownParticleName("%s %s (no. %i) from %s has incorrect name: %s." % data))
 
     def _check_bbatoms(self):
-        tuple(self.iter_atomsbb())
+        tuple(self.iter_bb_atoms())
 
     def _check_distance(self, atoms, name_1, name_2, min_dist, max_dist):
         """Raises WrongAtomDistances if atoms distance doesn't meet class criteria.
@@ -856,39 +856,39 @@ class MonomerChainable(Monomer):
             raise WrongAtomDistances(name_1.strip(), name_2.strip(), self)
 
     @property
-    def next_monomer(self):
+    def next_mer(self):
         """Property that returns monomer following current mer in its structure."""
         try:
             return self._next_monomer
         except AttributeError:
             return None
 
-    @next_monomer.setter
-    def next_monomer(self, value):
+    @next_mer.setter
+    def next_mer(self, value):
         """Property that returns monomer following current mer in its structure."""
         self._next_monomer = value  # pylint:disable=attribute-defined-outside-init
 
-    @next_monomer.deleter
-    def next_monomer(self):
+    @next_mer.deleter
+    def next_mer(self):
         """Property that returns monomer following current mer in its structure."""
         del self._next_monomer
 
     @property
-    def previous_monomer(self):
+    def previous_mer(self):
         """Property that returns monomer preceding current mer in its structure."""
         try:
             return self._previous_monomer
         except AttributeError:
             return None
 
-    @previous_monomer.setter
-    def previous_monomer(self, value):
+    @previous_mer.setter
+    def previous_mer(self, value):
         """Property that returns monomer preceding current mer in its structure."""
         self._previous_monomer = value  # pylint:disable=attribute-defined-outside-init
-        # same as in next_monomer.setter
+        # same as in next_mer.setter
 
-    @previous_monomer.deleter
-    def previous_monomer(self):
+    @previous_mer.deleter
+    def previous_mer(self):
         """Property that returns monomer preceding current mer in its structure."""
         del self._previous_monomer
 
@@ -898,11 +898,11 @@ class MonomerChainable(Monomer):
         bb_atoms = self.get_config('backbone_atoms')
         return [self.atoms[attr_name] for attr_name in bb_atoms]
 
-    def iter_atomsbb(self):
+    def iter_bb_atoms(self):
         """Returns iterator that iterates over monomer's backbone atoms."""
         return iter(self.backbone)
 
-    def iter_atomsnbb(self):
+    def iter_nbb_atoms(self):
         """Returns iterator that iterates over monomer's all atoms except backbone."""
         return iter([i for i in self.atoms.values() if i not in self.backbone])
 
@@ -911,7 +911,7 @@ class MonomerChainable(Monomer):
         or None if distance cannot be computed.
         """
         try:
-            return abs(self.backbone_average - self.next_monomer.backbone_average)
+            return abs(self.backbone_average - self.next_mer.backbone_average)
         except AttributeError:
             return None
 
@@ -941,9 +941,9 @@ class Residue(MonomerChainable):
         nn[:-1] = n[1:]
 
         no_prev = numpy.fromiter(
-            (r.previous_monomer is None for r in residues), dtype=bool)
+            (r.previous_mer is None for r in residues), dtype=bool)
         no_next = numpy.fromiter(
-            (r.next_monomer is None for r in residues), dtype=bool)
+            (r.next_mer is None for r in residues), dtype=bool)
 
         pc[no_prev] = n[no_prev]
         nn[no_next] = c[no_next]
@@ -1022,8 +1022,8 @@ class Residue(MonomerChainable):
         try:
             for step in range(steps / 2):  # pylint:disable=unused-variable
                 # step is a dummy
-                next_mer = next_mer.next_monomer
-                last_mer = last_mer.previous_monomer
+                next_mer = next_mer.next_mer
+                last_mer = last_mer.previous_mer
                 average_ca += next_mer.ca.vector + last_mer.ca.vector
                 cnt += 2
         except AttributeError:
@@ -1060,8 +1060,8 @@ class Residue(MonomerChainable):
             except ValueError:
                 pass
         except AttributeError:
-            prm = self.previous_monomer
-            nxm = self.next_monomer
+            prm = self.previous_mer
+            nxm = self.next_mer
 
             atoms = [self.atoms['N'], self.atoms['CA'], self.atoms['C']]
 

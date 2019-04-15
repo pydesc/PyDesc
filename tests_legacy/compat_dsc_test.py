@@ -72,8 +72,8 @@ def assert_monomers_equal(self, m, cm):
     self.assertEqual(cm.type, cm.types_dict[type(m)])
     self.assertEqual(cm.type_name, type(m).__name__)
 
-    if m.next_monomer:
-        self.assertEqual(cm.next_ind, m.next_monomer.ind)
+    if m.next_mer:
+        self.assertEqual(cm.next_ind, m.next_mer.ind)
     else:
         self.assertEqual(cm.next_ind, 0)
 
@@ -243,10 +243,10 @@ def make_dscstructuretest(name):
             self.assertEqual(len(dscstructure), len(self.dscfile.main))
 
             for mer in dscstructure:
-                if mer.next_monomer:
-                    self.assertEqual(mer, mer.next_monomer.previous_monomer)
-                if mer.previous_monomer:
-                    self.assertEqual(mer, mer.previous_monomer.next_monomer)
+                if mer.next_mer:
+                    self.assertEqual(mer, mer.next_mer.previous_mer)
+                if mer.previous_mer:
+                    self.assertEqual(mer, mer.previous_mer.next_mer)
 
             for desc_ind in self.dscfile.contacts.keys():
                 try:

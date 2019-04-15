@@ -590,7 +590,7 @@ class Alignment(object):
             except IndexError:
                 continue
             for pair in zip(list_of_mers[:-1], list_of_mers[1:]):
-                if pair[0].next_monomer == pair[1]:
+                if pair[0].next_mer == pair[1]:
                     continue
                 end = pair[0]
                 regions[structure_obj].append((start, end))
@@ -763,7 +763,7 @@ class PairAlignment(Alignment):
         seg0 = [[self.aligned_mers[0][0]]]
         seg1 = [[self.aligned_mers[0][1]]]
         for (prev0, prev1), (curr0, curr1) in zip(self.aligned_mers[:-1], self.aligned_mers[1:]):
-            if prev0.next_monomer == curr0 and prev1.next_monomer == curr1:
+            if prev0.next_mer == curr0 and prev1.next_mer == curr1:
                 continue
             seg0[-1].append(prev0)
             seg0.append([curr0])

@@ -173,7 +173,17 @@ class ContactMap(object):
 
     def __iter__(self):
         """Returns iterator that runs over all contacts in contact map."""
-        return iter([(i, j, v) for i, cs in self._contacts.items() for j, v in cs.items()])
+        return iter(self._contacts.items())
+
+    def __len__(self):
+        """Return length of self._contacts dok_matrix keys list."""
+        return len(self._contacts)
+
+    def __getitem__(self, item):
+        try:
+            return self.get_contact_value(*item)
+        except TypeError:
+            return self.get_monomer_contacts(item)
 
     def get_monomer_contacts(self, monomer_id, raw_numbering=False):
         """Returns list of given monomer contacts.

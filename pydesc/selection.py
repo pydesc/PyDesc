@@ -28,7 +28,6 @@ import pydesc.structure
 
 
 class Selection(object):
-
     """A selections of mers of a (sub)structures."""
 
     __metaclass__ = ABCMeta
@@ -36,13 +35,15 @@ class Selection(object):
     def __init__(self, distinguish_chains):
         """Selections constructor.
 
-        Creates a registry of selected structures as a dictionary, which keys are (sub)structures and values are instances of user structures.
+        Creates a registry of selected structures as a dictionary, which keys are (sub)structures and values are
+        instances of user structures.
 
         Argumnet:
-        distinguish_chains -- True, False or None; if True chain character is considered while selecting (sub)structure, otherwise selection includes all mers with given number and insertion code regardless of chain character.
+        distinguish_chains -- True, False or None; if True chain character is considered while selecting (sub)structure,
+        otherwise selection includes all mers with given number and insertion code regardless of chain character.
         None is for complex selections only; in that case all subselections use their own distinguish chains setup.
         """
-        self._distinguish_chains = distinguish_chains        # get and set provided by property
+        self._distinguish_chains = distinguish_chains  # get and set provided by property
 
     def __add__(self, selection):
         return SelectionsUnion([self, selection])
@@ -61,7 +62,8 @@ class Selection(object):
 
         Arguments:
         structure_obj -- an instance of any abstract structure subclass.
-        distinguish_chains -- True or False; temporarily changes property distinguish_chains. Initially set to None, if so default value set by constructor is used.
+        distinguish_chains -- True or False; temporarily changes property distinguish_chains.
+        Initially set to None, if so default value set by constructor is used.
 
         CHANGES IN structure_obj.converter (its numberconverter) WILL INFLUENCE CREATED User Structure OBJECT.
         """
@@ -74,7 +76,8 @@ class Selection(object):
 
         Arguments:
         structure_obj -- an instance of any abstract structure subclass.
-        distinguish_chains -- True or False; temporarily changes property distinguish_chains. Initially set to None, if so default value set by constructor is used.
+        distinguish_chains -- True or False; temporarily changes property distinguish_chains.
+        Initially set to None, if so default value set by constructor is used.
 
         CHANGES IN structure_obj.converter (its numberconverter) WILL INFLUENCE CREATED User Structure OBJECT.
         """
@@ -86,7 +89,8 @@ class Selection(object):
     def distinguish_chains(self):
         """Property that takes boolian values; describes selection ability to distinguish chain character.
 
-        If this property is set to True chain character is considered while selecting (sub)structure, otherwise selection includes all mers with given number and insertion code regardless of chain character.
+        If this property is set to True chain character is considered while selecting (sub)structure, otherwise
+        selection includes all mers with given number and insertion code regardless of chain character.
         """
         return self._distinguish_chains
 
@@ -98,11 +102,14 @@ class Selection(object):
 
         Arguments:
         structure_obj -- a structure to be base for new selection.
-        distinguish_chains -- True or False; changes the behaviour of a new set in such a way that if the value of a chain is set to False, then the chain's character is ignored. Initially set to None, if so default value set by constructor is used.
+        distinguish_chains -- True or False; changes the behaviour of a new set in such a way that if the value of a
+        chain is set to False, then the chain's character is ignored.
+        Initially set to None, if so default value set by constructor is used.
         """
         pass
 
-    def _finalize_specify(self, list_of_inds, converter):   # pylint: disable=no-self-use
+    @staticmethod
+    def _finalize_specify(list_of_inds, converter):  # pylint: disable=no-self-use
         # current method may need to use self in future
         """Creates an instance of set of given (sub)structure mers.
 
@@ -118,7 +125,6 @@ class Selection(object):
 
 # =========== Simple selections
 class Set(Selection):
-
     """Set of mers PyDesc inds."""
 
     def __init__(self, list_of_pdb_ids, distinguish_chains=True):
@@ -152,7 +158,8 @@ class Set(Selection):
         NOTE: CHANGES IN structure_obj.converter (its numberconverter) WILL INFLUENCE CREATED User Structure OBJECT.
         """
         inds = filter(bool, structure_obj.derived_from.converter.get_list_of_inds(self.ids))
-        substructure = pydesc.structure.UserStructure([structure_obj[ind] for ind in inds], structure_obj.derived_from.converter)
+        substructure = pydesc.structure.PartialStructure([structure_obj[ind] for ind in inds],
+                                                         structure_obj.derived_from.converter)
         return substructure
 
     def create_new_structure(self, structure_obj, distinguish_chains=None):
@@ -164,7 +171,7 @@ class Set(Selection):
 
         NOTE: CHANGES IN structure_obj.converter (its numberconverter) WILL INFLUENCE CREATED User Structure OBJECT.
         """
-        substructure = pydesc.structure.UserStructure([], structure_obj.derived_from.converter)
+        substructure = pydesc.structure.PartialStructure([], structure_obj.derived_from.converter)
         inds = filter(bool, structure_obj.derived_from.converter.get_list_of_inds(self.ids))
         mers = [structure_obj[ind].__class__(structure_obj[ind].pdb_residue, substructure) for ind in inds]
         # pylint: disable=protected-access
@@ -192,7 +199,6 @@ class Set(Selection):
 
 
 class Range(Selection):
-
     """Range of PyDesc inds to select."""
 
     def __init__(self, pdb_start, pdb_end, distinguish_chains=True):
@@ -211,8 +217,8 @@ class Range(Selection):
         distinguish_chains -- True or False; changes the behaviour of a new set in such a way that if the value of a chain is set to False, then the chain's character is ignored. Initially set to True.
         """
         Selection.__init__(self, distinguish_chains)
-        #~ if pdb_start == pdb_end:
-            #~ raise ValueError("Cannot create range selection using one mer (same start and end)")
+        # ~ if pdb_start == pdb_end:
+        # ~ raise ValueError("Cannot create range selection using one mer (same start and end)")
         self.start = pdb_start
         self.end = pdb_end
 
@@ -249,7 +255,6 @@ class Range(Selection):
 
 
 class ChainSelection(Selection):
-
     """Selection of all mers signed with given chain character."""
 
     def __init__(self, chain_char):
@@ -282,7 +287,6 @@ class ChainSelection(Selection):
 
 
 class MonomerName(Selection):
-
     """Selection of all mers with given name."""
 
     def __init__(self, monomer_name):
@@ -315,7 +319,6 @@ class MonomerName(Selection):
 
 
 class MonomerType(Selection):
-
     """Selection of mers of given type."""
 
     def __init__(self, monomer_subclass):
@@ -352,7 +355,6 @@ class MonomerType(Selection):
 
 
 class Everything(Selection):
-
     """Selection of all possible mers created by PyDesc."""
 
     def __init__(self):
@@ -369,11 +371,13 @@ class Everything(Selection):
         distinguish_chains -- always set to True.
         """
         list_of_inds = map(operator.attrgetter('ind'), structure_obj)
-        return Selection._finalize_specify(self, list_of_inds, structure_obj.derived_from.converter)
+        return self._finalize_specify(list_of_inds, structure_obj.derived_from.converter)
+
+    def create_structure(self, structure_obj, distinguish_chains=None):
+        return structure_obj
 
 
 class Nothing(Selection):
-
     """Empty selection."""
 
     def __init__(self):
@@ -387,7 +391,7 @@ class Nothing(Selection):
         structure_obj -- instance od pydesc.structure.AbstractStructure.
         distinguish_chains -- boolean value set always to False. See pydesc.selection.Selection.create_structure for more informations.
         """
-        substructure = pydesc.structure.UserStructure([], structure_obj.derived_from.converter)
+        substructure = pydesc.structure.PartialStructure([], structure_obj.derived_from.converter)
         return substructure
 
     def specify(self, structure_obj, distinguish_chains=True):
@@ -402,7 +406,6 @@ class Nothing(Selection):
 
 # =============
 class CombinedSelection(Selection):
-
     """Abstract class, a selection obtained via operation on other selections."""
 
     __metaclass__ = ABCMeta
@@ -425,12 +428,14 @@ class CombinedSelection(Selection):
 
     def iter_recursively(self):
         """Returns recurive iterator over subselections."""
+
         def iter_combined(sel):
             """Returns recursiv iterator if possible, otherwise - returns given obj"""
             try:
                 return list(sel.iter_recursively())
             except AttributeError:
                 return [sel]
+
         return iter(reduce(operator.add, map(iter_combined, self.selections)))
 
     def __repr__(self):
@@ -447,7 +452,6 @@ class CombinedSelection(Selection):
 
 # ============= Combined selections
 class SelectionsUnion(CombinedSelection):
-
     """An union of two selections.
 
     You can easily create unions adding two selections, e.g.:
@@ -463,7 +467,9 @@ class SelectionsUnion(CombinedSelection):
         """
         if distinguish_chains is None:
             distinguish_chains = self._distinguish_chains
-        list_of_pdb_ids = reduce(operator.add, [list(selection.specify(structure_obj, distinguish_chains)) for selection in self.selections])
+        list_of_pdb_ids = reduce(operator.add,
+                                 [list(selection.specify(structure_obj, distinguish_chains)) for selection in
+                                  self.selections])
         list_of_pdb_ids = dict((list_of_pdb_ids.index(pdb_id), pdb_id) for pdb_id in list_of_pdb_ids)
         # removing repeated mers by assigning them to the same key in dictionary
         list_of_pdb_ids = [list_of_pdb_ids[key] for key in list_of_pdb_ids.keys()]
@@ -471,7 +477,6 @@ class SelectionsUnion(CombinedSelection):
 
 
 class SelectionsIntersection(CombinedSelection):
-
     """An intersection of two selections.
 
     You can easily create intersections multiplying two selections, e.g.:
@@ -488,7 +493,8 @@ class SelectionsIntersection(CombinedSelection):
         if distinguish_chains is None:
             distinguish_chains = self._distinguish_chains
         try:
-            list_of_pdb_ids = list(set.intersection(*map(set, map(operator.methodcaller('specify', structure_obj, distinguish_chains), self.selections))))
+            list_of_pdb_ids = list(set.intersection(
+                *map(set, map(operator.methodcaller('specify', structure_obj, distinguish_chains), self.selections))))
             # only mers present in all structures connected wiht selections are in list above; they are stored in order imposed by first selection
         except (TypeError, KeyError):
             raise ValueError("Not enough selections to intersect")
@@ -496,7 +502,6 @@ class SelectionsIntersection(CombinedSelection):
 
 
 class SelectionsRelativeComplement(CombinedSelection):
-
     """An relative complement of two selections.
 
     You can easily create relative complements subtracting two selections, e.g.:
@@ -512,6 +517,7 @@ class SelectionsRelativeComplement(CombinedSelection):
         """
         if distinguish_chains is None:
             distinguish_chains = self._distinguish_chains
-        list_of_pdb_ids = [pdb_id for pdb_id in self.selections[0].specify(structure_obj, distinguish_chains) if pdb_id not in self.selections[1].specify(structure_obj, distinguish_chains)]
+        list_of_pdb_ids = [pdb_id for pdb_id in self.selections[0].specify(structure_obj, distinguish_chains) if
+                           pdb_id not in self.selections[1].specify(structure_obj, distinguish_chains)]
         # adding mers to list, if they are not present in structure created under second selection contidions
         return Set(list_of_pdb_ids, distinguish_chains)

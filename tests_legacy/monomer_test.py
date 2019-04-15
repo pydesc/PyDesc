@@ -141,8 +141,8 @@ def make_monomertestbasic(strname, test_structure_dir, cls, names):
             for i in zip(ress[:-1], ress[1:]):
                 m1 = i[0][monomer.Residue]
                 m2 = i[1][monomer.Residue]
-                m1.next_monomer = m2
-                m2.previous_monomer = m1
+                m1.next_mer = m2
+                m2.previous_mer = m1
             for i in self.ress:
                 if i in ress:
                     self.assertTrue(i[monomer.Residue].adjusted_lenght() <= 3)
