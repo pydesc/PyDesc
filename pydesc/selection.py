@@ -24,6 +24,7 @@ from abc import ABCMeta
 from abc import abstractmethod
 import operator
 import re
+from copy import deepcopy
 import pydesc.structure
 
 
@@ -87,7 +88,7 @@ class Selection(object):
 
     @property
     def distinguish_chains(self):
-        """Property that takes boolian values; describes selection ability to distinguish chain character.
+        """Property that takes boolean values; describes selection ability to distinguish chain character.
 
         If this property is set to True chain character is considered while selecting (sub)structure, otherwise
         selection includes all mers with given number and insertion code regardless of chain character.
@@ -109,11 +110,8 @@ class Selection(object):
         pass
 
     @staticmethod
-    def _finalize_specify(list_of_inds, converter):  # pylint: disable=no-self-use
-        # current method may need to use self in future
-        """Creates an instance of set of given (sub)structure mers.
-
-        Abstract method, should be override and called by every subclass of Selection.
+    def _finalize_specify(list_of_inds, converter):
+        """Creates an instance of selection.Set out of given list of pydesc indices.
 
         Arguments:
         list_of_inds -- a list of PyDesc integers of mers that are to be changed into pdb-id tuples.
@@ -155,7 +153,7 @@ class Set(Selection):
         structure_obj -- an instance of any abstract structure subclass.
         distinguish_chains -- True or False; temporarily changes property distinguish_chains. Initially set to None, if so default value set by constructor is used.
 
-        NOTE: CHANGES IN structure_obj.converter (its numberconverter) WILL INFLUENCE CREATED User Structure OBJECT.
+        NOTE: CHANGES IN structure_obj.converter (its number_converter) WILL INFLUENCE CREATED User Structure OBJECT.
         """
         inds = filter(bool, structure_obj.derived_from.converter.get_list_of_inds(self.ids))
         substructure = pydesc.structure.PartialStructure([structure_obj[ind] for ind in inds],
@@ -169,18 +167,13 @@ class Set(Selection):
         structure_obj -- an instance of any abstract structure subclass.
         distinguish_chains -- True or False; temporarily changes property distinguish_chains. Initially set to None, if so default value set by constructor is used.
 
-        NOTE: CHANGES IN structure_obj.converter (its numberconverter) WILL INFLUENCE CREATED User Structure OBJECT.
+        NOTE: CHANGES IN structure_obj.converter (its number_converter) WILL INFLUENCE CREATED User Structure OBJECT.
         """
-        substructure = pydesc.structure.PartialStructure([], structure_obj.derived_from.converter)
+        structure = pydesc.structure.PartialStructure([], structure_obj.derived_from.converter)
         inds = filter(bool, structure_obj.derived_from.converter.get_list_of_inds(self.ids))
-        mers = [structure_obj[ind].__class__(structure_obj[ind].pdb_residue, substructure) for ind in inds]
-        # pylint: disable=protected-access
-        # used methods are meant to be protected from users, not from pydesc modules
-        substructure._monomers = mers
-        substructure._fill_monomers_attrs()
-        substructure._set_segments()
-        # pylint: enable=protected-access
-        return substructure
+        mers = [deepcopy(structure_obj[ind]) for ind in inds]
+        structure.set_mers(mers)
+        return structure
 
     def specify(self, structure_obj, distinguish_chains=None):
         """Returns Set of current set pdb-id tuples.
@@ -264,7 +257,7 @@ class ChainSelection(Selection):
         Stores a character of chain to be selected.
 
         Argument:
-        chain_char -- a character of chain to be selected.
+        chain_name -- a character of chain to be selected.
         """
         Selection.__init__(self, True)
         self.chain = chain_char

@@ -16,10 +16,10 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests_legacy for monomer.py.
+Unit tests_legacy for mers.py.
 
 Usage:
-    python monomer_test.py [-v] [--fast]
+    python mers_test.py [-v] [--fast]
 
     or
 
@@ -46,7 +46,7 @@ import Bio.PDB
 from argparse import ArgumentParser as AP
 
 import pydesc.structure as structure
-import pydesc.monomer as monomer
+import pydesc.mers as monomer
 import pydesc.config as config
 import tests_legacy
 from pydesc.warnexcept import IncompleteChainableParticle

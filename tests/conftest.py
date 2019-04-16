@@ -1,8 +1,8 @@
 import os.path
 
-from pydesc.monomer import Nucleotide
-from pydesc.monomer import Residue
-from pydesc.monomer import Ion
+from pydesc.mers import Nucleotide
+from pydesc.mers import Residue
+from pydesc.mers import Ion
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_STRUCTURES_DIR = os.path.join(BASE_DIR, 'data', 'test_structures')

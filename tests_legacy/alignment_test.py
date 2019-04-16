@@ -32,7 +32,7 @@ import syntax_check
 from syntax_check import notest, testing, test_name_append
 
 import pydesc.alignment as alignment
-import pydesc.monomer as monomer
+import pydesc.mers as monomer
 import pydesc.structure as structure
 import pydesc.config as config
 import pydesc.warnexcept as warnexcept

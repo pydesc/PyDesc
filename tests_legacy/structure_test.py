@@ -40,7 +40,7 @@ import os
 
 import pydesc.structure as structure
 import pydesc.selection as selection
-import pydesc.monomer as monomer
+import pydesc.mers as monomer
 import pydesc.numberconverter as numberconverter
 import pydesc.warnexcept as warnexcept
 import pydesc.config as config

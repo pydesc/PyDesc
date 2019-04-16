@@ -25,7 +25,7 @@ import numpy as np
 import scipy.spatial
 from scipy.sparse import dok_matrix
 
-import pydesc.monomer
+import pydesc.mers
 import pydesc.contacts.contacts
 from pydesc.warnexcept import WrongMerType
 from pydesc.selection import Everything

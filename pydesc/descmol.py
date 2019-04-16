@@ -27,7 +27,7 @@ import tkSimpleDialog
 import tkMessageBox
 import os
 from pydesc import structure
-from pydesc import monomer
+from pydesc import mers
 from pydesc import selection
 from pydesc import geometry
 from pydesc.contacts import contactmap
@@ -527,7 +527,7 @@ if __name__ == "pydesc.descmol":
     geometry.TRTMatrix.transform = transform_decorator(geometry.TRTMatrix.transform)
     geometry.TRTMatrix.convert_to_flat_pymol_matrix = convert_to_pml_mtx
     # MONOMER
-    monomer.Monomer.iter_pseudoatoms = iter_pseudoatoms
+    mers.Monomer.iter_pseudoatoms = iter_pseudoatoms
     # CONTACTMAP
     contactmap.ContactMap.show_contacts = show_contacts
 # pylint: enable=protected-access

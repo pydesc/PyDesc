@@ -360,15 +360,20 @@ class Atom(pydesc.geometry.Coord):
     pdb_atom -- instance of BioPython Atom class.
     """
 
-    def __init__(self, coords, element):  # pylint:disable=super-init-not-called
+    def __init__(self, coords, element, occupancy=.0, b_factor=.0):  # pylint:disable=super-init-not-called
         # there is no need to call dict.__init__
         """Atom constructor.
 
         Arguments:
-        pdb_atom -- instance of BioPython Atom class.
+        coords -- np.array of x, y, z coordinates.
+        element -- one letter string indicating element.
+        occupancy -- value from pdb file, 0.0 by defautl
+        b_factor -- value from pdb file, 0.0 by defautl
         """
         self.vector = coords
         self.element = element
+        self.occupancy = occupancy
+        self.b_factor = b_factor
 
     def __repr__(self):
         return "<Atom at %s>" % " ".join(["%.2f" % i for i in self.vector])

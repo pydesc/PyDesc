@@ -28,7 +28,7 @@ import os
 import ctypes
 import ctypes.util
 import pydesc.structure as structure
-import pydesc.monomer as monomer
+import pydesc.mers as monomer
 import pydesc.contacts.contactmap as contactmap
 import pydesc.contacts.contacts as contacts
 import pydesc

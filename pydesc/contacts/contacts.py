@@ -21,7 +21,7 @@ Classes that deal with contacts among mers present in PyDesc (sub)structures.
 created: 18.07.2013 - , Tymoteusz 'hert' Oleniecki, Agnieszka Mykowiecka
 """
 
-import pydesc.monomer
+import pydesc.mers
 from pydesc.config import ConfigManager
 from pydesc.warnexcept import WrongMerType
 from pydesc.warnexcept import CannotCalculateContact
@@ -270,7 +270,7 @@ class ContactCriterion(object):
         if type_1 == type_2:
             type_2 = None
 
-        if type_1 == pydesc.monomer.Monomer and type_2 == None:
+        if type_1 == pydesc.mers.Monomer and type_2 == None:
             type_1 = None
 
         self.type_1 = type_1
@@ -278,7 +278,7 @@ class ContactCriterion(object):
 
     def get_types(self):
         """Returns types of mer for which criterion is created."""
-        type_1 = pydesc.monomer.Monomer if self.type_1 is None else self.type_1
+        type_1 = pydesc.mers.Monomer if self.type_1 is None else self.type_1
         type_2 = type_1 if self.type_2 is None else self.type_2
 
         return (type_1, type_2)
@@ -427,7 +427,7 @@ class PointsDistanceCriterion(ContactCriterion):
             return 0
 
 
-@for_monomer_type_only(pydesc.monomer.Residue)
+@for_monomer_type_only(pydesc.mers.Residue)
 class CaContact(PointsDistanceCriterion):
 
     """Carbon alfa distance criterion."""
@@ -435,7 +435,7 @@ class CaContact(PointsDistanceCriterion):
     monomer_hallmark = "ca"
 
 
-@for_monomer_type_only(pydesc.monomer.Residue)
+@for_monomer_type_only(pydesc.mers.Residue)
 class CbxContact(PointsDistanceCriterion):
 
     """C-beta extended points (carbon beta extended by 1 Angstrom) distance criterion."""
@@ -450,7 +450,7 @@ class RcContact(PointsDistanceCriterion):
     monomer_hallmark = "rc"
 
 
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
+@for_monomer_type_only(pydesc.mers.Nucleotide)
 class RingCenterContact(PointsDistanceCriterion):
 
     """Nucleotide ring center distance criterion."""
@@ -463,7 +463,7 @@ class RingCenterContact(PointsDistanceCriterion):
         self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
 
 
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
+@for_monomer_type_only(pydesc.mers.Nucleotide)
 class PrcContact(PointsDistanceCriterion):
 
     """Nucleotide proximate ring center distance criterion."""
@@ -478,7 +478,7 @@ class PrcContact(PointsDistanceCriterion):
             2  # for the sake of compatibilty!
 
 
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
+@for_monomer_type_only(pydesc.mers.Nucleotide)
 class NxContact(PointsDistanceCriterion):
 
     """Nucleotide ring center distance criterion."""
@@ -591,7 +591,7 @@ class VectorDistanceCriterion(ContactCriterion):    # pylint: disable=abstract-c
         pass
 
 
-@for_monomer_type_only(pydesc.monomer.Residue)
+@for_monomer_type_only(pydesc.mers.Residue)
 class CaCbxSubtractionCriterion(VectorDistanceCriterion):
 
     """Criterion based on difference between carbon alpha and extended carbon beta distances.
@@ -859,7 +859,7 @@ class SetDistanceCriterion(ContactCriterion):
         return 0
 
 
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
+@for_monomer_type_only(pydesc.mers.Nucleotide)
 class RaContact(SetDistanceCriterion):
 
     """Nucleotide ring atoms distance criterion."""
@@ -882,7 +882,7 @@ class RaContact(SetDistanceCriterion):
         return SetDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
 
 
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
+@for_monomer_type_only(pydesc.mers.Nucleotide)
 class AtContact(SetDistanceCriterion):
 
     """Nucleotide atoms distance criterion."""
@@ -902,7 +902,7 @@ class AtContact(SetDistanceCriterion):
         return SetDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
 
 
-@for_monomer_type_only(pydesc.monomer.Nucleotide, pydesc.monomer.Ion)
+@for_monomer_type_only(pydesc.mers.Nucleotide, pydesc.mers.Ion)
 class NIContact(SetDistanceCriterion):
 
     """Nucleotide-ion distance criterion."""
@@ -972,7 +972,7 @@ class DihedralAngleCriterion(ContactCriterion):
             return 1
 
 
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
+@for_monomer_type_only(pydesc.mers.Nucleotide)
 class RpaContact(DihedralAngleCriterion):
 
     """Angle between nucleotide ring planes criterion."""
@@ -1052,7 +1052,7 @@ class HorizontalBisectorDistanceCriterion(ContactCriterion):
             return 1
 
 
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
+@for_monomer_type_only(pydesc.mers.Nucleotide)
 class RcbpDistance(HorizontalBisectorDistanceCriterion):
 
     """Horizontal distance between ring centers contact criterion (for pairing)."""
@@ -1070,7 +1070,7 @@ class RcbpDistance(HorizontalBisectorDistanceCriterion):
         return HorizontalBisectorDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
 
 
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
+@for_monomer_type_only(pydesc.mers.Nucleotide)
 class RcbsDistance(HorizontalBisectorDistanceCriterion):
 
     """Horizontal distance between ring centers contact criterion (for stacking)."""
@@ -1152,7 +1152,7 @@ class VerticalBisectorDistanceCriterion(ContactCriterion):
             return 1
 
 
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
+@for_monomer_type_only(pydesc.mers.Nucleotide)
 class RcpDistance(VerticalBisectorDistanceCriterion):
 
     """Vertical distance between ring centers contact criterion (for pairing)."""
@@ -1170,7 +1170,7 @@ class RcpDistance(VerticalBisectorDistanceCriterion):
         return VerticalBisectorDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
 
 
-@for_monomer_type_only(pydesc.monomer.Nucleotide)
+@for_monomer_type_only(pydesc.mers.Nucleotide)
 class RcsDistance(VerticalBisectorDistanceCriterion):
 
     """Vertical distance between ring centers contact criterion (for stacking)."""
@@ -1252,8 +1252,8 @@ class ContactsConjunction(CombinedContact):
         """
         CombinedContact.__init__(self, *criteria_objs)
 
-        type_1 = pydesc.monomer.Monomer
-        type_2 = pydesc.monomer.Monomer
+        type_1 = pydesc.mers.Monomer
+        type_2 = pydesc.mers.Monomer
 
         for i in criteria_objs:
             (t1, t2) = i.get_types()

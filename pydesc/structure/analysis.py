@@ -22,7 +22,7 @@ created: 10.07.2013 - , Giovanni Nico, Tymoteusz 'hert' Oleniecki
 """
 
 import numpy
-from pydesc.monomer import Residue
+from pydesc.mers import Residue
 
 eps = 0.00000001
 rtod = 180. / numpy.pi

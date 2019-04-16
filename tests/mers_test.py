@@ -2,10 +2,10 @@ import pytest
 import os.path
 import Bio.PDB
 
-from pydesc.monomer import MonomerFactory
-from pydesc.monomer import Nucleotide
-from pydesc.monomer import Residue
-from pydesc.monomer import Ion
+from pydesc.mers import MonomerFactory
+from pydesc.mers import Nucleotide
+from pydesc.mers import Residue
+from pydesc.mers import Ion
 
 from conftest import PDB_FILES_WITH_TYPE
 from conftest import TEST_STRUCTURES_DIR
