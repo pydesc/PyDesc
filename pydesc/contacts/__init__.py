@@ -33,7 +33,7 @@ from pydesc.selection import Everything
 
 class ContactMapCalculator(object):
 
-    def __init__(self, structure_obj, contact_criterion_obj=None, select1=Everything(), select2=Everything()):
+    def __init__(self, structure_obj, contact_criterion_obj=None, select1=Everything(), select2=None):
         """ContactMapCalculator constructor.
 
         Arguments:
@@ -55,21 +55,28 @@ class ContactMapCalculator(object):
                     pydesc.contacts.contacts.RingCenterContact()
                 )
             )
-        self.derived_from = structure_obj.derived_from
         self.contact_criterion = contact_criterion_obj
         self.structure = structure_obj
         structure_length = structure_obj.derived_from[-1].ind
-        self._contacts = dok_matrix((structure_length, structure_length), dtype=int)
-        self.sel1 = select1.create_structure(structure_obj)
-        self.sel2 = select2.create_structure(structure_obj)
-        sel12 = select1 * select2
-        self.sel12 = sel12.create_structure(structure_obj)
-        self.sel1uni = (select1 - sel12).create_structure(structure_obj)
-        self.sel2uni = (select2 - sel12).create_structure(structure_obj)
+        self._contacts = dok_matrix((structure_length + 1, structure_length + 1), dtype=int)
         self._rc_distC = None
         self._rc_dist1C = None
         self._rc_dist2C = None
         self._rc_dist12 = None
+
+        if select2 is None:
+            self.sel1 = tuple(select1.create_structure(structure_obj))
+            self.sel2 = self.sel1
+            self.sel12 = self.sel1
+            self.sel1uni = ()
+            self.sel2uni = ()
+            return
+        self.sel1 = tuple(select1.create_structure(structure_obj))
+        self.sel2 = tuple(select2.create_structure(structure_obj))
+        sel12 = select1 * select2
+        self.sel12 = tuple(sel12.create_structure(structure_obj))
+        self.sel1uni = tuple((select1 - sel12).create_structure(structure_obj))
+        self.sel2uni = tuple((select2 - sel12).create_structure(structure_obj))
 
     def __iter__(self):
         """Returns iterator that runs over all contacts in contact map."""
@@ -99,19 +106,16 @@ class ContactMapCalculator(object):
 
         def compare_mers(mer_1, mer_2):
             try:
-                value = iic(mer_1, mer_2)
+                value = self.contact_criterion.is_in_contact_no_pre_check(mer_1, mer_2)
             except WrongMerType:
                 return
             if value > 0:
                 self._contacts[mer_1.ind, mer_2.ind] = value
                 self._contacts[mer_2.ind, mer_1.ind] = value
 
-        if None in (self._rc_dist1C, self._rc_dist2C, self._rc_dist12, self._rc_distC):
-            self.calculate_rc_dist()
-        iic = self.contact_criterion.is_in_contact
+        self.calculate_rc_dist()
         max_rc_dist = getattr(self.contact_criterion, "max_rc_dist", None)
 
-        mer_tuple_12 = tuple(self.sel12)
         if max_rc_dist:
             # common(C) vs C
             try:
@@ -119,15 +123,15 @@ class ContactMapCalculator(object):
                 indexes = indexes[indexes[:, 0] < indexes[:, 1]]
 
                 for (i, j) in indexes:
-                    mer1 = mer_tuple_12[i]
-                    mer2 = mer_tuple_12[j]
+                    mer1 = self.sel12[i]
+                    mer2 = self.sel12[j]
                     compare_mers(mer1, mer2)
 
             except (ValueError, IndexError):
                 pass
         else:
             for i, mer1 in enumerate(self.sel12):
-                for mer2 in mer_tuple_12[i + 1:]:
+                for mer2 in self.sel12[i + 1:]:
                     compare_mers(mer1, mer2)
 
         items = (
@@ -135,9 +139,7 @@ class ContactMapCalculator(object):
             (self.sel2uni, self.sel12, '_rc_dist2C'),  # uniB vs C
             (self.sel1uni, self.sel2uni, '_rc_dist12'),  # uniA vs uniB
         )
-        for sel1, sel2, rc_name in items:
-            mer_tuple_1 = tuple(sel1)
-            mer_tuple_2 = tuple(sel2)
+        for mer_tuple_1, mer_tuple_2, rc_name in items:
             if max_rc_dist:
                 try:
                     rc_mtx = getattr(self, rc_name)

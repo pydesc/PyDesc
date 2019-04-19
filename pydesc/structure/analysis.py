@@ -311,10 +311,10 @@ def calculate_theta(stc, mer_ind):
 
     stc.frame = 1
     while True:
-        rvec = (mer.ca - mer.cbx).get_versor()
+        rvec = (mer.ca - mer.cbx).get_unit_vector()
         for m in stc:
             if m == mer: continue
-            vec = (m.ca - mer.ca).get_versor()
+            vec = (m.ca - mer.ca).get_unit_vector()
             res[m].append(numpy.arccos(numpy.dot(vec, rvec)))
         try:
             stc.next_frame()

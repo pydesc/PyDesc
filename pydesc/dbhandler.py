@@ -445,7 +445,7 @@ class MetaParser(object):
         for prsr in self.parsers:
             try:
                 return prsr.get_structure(stc, file, *args, **kwargs)
-            except ValueError:  # the only exception known to be raised when propper mmCIF is passed to PDBParser
+            except ValueError:  # the only exception known to be raised when proper mmCIF is passed to PDBParser
                 file.seek(0)
                 continue
         raise ValueError('None of parsers could get %s structure. Tried: %s.' % (stc, ", ".join([type(i).__name__ for i in self.parsers])))

@@ -231,7 +231,7 @@ class ContactCriterion(object):
         return False
 
     @check_type
-    def is_in_contact_nopre(self, monomer_1, monomer_2, *args, **kwargs):
+    def is_in_contact_no_pre_check(self, monomer_1, monomer_2, *args, **kwargs):
         """Like is_in_contact, but withour precheck."""
         return self._is_in_contact(monomer_1, monomer_2, *args, **kwargs)
 
@@ -246,10 +246,10 @@ class ContactCriterion(object):
         lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
         """
 
-        if not self._precheck(monomer_1, monomer_2, **kwargs):
+        if not self._pre_check(monomer_1, monomer_2, **kwargs):
             return 0
 
-        return self.is_in_contact_nopre(monomer_1, monomer_2, *args, **kwargs)
+        return self.is_in_contact_no_pre_check(monomer_1, monomer_2, *args, **kwargs)
 
     @check_type
     def calculate_distance(self, monomer_1, monomer_2, *args, **kwargs):
@@ -300,10 +300,10 @@ class ContactCriterion(object):
         """
         pass
 
-    def _precheck(self, monomer_1, monomer_2, rcdist=None, **kwargs):
+    def _pre_check(self, monomer_1, monomer_2, rc_dist=None, **kwargs):
         """A method for checking a quick and easy precondition of a contact.
 
-        This method should be overriden whenever possible to provide a quick and dirty checking,
+        This method should be overridden whenever possible to provide a quick and dirty checking,
         before computing actual criteria.
 
         This method accepts arguments of any type and returns a boolean.
@@ -312,8 +312,8 @@ class ContactCriterion(object):
         """
 
         try:
-            if rcdist is not None:
-                return rcdist <= self.max_rc_dist
+            if rc_dist is not None:
+                return rc_dist <= self.max_rc_dist
             else:
                 return abs(monomer_1.rc - monomer_2.rc) <= self.max_rc_dist
         except:  # If anything goes wrong, just disregard the whole precheck.
@@ -529,7 +529,6 @@ class DifferentPointsDistanceCriterion(ContactCriterion):
             return self._undecidable_range
         return getattr(ConfigManager.contacts, "_".join((self.mer1_hallmark , self.mer2_hallmark, 'contact_undecidable_range')))
 
-
     def _calculate_distance(self, mer1, mer2, *args, **kwargs):
         #~ super(DifferentPointsDistanceCriterion, self)._calculate_distance(mer1, mer2, *args, **kwargs)
         res = set([])
@@ -719,7 +718,7 @@ class SetDistanceCriterion(ContactCriterion):
         monomer_2_obj -- second mers instacne.
         lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
         """
-        if not self._precheck(monomer_1_obj, monomer_2_obj):
+        if not self._pre_check(monomer_1_obj, monomer_2_obj):
             return False
 
         dist_mat = self._calculate_distance(monomer_1_obj, monomer_2_obj)
@@ -1217,8 +1216,14 @@ class CombinedContact(ContactCriterion):
     def __str__(self):
         return '%s of %s criteria' % (self._repr_operation(), " and ".join(map(str, self.criteria)))
 
+    def is_in_contact(self, monomer_1, monomer_2, *args, **kwargs):
+        return self._is_in_contact(monomer_1, monomer_2, *args, no_pre_check=True)
+
+    def is_in_contact_no_pre_check(self, monomer_1, monomer_2, *args, **kwargs):
+        return self._is_in_contact(monomer_1, monomer_2, *args)
+
     @abstractmethod
-    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True, **kwargs):
+    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True, no_pre_check=False, **kwargs):
         """Returns value of combined contact criterion.
 
         Arguments:
@@ -1351,19 +1356,20 @@ class ContactsAlternative(ContactsDisjunction):
     Given criteria could be a CombinedContact instance.
     """
 
-    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True, **kwargs):
+    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True, no_pre_check=False, **kwargs):
         """Returns contact value under an alternative of given criteria.
 
         Arguments:
-        monomer_1_obj -- first monomer instacne.
-        monomer_2_obj -- second mers instacne.
-        lazy -- True or False, initially set to True. Deremines if subcriteria values are to be calculated lazy or not.
+        monomer_1_obj -- first monomer instance.
+        monomer_2_obj -- second mers instance.
+        lazy -- True or False, initially set to True. Determines if subcriteria values are to be calculated lazy or not.
         Lazy calculation means that if program is able to assume that criterion is not satisfied during calculation subcriterion - further subcriteria are not calculated.
         """
+        attr = 'is_in_contact_no_pre_check' if no_pre_check else 'is_in_contact'
         values = []
         for contact_criterion in self.criteria:
             try:
-                value = contact_criterion.is_in_contact(monomer_1_obj, monomer_2_obj, lazy=lazy, **kwargs)
+                value = getattr(contact_criterion, attr)(monomer_1_obj, monomer_2_obj, lazy=lazy, **kwargs)
             except WrongMerType:
                 value = 0
             values.append(value)

@@ -100,7 +100,7 @@ ConfigManager.monomer.residue.set_default("check_distances", False)
 ConfigManager.monomer.residue.set_default(
     "crucial_atom_distances", (('C', 'CA', 1.35, 1.71), ('CA', 'N', 1.35, 1.75)))
 ConfigManager.monomer.residue.set_default("indicators", ('CA', 'cbx'))
-ConfigManager.monomer.residue.set_default("old_cbx_calculation", False)
+ConfigManager.monomer.residue.set_default("legacy_cbx_calculation", False)
 ConfigManager.monomer.residue.set_default("adjusted_segment_length", 18.0)
 ConfigManager.monomer.nucleotide.set_default("nucleotide_code", {
     'G': 'G', 'C': 'C', 'U': 'U', 'A': 'A', 'DG': 'G', 'DA': 'A', 'DT': 'T', 'DC': 'C'})
@@ -575,8 +575,7 @@ class Monomer(object):
                 return self.pseudoatoms[name]
             except (AttributeError, KeyError):
                 repr_ = self.ind if self.ind is not None else str(self)
-                raise AttributeError(
-                    "Monomer %s has no attribute %s" % (repr_, name))
+                raise AttributeError("Monomer %s has no attribute %s" % (repr_, name))
 
     def __getitem__(self, name):
         """Deprecated method. Returns proper attribute value.
@@ -621,10 +620,10 @@ class Monomer(object):
         Adds pydesc.geometry.Coord instance representing the geometrical center of a mer to mers pseudoatoms dict.
         If possible, only sidechain atoms are taken into account.
         """
-        nbbcrds = [a.vector for a in self.iter_nbb_atoms()]
+        non_backbone_coordinates = [a.vector for a in self.iter_nbb_atoms()]
 
-        if nbbcrds != []:
-            vector = numpy.average(nbbcrds, 0)
+        if non_backbone_coordinates:
+            vector = numpy.average(non_backbone_coordinates, 0)
         else:
             try:
                 vector = self.ca.vector
@@ -643,13 +642,6 @@ class Monomer(object):
     def iter_nbb_atoms(self):
         """Returns iterator that iterates over monomer's all atoms except backbone."""
         return self.iter_atoms()
-
-    @property
-    def indicators(self):
-        """Returns names of monomer attributes that store coordinates used in RMSD calculation."""
-        return self.get_config('indicators')
-        # temp = getattr(ConfigManager.monomer, str(type(self).__name__).lower())
-        # return  getattr(temp, "indicators")
 
     @classmethod
     def seq_3to1(cls, seq):
@@ -718,14 +710,7 @@ class Monomer(object):
     @property
     def representation(self):
         """Returns indicators of current monomer set in configuration manager."""
-        return [getattr(self, indicator) for indicator in self.indicators]
-
-    def get_representation(self):
-        """Deprecated method. Returns self.representation."""
-        warn(
-            DeprecationWarning("Method get_representation is deprecated. Please, use property representation instead."),
-            1)
-        return self.representation
+        return [getattr(self, indicator) for indicator in self.get_config('indicators')]
 
     def get_pdb_id(self):
         """Returns pdb id if possible, otherwise returns None."""
@@ -763,18 +748,6 @@ class Monomer(object):
         # configuration manager is dynamic with member that cannot be
         # recognized by pylint
         return temp[self._ss]
-
-    def is_next(self, monomer):
-        """Deprecated method. Returns True if given mer follows current mer."""
-        warn(
-            DeprecationWarning("is_next method is deprecated, use attribute next_mer instead."))
-        return self.next_monomer == monomer
-
-    def is_prev(self, monomer):
-        """Deprecated method. Returns True if given mer preceeds current mer."""
-        warn(
-            DeprecationWarning("is_prev method is deprecated, use attribute prevoius_monomer instead."))
-        return self.previous_monomer == monomer
 
 
 class MonomerChainable(Monomer):
@@ -820,8 +793,9 @@ class MonomerChainable(Monomer):
         """
         if type(monomer) != type(self):
             return False
-        last_atom = self.backbone[-1]
-        next_atom = monomer.backbone[0]
+        bb_atoms = self.get_config('backbone_atoms')
+        last_atom = self.atoms[bb_atoms[-1]]
+        next_atom = monomer.atoms[bb_atoms[0]]
         try:
             distance = (last_atom - next_atom).calculate_length()
             return distance <= ConfigManager.monomer.monomer_acceptable_distance  # pylint:disable=no-member
@@ -873,11 +847,6 @@ class MonomerChainable(Monomer):
         """Property that returns monomer following current mer in its structure."""
         self._next_monomer = value  # pylint:disable=attribute-defined-outside-init
 
-    @next_mer.deleter
-    def next_mer(self):
-        """Property that returns monomer following current mer in its structure."""
-        del self._next_monomer
-
     @property
     def previous_mer(self):
         """Property that returns monomer preceding current mer in its structure."""
@@ -892,24 +861,15 @@ class MonomerChainable(Monomer):
         self._previous_monomer = value  # pylint:disable=attribute-defined-outside-init
         # same as in next_mer.setter
 
-    @previous_mer.deleter
-    def previous_mer(self):
-        """Property that returns monomer preceding current mer in its structure."""
-        del self._previous_monomer
-
-    @property
-    def backbone(self):
-        """Returns backbone atoms"""
-        bb_atoms = self.get_config('backbone_atoms')
-        return [self.atoms[attr_name] for attr_name in bb_atoms]
-
     def iter_bb_atoms(self):
         """Returns iterator that iterates over monomer's backbone atoms."""
-        return iter(self.backbone)
+        bb_atoms = self.get_config('backbone_atoms')
+        return iter([self.atoms[attr_name] for attr_name in bb_atoms])
 
     def iter_nbb_atoms(self):
         """Returns iterator that iterates over monomer's all atoms except backbone."""
-        return iter([i for i in self.atoms.values() if i not in self.backbone])
+        bb_atoms = self.get_config('backbone_atoms')
+        return iter([atom for atom_name, atom in self.atoms.items() if atom_name not in bb_atoms])
 
     def adjusted_length(self):
         """Returns distance between backbone_average pseudoatoms of this and the next monomer
@@ -938,7 +898,7 @@ class Residue(MonomerChainable):
         if nres == 0:
             return
         n, ca, c = numpy.transpose(
-            numpy.array([[a.vector for a in r.backbone] for r in residues]), (1, 0, 2))[[0, 1, 2]]
+            numpy.array([[a.vector for a in r.iter_bb_atoms()] for r in residues]), (1, 0, 2))[[0, 1, 2]]
         pc = numpy.empty((nres, 3), dtype=numpy.float32)
         nn = numpy.empty((nres, 3), dtype=numpy.float32)
 
@@ -1016,17 +976,14 @@ class Residue(MonomerChainable):
 
         Average ca is calculated as moving average for configurable number of residues around current residue.
         """
-        steps = self.get_config(
-            'moving_average')  # pylint:disable=no-member
+        steps = self.get_config('moving_average')
         if not steps % 2 == 1:
-            raise ValueError(
-                "Wrong Number of steps for moving average. Configure correnct length with ConfigManager")
+            raise ValueError("Wrong Number of steps for moving average.")
         average_ca = numpy.array(self.ca.vector)
         next_mer = last_mer = self
         cnt = 1
         try:
-            for step in range(steps / 2):  # pylint:disable=unused-variable
-                # step is a dummy
+            for _ in range(steps / 2):
                 next_mer = next_mer.next_mer
                 last_mer = last_mer.previous_mer
                 average_ca += next_mer.ca.vector + last_mer.ca.vector
@@ -1036,8 +993,7 @@ class Residue(MonomerChainable):
             # they have no next/previous mers
             pass
 
-        self.pseudoatoms['backbone_average'] = Pseudoatom(
-            numpy_vec=(average_ca / cnt))
+        self.pseudoatoms['backbone_average'] = Pseudoatom(numpy_vec=(average_ca / cnt))
 
     @property
     def angles(self):
@@ -1085,8 +1041,7 @@ class Residue(MonomerChainable):
         self.dynamic_properties['angles'] = (ang_psi, ang_phi)
 
     @property
-    def ca(self):  # pylint:disable=invalid-name
-        # 'ca' is valid for us
+    def ca(self):
         """Property that returns current residue alpha carbon Atom object."""
         return self.atoms['CA']
 
@@ -1094,12 +1049,14 @@ class Residue(MonomerChainable):
         """Adds Pseudoatom containing coordinates of the point that lies 1A farther from carbon
         alpha, than does carbon beta; or carbon alpha coordinates for GLY.
         """
-        if self.get_config('old_cbx_calculation'):
+        if self.get_config('legacy_cbx_calculation'):
             self.calculate_cbx_legacy()
             return
         if self.name == "GLY":
-            self.pseudoatoms['cbx'] = Pseudoatom(
-                numpy_vec=self.atoms['CA'].vector, name='cbx')
+            n_2_ca = self.atoms['N'] - self.atoms['CA']
+            c_2_ca = self.atoms['C'] - self.atoms['CA']
+            average_ca_cb_distance = 1.53
+            cbx = (n_2_ca + c_2_ca).get_unit_vector() * (average_ca_cb_distance + 1)
         else:
             try:
                 ca = self.atoms['CA'].vector
@@ -1109,10 +1066,9 @@ class Residue(MonomerChainable):
             vec = cb - ca
             nrm = norm(vec)
             vec = vec * ((nrm + 1) / nrm)
-
             cbx = ca + vec
 
-            self.pseudoatoms['cbx'] = Pseudoatom(numpy_vec=cbx, name='cbx')
+        self.pseudoatoms['cbx'] = Pseudoatom(numpy_vec=cbx, name='cbx')
 
     def calculate_cbx_legacy(self):
         """Creates pydesc.geometry.Coord instance containing coordinates of cbx calculated in legacy mode and assigns it to residue cbx property.
@@ -1255,7 +1211,7 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
             vec /= 5.
             self.pseudoatoms['prc'] = Pseudoatom(numpy_vec=vec, name='prc')
         except KeyError:
-            pass
+            self.pseudoatoms['prc'] = None
 
     @property
     def prc(self):

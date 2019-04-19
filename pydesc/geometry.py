@@ -228,7 +228,7 @@ class Coord(object):
             return tuple(transformation_matrix.transform(*self.vector))
         return tuple(self.vector)
 
-    def get_versor(self):
+    def get_unit_vector(self):
         return self.vector / self.calculate_length()
 
     # pylint: disable=invalid-name

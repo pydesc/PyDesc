@@ -23,6 +23,9 @@ nie usuwac, bedzie rozbudowany przy tworzeniu tutoriala
 from pydesc.structure import StructureLoader
 
 
+PROTEIN_PDBS = ['1A24', '2BLL', '2JRM', '2LJP', '3BIP', '3FV6', '3G67', '3J96', '3NPU', '3PSC', '4LTT', '4NJ6', '4ONK', '4YYN', '4ZTD', '5ERB', '5IFH', '5LF9', '5MPV', '5X55']
+
+
 def get(stc_name="1no5", ind=0):
     """Returns structure of given PDB id.
 

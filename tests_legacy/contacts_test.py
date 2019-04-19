@@ -19,7 +19,7 @@
 Unit tests_legacy for contacts.py.
 
 Usage:
-    python contacts_test.py [-v] [--fast]
+    python cmap_test.py [-v] [--fast]
 
     or
 
