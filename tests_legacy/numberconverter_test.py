@@ -161,7 +161,7 @@ class NumberConverterTest(unittest.TestCase):
     def test_PDB_id_properties(self):
         for s in self.biopdb.values():
             nc = numberconverter.NumberConverter(s)
-            for i in nc.dict_ind_to_pdb.values():
+            for i in nc.ind2pdb.values():
                 self.try_pdb_id(i)
 
     @testing(numberconverter.PDBid.create_from_string)

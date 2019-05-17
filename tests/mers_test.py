@@ -7,10 +7,10 @@ from pydesc.mers import Nucleotide
 from pydesc.mers import Residue
 from pydesc.mers import Ion
 
-from conftest import PDB_FILES_WITH_TYPE
-from conftest import TEST_STRUCTURES_DIR
-from conftest import TYPE_DICT
-from conftest import DIR_DICT
+from tests.conftest import PDB_FILES_WITH_TYPE
+from tests.conftest import TEST_STRUCTURES_DIR
+from tests.conftest import TYPE_DICT
+from tests.conftest import DIR_DICT
 
 TYPE_THRESHOLDS = {Nucleotide: .25,
                    Residue: .01,
@@ -24,11 +24,13 @@ class TestMonomerFactory(object):
     def test_default_monomer_factory_create_from_pdb_res(self, type_, struc_file):
 
         factory = MonomerFactory()
-        pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(struc_file,
-                                                                    os.path.join(TEST_STRUCTURES_DIR,
-                                                                                 type_,
-                                                                                 struc_file)
-                                                                    )
+        pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
+            struc_file,
+            os.path.join(
+                TEST_STRUCTURES_DIR,
+                type_,
+                struc_file)
+        )
 
         expected_type = TYPE_DICT[type_]
         type_threshold = TYPE_THRESHOLDS[expected_type]
@@ -52,13 +54,14 @@ class TestMonomerFactory(object):
             '%i out of %i residues are of expected type' % (points[True], length)
 
     def test_create_residue_from_pdb_res(self):
-
         factory = MonomerFactory()
-        pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure('5MPV.pdb',
-                                                                    os.path.join(TEST_STRUCTURES_DIR,
-                                                                                 'prots_only',
-                                                                                 '5MPV.pdb')
-                                                                    )
+        pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
+            '5MPV.pdb',
+            os.path.join(
+                TEST_STRUCTURES_DIR,
+                'prots_only',
+                '5MPV.pdb')
+        )
 
         r1 = pdb_structure[0]['D'][15]
         r2 = pdb_structure[0]['D'][16]
@@ -73,7 +76,6 @@ class TestMonomerFactory(object):
 
         assert len(tuple(res.iter_bb_atoms())) == 3
         assert len(tuple(res.iter_nbb_atoms())) > 0
-
         assert 'cbx' in res.pseudoatoms
         assert 'rc' in res.pseudoatoms
         assert 'backbone_average' in res.pseudoatoms
@@ -84,7 +86,6 @@ class TestMonomerFactory(object):
         res.calculate_rc()
 
         assert [round(i, 2) for i in res.angles] == [0.62, 1.30]
-
         assert res.next_mer is next
         assert res.previous_mer is prev
 
@@ -94,14 +95,14 @@ class MerTest(object):
     @staticmethod
     def iter_structure(dir_, file_, class_):
         factory = MonomerFactory()
-        pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(file_,
-                                                                    os.path.join(TEST_STRUCTURES_DIR,
-                                                                                 dir_,
-                                                                                 file_)
-                                                                    )
-
+        pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
+            file_,
+            os.path.join(
+                TEST_STRUCTURES_DIR,
+                dir_,
+                file_)
+        )
         to_return = []
-
         for model in pdb_structure:
             for chain in model:
                 for residue in chain:
@@ -118,7 +119,6 @@ class TestResidue(MerTest):
     @pytest.mark.parametrize('type_, structure_file', [i for i in PDB_FILES_WITH_TYPE if i[0] == DIR_DICT[Residue]])
     def test_calculate_cbx(self, type_, structure_file):
         checked = 0
-
         for result in self.iter_structure(type_, structure_file, Residue):
             if result.name == 'GLY':
                 continue

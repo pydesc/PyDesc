@@ -20,13 +20,11 @@ PROTS_DIR = 'prots_only'
 @pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_TYPE)
 def test_rc_contact_map(type_, struc_file):
     sl = StructureLoader()
-
     structures = sl.load_structures(path=os.path.join(TEST_STRUCTURES_DIR, type_, struc_file))
 
     for structure in structures:
         cm_calc = ContactMapCalculator(structure, contact_criterion_obj=RcContact())
         cm = cm_calc.calculate_contact_map()
-
         assert len(cm) > 0, 'No contacts in structure %s' % str(structure)
         for (k1, k2), v in cm:
             assert (structure[k1].rc - structure[k2].rc).calculate_length() < 10
@@ -39,7 +37,6 @@ def test_golden_standard_pydesc_criterion_protein(structure_file):
         golden_cmap_dict = pickle.load(fh)
 
     sl = StructureLoader()
-
     structure = sl.load_structures(path=os.path.join(TEST_STRUCTURES_DIR, PROTS_DIR, structure_file))[0]
 
     cm_calc = ContactMapCalculator(structure)
@@ -56,7 +53,6 @@ def test_golden_standard_rc_protein(structure_file):
         golden_cmap_dict = pickle.load(fh)
 
     sl = StructureLoader()
-
     structure = sl.load_structures(path=os.path.join(TEST_STRUCTURES_DIR, PROTS_DIR, structure_file))[0]
 
     cm_calc = ContactMapCalculator(structure, contact_criterion_obj=RcContact())

@@ -196,7 +196,7 @@ class NumberConverter(object):
         Arguments:
         pdb_models -- list of pdb models from Bio.PDB parser.
 
-        Sets attributes dict_ind_to_pdb and dict_pdb_to_ind which provides translation between PDB_id and
+        Sets attributes ind2pdb and pdb2ind which provides translation between PDB_id and
         PyDesc integers (inds).
 
         For structures containing few models - performs Smith-Waterman algorithm to establish correct order
@@ -213,8 +213,8 @@ class NumberConverter(object):
         if len(models_ids) > 1:
             models_ids = perform_smith_waterman(models_ids)
 
-        self.dict_ind_to_pdb = {ind + 1: pdb_id for ind, pdb_id in enumerate(models_ids[0])}
-        self.dict_pdb_to_ind = dict(map(tuple, map(reversed, self.dict_ind_to_pdb.items())))
+        self.ind2pdb = {ind + 1: pdb_id for ind, pdb_id in enumerate(models_ids[0])}
+        self.pdb2ind = dict(map(tuple, map(reversed, self.ind2pdb.items())))
 
     def get_pdb_id(self, ind):
         """Returns list of PDB-id tuples.
@@ -227,7 +227,7 @@ class NumberConverter(object):
         Argument:
         ind -- PyDesc integer.
         """
-        return self.dict_ind_to_pdb[ind]
+        return self.ind2pdb[ind]
 
     def get_list_of_inds(self, pdb_id_tuples, distinguish_chains=True):
         """Returns list of PyDesc integers (inds) of mers corresponding to given list of PDB_id
@@ -240,10 +240,10 @@ class NumberConverter(object):
         """
         if not distinguish_chains:
             sliced_ids = [id_[1:] for id_ in pdb_id_tuples]
-            for key in self.dict_pdb_to_ind:
+            for key in self.pdb2ind:
                 if key[1:] in sliced_ids and key not in pdb_id_tuples:
                     pdb_id_tuples.append(key)
-        return [self.dict_pdb_to_ind[pdb_id] if pdb_id in self.dict_pdb_to_ind else None for pdb_id in pdb_id_tuples]
+        return [self.pdb2ind[pdb_id] if pdb_id in self.pdb2ind else None for pdb_id in pdb_id_tuples]
 
     def get_ind(self, pdb_id):
         """Takes PDB_id or apropriate tuple and returns proper monomer PyDesc integer (ind).
@@ -252,7 +252,7 @@ class NumberConverter(object):
         pdb_id -- PDB id object or tuple containg proper pdb id.
         """
         try:
-            return self.dict_pdb_to_ind[pdb_id]
+            return self.pdb2ind[pdb_id]
         except KeyError:
             if pdb_id[2] is None:
                 pdb_id = pdb_id[:-1] + (' ',)
@@ -265,4 +265,4 @@ class NumberConverter(object):
             warn(
                 DeprecationWarning("' ' as empty insertion code is no longer supperted. Use None insetad. (%s)." % msg))
 
-            return self.dict_pdb_to_ind[pdb_id]
+            return self.pdb2ind[pdb_id]
