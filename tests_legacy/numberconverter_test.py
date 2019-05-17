@@ -67,12 +67,12 @@ class NumberConverterTest(unittest.TestCase):
         del cls.biopdb
 
     @testing(numberconverter.NumberConverter.__init__)
-    @testing(numberconverter.perform_Smith_Waterman)
-    @testing(numberconverter.build_SW_matrix)
+    @testing(numberconverter.perform_smith_waterman)
+    @testing(numberconverter.build_smith_waterman_matrix)
     @testing(numberconverter.go_backwards)
-    @testing(numberconverter.PDB_id)
-    @testing(numberconverter.PDB_id.__init__)
-    @testing(numberconverter.PDB_id.create_from_pdb_residue)
+    @testing(numberconverter.PDBid)
+    @testing(numberconverter.PDBid.__init__)
+    @testing(numberconverter.PDBid.create_from_pdb_residue)
     def test_init_file(self):
         for s in self.structures:
             #~ numberconverter.NumberConverter(s)
@@ -113,7 +113,7 @@ class NumberConverterTest(unittest.TestCase):
                         l.append(i)
 
     @testing(numberconverter.NumberConverter.get_pdb_id)
-    @testing(numberconverter.PDB_id.__str__)
+    @testing(numberconverter.PDBid.__str__)
     def test_get_pdb_id(self):
         for (sn, s) in self.biopdb.items():
             nc = numberconverter.NumberConverter(s)
@@ -155,21 +155,21 @@ class NumberConverterTest(unittest.TestCase):
         self.assertTrue(pid.icode is None or (isinstance(pid.icode, str) and len(pid.icode) == 1))
         self.assertIsInstance(pid.ind, int)
 
-    @testing(numberconverter.PDB_id.chain)
-    @testing(numberconverter.PDB_id.icode)
-    @testing(numberconverter.PDB_id.ind)
+    @testing(numberconverter.PDBid.chain)
+    @testing(numberconverter.PDBid.icode)
+    @testing(numberconverter.PDBid.ind)
     def test_PDB_id_properties(self):
         for s in self.biopdb.values():
             nc = numberconverter.NumberConverter(s)
             for i in nc.dict_ind_to_pdb.values():
                 self.try_pdb_id(i)
 
-    @testing(numberconverter.PDB_id.create_from_string)
+    @testing(numberconverter.PDBid.create_from_string)
     def test_PDB_id_from_string(self):
         for ch in ['a', 'A', ';', '%']:
             for i in range(201):
                 for ic in [' ', 'A', 'B']:
-                    self.try_pdb_id(numberconverter.PDB_id.create_from_string(ch + str(i) + ic))
+                    self.try_pdb_id(numberconverter.PDBid.create_from_string(ch + str(i) + ic))
 
 
 if __name__ == '__main__':

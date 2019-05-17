@@ -110,9 +110,10 @@ class ConfigManager(object):
     @staticmethod
     def load_config(config_filename):
         try:
-            execfile(config_filename)
-        except IOError, e:
-            print "Configuration file read error: ", e
+            with open(config_filename) as cofig_file_handler:
+                exec(cofig_file_handler.read())
+        except IOError as e:
+            print("Configuration file read error: ", e)
 
     @staticmethod
     def _get_dict():
@@ -126,7 +127,7 @@ class ConfigManager(object):
     @staticmethod
     def show_config(print_limit=0):
         sorted_slownik = ConfigManager._get_dict()
-        print '+ConfigManager'
+        print('+ConfigManager')
         for k, v in sorted_slownik:
             if v is 'branch_sig':
                 print ('\t' * (k.count('.') - 1)), '+' + k.rsplit(".", 1)[1]
@@ -163,5 +164,5 @@ class ConfigManager(object):
                     else:
                         tmp_a, tmp_b = str(k).rsplit(".", 1)
                         fh.write('%s.set("%s", %s)\n' % (tmp_a, tmp_b, str(v)))
-        except IOError, e:
-            print "Configuration file write error: ", e
+        except IOError as e:
+            print("Configuration file write error: ", e)

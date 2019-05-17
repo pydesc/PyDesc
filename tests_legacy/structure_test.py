@@ -173,7 +173,7 @@ def make_structuretest(strname):
 
         def test_monomer_ind(self):
             for m in self.struct:
-                pdb_id = numberconverter.PDB_id.create_from_pdb_residue(m.pdb_residue)
+                pdb_id = numberconverter.PDBid.create_from_pdb_residue(m.pdb_residue)
                 self.assertEqual(m.ind, self.converter.get_ind(tuple(pdb_id)))
 
         def test_getitem(self):

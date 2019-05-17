@@ -1,7 +1,6 @@
 import pytest
 import os.path
 import Bio.PDB
-import numpy as np
 
 from pydesc.mers import MonomerFactory
 from pydesc.mers import Nucleotide
@@ -12,7 +11,6 @@ from conftest import PDB_FILES_WITH_TYPE
 from conftest import TEST_STRUCTURES_DIR
 from conftest import TYPE_DICT
 from conftest import DIR_DICT
-
 
 TYPE_THRESHOLDS = {Nucleotide: .25,
                    Residue: .01,

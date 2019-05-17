@@ -23,11 +23,12 @@ created: 11.07.2013 - 31.07.2013, Tymoteusz 'hert' Oleniecki
 
 import pydesc.geometry
 import numpy
+from copy import deepcopy
 
 import scipy.linalg
 
 from pydesc.config import ConfigManager
-from pydesc.numberconverter import PDB_id
+from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import warn
 from pydesc.warnexcept import WarnManager
 from pydesc.warnexcept import IncompleteParticle
@@ -45,17 +46,17 @@ except ImportError:
 norm = scipy.linalg.get_blas_funcs('nrm2')
 
 # pylint: disable=no-member
-ConfigManager.new_branch("monomer")
-ConfigManager.monomer.set_default("monomer_acceptable_distance", 2.0)
-ConfigManager.monomer.set_default("solvent", ['HOH'])
-ConfigManager.monomer.new_branch("nucleotide")
-ConfigManager.monomer.new_branch("residue")
-ConfigManager.monomer.new_branch("monomerchainable")
-ConfigManager.monomer.new_branch("ion")
-ConfigManager.monomer.new_branch("ligand")
-ConfigManager.monomer.set_default("backbone_atoms", ())
-ConfigManager.monomer.monomerchainable.set_default("check_distances", False)
-ConfigManager.monomer.residue.set_default("residue_code", {
+ConfigManager.new_branch("mers")
+ConfigManager.mers.set_default("monomer_acceptable_distance", 2.0)
+ConfigManager.mers.set_default("solvent", ['HOH'])
+ConfigManager.mers.new_branch("nucleotide")
+ConfigManager.mers.new_branch("residue")
+ConfigManager.mers.new_branch("monomerchainable")
+ConfigManager.mers.new_branch("ion")
+ConfigManager.mers.new_branch("ligand")
+ConfigManager.mers.set_default("backbone_atoms", ())
+ConfigManager.mers.monomerchainable.set_default("check_distances", False)
+ConfigManager.mers.residue.set_default("residue_code", {
     'ILE': 'I', 'GLN': 'Q',
     'GLX': 'Z', 'GLY': 'G',
     'GLU': 'E', 'CYS': 'C',
@@ -67,7 +68,7 @@ ConfigManager.monomer.residue.set_default("residue_code", {
     'PHE': 'F', 'ALA': 'A',
     'MET': 'M', 'LEU': 'L',
     'ARG': 'R', 'TYR': 'Y'})
-ConfigManager.monomer.residue.set_default("residue_additional_code", {
+ConfigManager.mers.residue.set_default("residue_additional_code", {
     'DNP': 'A', 'ABI': 'A', 'ALM': 'A', 'MAA': 'A', 'TIH': 'A', 'FLA': 'A', 'DAL': 'A', 'CSD': 'A',
     'BNN': 'A', 'HAC': 'A', 'PRR': 'A', 'AYA': 'A', 'CHG': 'A', 'DHA': 'A', 'TPQ': 'A', 'SEG': 'A',
     'DIV': 'V', 'MVA': 'V', 'DVA': 'V',
@@ -95,27 +96,27 @@ ConfigManager.monomer.residue.set_default("residue_additional_code", {
     'ALY': 'K',
     'ARM': 'R', 'ACL': 'R', 'HAR': 'R', 'HMR': 'R', 'AGM': 'R', 'DAR': 'R',
     'HIC': 'H', '3AH': 'H', 'NEM': 'H', 'NEP': 'H', 'DHI': 'H', 'MHS': 'H', 'HIP': 'H', })
-ConfigManager.monomer.residue.set_default("backbone_atoms", ('N', 'CA', 'C'))
-ConfigManager.monomer.residue.set_default("check_distances", False)
-ConfigManager.monomer.residue.set_default(
+ConfigManager.mers.residue.set_default("backbone_atoms", ('N', 'CA', 'C'))
+ConfigManager.mers.residue.set_default("check_distances", False)
+ConfigManager.mers.residue.set_default(
     "crucial_atom_distances", (('C', 'CA', 1.35, 1.71), ('CA', 'N', 1.35, 1.75)))
-ConfigManager.monomer.residue.set_default("indicators", ('CA', 'cbx'))
-ConfigManager.monomer.residue.set_default("legacy_cbx_calculation", False)
-ConfigManager.monomer.residue.set_default("adjusted_segment_length", 18.0)
-ConfigManager.monomer.nucleotide.set_default("nucleotide_code", {
+ConfigManager.mers.residue.set_default("indicators", ('CA', 'cbx'))
+ConfigManager.mers.residue.set_default("legacy_cbx_calculation", False)
+ConfigManager.mers.residue.set_default("adjusted_segment_length", 18.0)
+ConfigManager.mers.nucleotide.set_default("nucleotide_code", {
     'G': 'G', 'C': 'C', 'U': 'U', 'A': 'A', 'DG': 'G', 'DA': 'A', 'DT': 'T', 'DC': 'C'})
-ConfigManager.monomer.nucleotide.set_default(
+ConfigManager.mers.nucleotide.set_default(
     "backbone_atoms", ("P", "O5'", "C5'", "C4'", "C3'", "O3'"))
-ConfigManager.monomer.nucleotide.set_default(
+ConfigManager.mers.nucleotide.set_default(
     "ring_atoms", ("N1", "C2", "N3", "C4", "C5", "C6", "N7", "C8", "N9"))
-ConfigManager.monomer.nucleotide.set_default("check_distances", False)
-ConfigManager.monomer.nucleotide.set_default("crucial_atom_distances", (('P', "O5'", 1.54, 1.66), (
+ConfigManager.mers.nucleotide.set_default("check_distances", False)
+ConfigManager.mers.nucleotide.set_default("crucial_atom_distances", (('P', "O5'", 1.54, 1.66), (
     "O5'", "C5'", 1.34, 1.54), ("C5'", "C4'", 1.44, 1.56), ("C4'", "C3'", 1.46, 1.58), ("C3'", "O3'", 1.37, 1.49)))
-ConfigManager.monomer.nucleotide.set_default(
+ConfigManager.mers.nucleotide.set_default(
     "indicators", ("C3'", 'P', 'ring_center'))
-ConfigManager.monomer.set_default("moving_average", 3)
-ConfigManager.monomer.ion.set_default("indicators", ("rc",))
-ConfigManager.monomer.ion.set_default("radii", {'BE': 0.59,
+ConfigManager.mers.set_default("moving_average", 3)
+ConfigManager.mers.ion.set_default("indicators", ("rc",))
+ConfigManager.mers.ion.set_default("radii", {'BE': 0.59,
                                                 'BA': 1.49,
                                                 'BI': 1.17,
                                                 'BK': 1.1,
@@ -209,7 +210,7 @@ ConfigManager.monomer.ion.set_default("radii", {'BE': 0.59,
                                                 'CD': 1.09,
                                                 'XE': 0.62})
 
-ConfigManager.monomer.ligand.set_default("indicators", ("rc",))
+ConfigManager.mers.ligand.set_default("indicators", ("rc",))
 ConfigManager.new_branch("structure_mon")
 ConfigManager.structure_mon.set_default("simple_secondary_structure_code", {
     'H': 'H', 'B': 'E', 'E': 'E', 'G': 'H', 'I': 'H', 'T': 'C', 'S': 'C', '-': 'C', '=': '='})
@@ -241,13 +242,23 @@ class MonomerFactory(object):
     def other(self):
         return [i for i in self.classes if issubclass(i, MonomerOther)]
 
+    def copy_mer(self, mer):
+        """Return copy of given mer.
+
+        Argument:
+        mer -- mer subclass instance.
+        """
+        base_data = self.unpack_base(mer)
+        mer = self._create_mer_of_type(type(mer), base_data[:-1] + (deepcopy(base_data[-1]),))
+        mer.finalize()
+        return mer
+
     def create_from_biopdb(self,
                            pdb_residue,
                            structure_obj=None,
                            warn_in_place=True,
                            warnings_=None,
-                           base=None,
-                           dbg=False):
+                           base=None):
         """Class method, returns Monomer instances.
 
         Returns dictionary of different monomer types as values, calls _create_possible_monomers to create actual objects.
@@ -270,22 +281,23 @@ class MonomerFactory(object):
         """
 
         name = self.get_pdb_residue_name(pdb_residue)
-        if name in ConfigManager.monomer.solvent:
+        if name in ConfigManager.mers.solvent:
             return None, None  # We ignore solvent
 
         if warnings_ is None:
             warnings_ = WarnManager(pdb_residue)
 
         try:
-            ind = structure_obj.converter.get_ind(PDB_id.create_from_pdb_residue(pdb_residue))
+            ind = structure_obj.converter.get_ind(PDBid.create_from_pdb_residue(pdb_residue))
         except (AttributeError, KeyError):
             ind = None
 
         if base is None:
-            base = Monomer(structure_obj,
-                           ind,
-                           *self.unpack_pdb_residue(pdb_residue, name)
-                           )
+            base = Monomer(
+                structure_obj,
+                ind,
+                *self.unpack_pdb_residue(pdb_residue, name)
+            )
 
         mers, warnings_ = self._create_possible_monomers(base, warnings_, self.classes)
         if warn_in_place:
@@ -310,11 +322,22 @@ class MonomerFactory(object):
         for monomer_type in classes:
             try:
                 with warnings_(monomer_type):
-                    mers[monomer_type] = monomer_type(*base_data)
-            except (IncompleteParticle, WrongAtomDistances, WrongMerType):
+                    mers[monomer_type] = self._create_mer_of_type(monomer_type, base_data)
+            except (IncompleteParticle, WrongAtomDistances, WrongMerType) as e:
+                # import pdb; pdb.set_trace()
                 pass
 
         return mers, warnings_
+
+    @staticmethod
+    def _create_mer_of_type(monomer_type, base_data):
+        """Return monomer of given type based on given base data dictionary.
+
+        Arguments:
+            monomer_type -- monomer subclass.
+            base_data -- dict of base data.
+        """
+        return monomer_type(*base_data)
 
     def unpack_pdb_residue(self, pdb_residue, name=None):
         """Return important data from pdb_residue.
@@ -328,13 +351,13 @@ class MonomerFactory(object):
         if name is None:
             name = self.get_pdb_residue_name(pdb_residue)
         chain = pdb_residue.get_full_id()[2]
-        crt = self.create_atom_from_BioAtom
+        crt = self.create_atom_from_bio_atom
         atoms = {pdb_atom.get_fullname().strip(): crt(pdb_atom)
                  for pdb_atom in pdb_residue}
         return name, chain, atoms
 
     @staticmethod
-    def create_atom_from_BioAtom(pdb_atom):
+    def create_atom_from_bio_atom(pdb_atom):
         """Return Atom instance from given Bio.Atom instance."""
         return Atom(numpy.array(pdb_atom.get_coord()), pdb_atom.element)
 
@@ -497,7 +520,7 @@ class Monomer(object):
         try:
             cls_name = cls.__name__.lower()
 
-            branch = ConfigManager.monomer  # pylint: disable=no-member
+            branch = ConfigManager.mers  # pylint: disable=no-member
             if cls_name != 'monomer':
                 branch = getattr(branch, cls_name)
 
@@ -569,7 +592,7 @@ class Monomer(object):
         """
         name = name.lstrip()
         try:
-            return self.atoms[name]
+            return object.__getattribute__(self, 'atoms')[name]
         except KeyError:
             try:
                 return self.pseudoatoms[name]
@@ -649,10 +672,10 @@ class Monomer(object):
         try:
             cls_name = cls.__name__.lower()
             code_dictionary = getattr(
-                getattr(ConfigManager.monomer, cls_name), cls_name + "_code")  # pylint:disable=no-member
+                getattr(ConfigManager.mers, cls_name), cls_name + "_code")  # pylint:disable=no-member
             try:
                 additional_dictionary = getattr(
-                    getattr(ConfigManager.monomer, cls_name), cls_name + "_additional_code")  # pylint:disable=no-member
+                    getattr(ConfigManager.mers, cls_name), cls_name + "_additional_code")  # pylint:disable=no-member
             except AttributeError:
                 additional_dictionary = {}
             return code_dictionary[seq] if seq in code_dictionary else additional_dictionary[seq]
@@ -672,7 +695,7 @@ class Monomer(object):
         try:
             cls_name = cls.__name__.lower()
             code_dictionary = getattr(
-                getattr(ConfigManager.monomer, cls_name), cls_name + "_code")  # pylint:disable=no-member
+                getattr(ConfigManager.mers, cls_name), cls_name + "_code")  # pylint:disable=no-member
             for seq3, seq1 in code_dictionary.items():
                 if seq1 == let:
                     return seq3
@@ -766,17 +789,16 @@ class MonomerChainable(Monomer):
         Monomer.__init__(self, structure_obj, ind, name, chain, atoms)
 
         try:
-            backbone_atoms = dict((atom_name, None)
-                                  for atom_name in self.get_config('backbone_atoms'))
+            if self.get_config('check_distances'):
+                backbone_atoms = dict((atom_name, None) for atom_name in self.get_config('backbone_atoms'))
+                for atom_pair in self.get_config("crucial_atom_distances"):
+                    self._check_distance(backbone_atoms, *atom_pair)
             self._check_bbatoms()
         except (AttributeError, KeyError):
             data = type(self).__name__, self.get_pdb_id()
             msg = "Backbone atoms lacking, unable to create %s from residue %s" % data
             raise IncompleteParticle(msg)
 
-        if self.get_config('check_distances'):
-            for atom_pair in self.get_config("crucial_atom_distances"):
-                self._check_distance(backbone_atoms, *atom_pair)
         self._asa = None
         self._next_monomer = None
         self._previous_monomer = None
@@ -798,7 +820,7 @@ class MonomerChainable(Monomer):
         next_atom = monomer.atoms[bb_atoms[0]]
         try:
             distance = (last_atom - next_atom).calculate_length()
-            return distance <= ConfigManager.monomer.monomer_acceptable_distance  # pylint:disable=no-member
+            return distance <= ConfigManager.mers.monomer_acceptable_distance  # pylint:disable=no-member
         except UnboundLocalError:
             return False
 
@@ -807,7 +829,7 @@ class MonomerChainable(Monomer):
         try:
             self.seq_3to1(self.name)
         except KeyError:
-            data = type(self).__name__.capitalize(),\
+            data = type(self).__name__.capitalize(), \
                    str(self.get_pdb_id()), \
                    self.ind or 0, \
                    str(self.structure), \
@@ -952,7 +974,7 @@ class Residue(MonomerChainable):
         Extended MonomerChainable method.
         See also config file docstring.
 
-        Config parameteres in branch ConfigManager.monomer.residue:
+        Config parameteres in branch ConfigManager.mers.residue:
         min_c_ca_dist
         max_c_ca_dist
         min_ca_n_dist
@@ -983,7 +1005,7 @@ class Residue(MonomerChainable):
         next_mer = last_mer = self
         cnt = 1
         try:
-            for _ in range(steps / 2):
+            for _ in range(steps // 2):
                 next_mer = next_mer.next_mer
                 last_mer = last_mer.previous_mer
                 average_ca += next_mer.ca.vector + last_mer.ca.vector
@@ -1154,7 +1176,7 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
         Extended MonomerChainable method.
         See also config file docstring.
 
-        Config parameteres in branch ConfigManager.monomer.nucleotide:
+        Config parameters in branch ConfigManager.mers.nucleotide:
         min_o5'_p_dist
         max_o5'_p_dist
         min_c5'_o5'_dist

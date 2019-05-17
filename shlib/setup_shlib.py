@@ -23,9 +23,12 @@
 import sys
 import distutils.dist
 import distutils.command
-import build_shlib
+from shlib import build_shlib
 from distutils.command import build
 from distutils.command import build_ext
+from distutils.command import install
+from shlib import install_shlib
+
 
 # Redefine the Distribution class so that it has an shlibs list and a
 # has_shared_libraries method.
@@ -41,13 +44,17 @@ class Distribution(distutils.dist.Distribution):
     def __init__(self, attrs):
         self.shlibs = []
         distutils.dist.Distribution.__init__(self, attrs)
+
     def has_shared_libraries(self):
         return len(self.shlibs) > 0
+
+
 distutils.core.Distribution = Distribution
 
 distutils.command.__all__.append('build_shlib')
 sys.modules['distutils.command.build_shlib'] = build_shlib
 setattr(distutils.command, 'build_shlib', build_shlib)
+
 
 # Redefine build.build so that build_shlib and build_ext are run
 # first.  The unmodified distutils runs build_py *before* build_ext,
@@ -57,6 +64,7 @@ setattr(distutils.command, 'build_shlib', build_shlib)
 class Build(build.build):
     def has_shared_libraries(self):
         return self.distribution.has_shared_libraries()
+
     oldsub = build.build.sub_commands[:]
     subs = [sub for sub in oldsub if sub[0] != 'build_ext']
     bext = [sub for sub in oldsub if sub[0] == 'build_ext']
@@ -64,6 +72,7 @@ class Build(build.build):
     del subs
     del bext
     del oldsub
+
 
 build.build = Build
 
@@ -76,6 +85,8 @@ build.build = Build
 # them.
 
 oldbuildext = build_ext.build_ext
+
+
 class BuildExt(oldbuildext):
     def build_extensions(self):
         if self.distribution.has_shared_libraries():
@@ -85,21 +96,19 @@ class BuildExt(oldbuildext):
             bshlib = self.get_finalized_command('build_shlib')
             self.compiler.add_library_dir(bshlib.build_shlib)
         oldbuildext.build_extensions(self)
-build_ext.build_ext = BuildExt
 
+
+build_ext.build_ext = BuildExt
 
 ################
 
-## Install 'install_shlib' as a distutils installation command
-
-from distutils.command import install
-import install_shlib
+# Install 'install_shlib' as a distutils installation command
 
 distutils.command.__all__.append('install_shlib')
 sys.modules['distutils.command.install_shlib'] = install_shlib
 setattr(distutils.command, 'install_shlib', install_shlib)
 
-install.WINDOWS_SCHEME['shlib'] = '$base/Lib' # really, I have no idea
+install.WINDOWS_SCHEME['shlib'] = '$base/Lib'  # really, I have no idea
 install.INSTALL_SCHEMES['unix_prefix']['shlib'] = '$base/lib'
 install.INSTALL_SCHEMES['unix_home']['shlib'] = '$base/lib'
 try:
@@ -107,7 +116,7 @@ try:
     install.INSTALL_SCHEMES['mac']['shlib'] = '$base/Lib'
 except KeyError:
     pass
-install.INSTALL_SCHEMES['os2']['shlib'] = '$base/Lib'
+# install.INSTALL_SCHEMES['os2']['shlib'] = '$base/Lib'
 
 # Some systems have additional install schemes.  Ubuntu 9.04 in
 # particular introduces 'unix_local', and makes it the default.  But
@@ -120,14 +129,17 @@ except KeyError:
 install.SCHEME_KEYS = install.SCHEME_KEYS + ('shlib',)
 
 oldinstall = install.install
+
+
 class Install(oldinstall):
-    
     user_options = oldinstall.user_options + [
         ('install-shlib=', None, 'installation directory for shared libraries')
-        ]
+    ]
+
     def initialize_options(self):
         oldinstall.initialize_options(self)
         self.install_shlib = None
+
     def finalize_options(self):
         oldinstall.finalize_options(self)
         self.convert_paths('shlib')
@@ -142,5 +154,6 @@ class Install(oldinstall):
         return self.distribution.has_shared_libraries()
 
     sub_commands = [('install_shlib', has_shlib)] + oldinstall.sub_commands
+
 
 install.install = Install

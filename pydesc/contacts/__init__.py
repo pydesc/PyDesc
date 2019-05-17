@@ -94,7 +94,7 @@ class ContactMapCalculator(object):
             points2 = np.array([i.rc.vector for i in sel2])
             try:
                 res = scipy.spatial.distance.cdist(points1, points2)
-            except Exception as e:  # TODO: determine what exceptions
+            except ValueError as e:  # TODO: determine what exceptions
                 res = None
             setattr(self, attr_name, res)
 
@@ -148,7 +148,7 @@ class ContactMapCalculator(object):
                         mer1 = mer_tuple_1[i]
                         mer2 = mer_tuple_2[j]
                         compare_mers(mer1, mer2)
-                except ValueError:
+                except (ValueError, TypeError):
                     pass
             else:
                 for mer1 in mer_tuple_1:

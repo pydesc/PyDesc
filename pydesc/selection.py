@@ -26,6 +26,9 @@ import operator
 import re
 from copy import deepcopy
 import pydesc.structure
+from functools import reduce
+
+from pydesc.mers import MonomerFactory
 
 
 class Selection(object):
@@ -171,7 +174,8 @@ class Set(Selection):
         """
         structure = pydesc.structure.PartialStructure([], structure_obj.derived_from.converter)
         inds = filter(bool, structure_obj.derived_from.converter.get_list_of_inds(self.ids))
-        mers = [deepcopy(structure_obj[ind]) for ind in inds]
+        mf = MonomerFactory()
+        mers = [mf.copy_mer(structure_obj[ind]) for ind in inds]
         structure.set_mers(mers)
         return structure
 

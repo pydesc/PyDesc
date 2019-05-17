@@ -25,6 +25,8 @@ import re
 
 from pydesc.warnexcept import warn
 
+from pydesc.mers import ConfigManager
+
 
 def convert_to_id(pdb_residue):
     """Returns PDB id tuple.
@@ -34,26 +36,26 @@ def convert_to_id(pdb_residue):
     """
     warn("Function convert_to_id is deprecated. Use PDB_id.create_from_pdb_residue instead.", DeprecationWarning, 1)
 
-    return PDB_id.create_from_pdb_residue(pdb_residue)
+    return PDBid.create_from_pdb_residue(pdb_residue)
 
 
-def perform_Smith_Waterman(models_ids):      # pylint: disable=invalid-name
-    """Aligns given PDB_ids using Smith-Waterman algoritm.
+def perform_smith_waterman(models_ids):  # pylint: disable=invalid-name
+    """Aligns given PDB_ids using Smith-Waterman algorithm.
 
     Argument:
     models_ids -- list of lists containing PDB_ids to be aligned.
 
-    Used by NumberConverter to align PDB_ids provided by differen models (e.g. NMR) of the same structure.
+    Used by NumberConverter to align PDB_ids provided by different models (e.g. NMR) of the same structure.
     """
     aligned_ids = models_ids[0]
     for ids in models_ids[1:]:
         # iteration over subsequent models pdb ids
-        sw_matrix = build_SW_matrix(ids, aligned_ids)
-        aligned_ids = go_backwards(sw_matrix, iter(reversed(ids)), iter(reversed(aligned_ids)))
+        sw_matrix = build_smith_waterman_matrix(ids, aligned_ids)
+        aligned_ids = go_backwards(sw_matrix, iter(reversed(tuple(ids))), iter(reversed(tuple(aligned_ids))))
     return [aligned_ids]
 
 
-def build_SW_matrix(ids, aligned_ids):      # pylint: disable=invalid-name, too-many-locals
+def build_smith_waterman_matrix(ids, aligned_ids):  # pylint: disable=invalid-name, too-many-locals
     # first letters of names should be written with upper case
     # three locals are defined in order to maintain code in clarity
     """Builds and returns Smith-Waterman matrix.
@@ -74,7 +76,7 @@ def build_SW_matrix(ids, aligned_ids):      # pylint: disable=invalid-name, too-
         # notice that row is delayed by 1 due to additional row
         sw_matrix.append([(0, (row, 0))])
         for col, id2 in enumerate(ids):
-            # the same happend with column, while additional column
+            # the same happened with column, while additional column
             # is constructed
             compare = lambda: sw_matrix[-2][col][0] + match if id2 == id1 else sw_matrix[-2][col][0]
             sw_values = (sw_matrix[-1][col][0] + gap_open, sw_matrix[-2][col + 1][0] + gap_open, compare())
@@ -84,28 +86,28 @@ def build_SW_matrix(ids, aligned_ids):      # pylint: disable=invalid-name, too-
             # traceback is a tuple of matrix coordinates of
             # appropriate matrix entries
             id_to_choose = (id2, id1, id1)
-            # ids connected choose of, respectively, vartical,
+            # ids connected choose of, respectively, vertical,
             # horizontal and diagonal move
             scoring_tuples = zip(sw_values, traceback, id_to_choose)
             # scoring_tuple consists of: appropriate Smith-Waterman value, traceback and
             # id to choose if the value is the highest
-            key = lambda scoring_tuple: (scoring_tuple[0],) + scoring_tuple[2]
-            # key produces tuple of scoring tuple features that are to be sumbitted to evaluation
+            key = lambda scoring_tuple: (scoring_tuple[0],) + scoring_tuple[2][:2]
+            # key produces tuple of scoring tuple features that are to be submitted to evaluation
             # features to evaluate are, respectively: --Smith-Waterman value,
             # -- chain character of residue chain
             # -- residue pdb number
             # -- insertion code
-            sw_matrix[-1].append(sorted(scoring_tuples, key=key, reverse=True)[0])
+            sw_matrix[-1].append(min(scoring_tuples, key=key))
     return sw_matrix
     # pylint: enable=cell-var-from-loop
     # creating locals in loop is the point of above loop
 
 
 def go_backwards(sw_matrix, vertical_iterator, horizontal_iterator):
-    """Aligns two seqences contained by Smith-Waterman matrix.
+    """Aligns two sequences contained by Smith-Waterman matrix.
 
     Arguments:
-    sw_matrix -- matrix created by build_SW_matrix function.
+    sw_matrix -- matrix created by build_smith_waterman_matrix function.
     vertical_iterator, horizontal_iterator -- iterators or generators that iterates over appropriate sequences.
 
     Returns list of aligned items.
@@ -116,13 +118,14 @@ def go_backwards(sw_matrix, vertical_iterator, horizontal_iterator):
     while True:
         break_now = False
         new_row, new_col = sw_matrix[row][col][1]
+        addition = None
         if row - 1 == new_row and col - 1 == new_col:
-            addition = vertical_iterator.next()
-            dummy = horizontal_iterator.next()
+            addition = next(vertical_iterator)
+            next(horizontal_iterator)
         elif row - 1 == new_row:
-            addition = horizontal_iterator.next()
+            addition = next(horizontal_iterator)
         elif col - 1 == new_col:
-            addition = vertical_iterator.next()
+            addition = next(vertical_iterator)
         if new_row == 0 and new_col == 0:
             break_now = True
         row, col = new_row, new_col
@@ -132,10 +135,7 @@ def go_backwards(sw_matrix, vertical_iterator, horizontal_iterator):
     return [i for i in reversed(new_aligned_ids)]
 
 
-class PDB_id(tuple):    # pylint: disable=invalid-name
-    # but we like this name
-    # name written in upper case is in this case more natural for users
-
+class PDBid(tuple):
     """Tuple type subclass, stores monomer PDB id.
 
     PDB_id is a tuple containing subsequent values:
@@ -178,7 +178,7 @@ class PDB_id(tuple):    # pylint: disable=invalid-name
 
         tuple_ = match.groups()
         icode = None if tuple_[2] in (' ', '') else tuple_[2]
-        return PDB_id([tuple_[0], int(tuple_[1]), icode])
+        return pdb_id([tuple_[0], int(tuple_[1]), icode])
 
     @staticmethod
     def create_from_pdb_residue(pdb_residue):
@@ -189,32 +189,35 @@ class PDB_id(tuple):    # pylint: disable=invalid-name
         """
         id_tuple = pdb_residue.get_full_id()
         icode = None if id_tuple[3][2] == ' ' else id_tuple[3][2]
-        return PDB_id((id_tuple[2], int(id_tuple[3][1]), icode))
+        return PDBid((id_tuple[2], int(id_tuple[3][1]), icode))
 
 
 class NumberConverter(object):
-
     """Class of objects responsible for converting PDB names of mers to PyDesc integers (inds)."""
 
     def __init__(self, pdb_models):
         """NumberConverter constructor.
 
         Arguments:
-        pdb_structure -- instance of BioPython PDBStructure. None by default, if so pdb_mers_list is expected to be present.
-        pdb_mers_list -- list of Bio.PDB.Residue instances to be included in converter. Optional.
+        pdb_models -- list of pdb models from Bio.PDB parser.
 
         Sets attributes dict_ind_to_pdb and dict_pdb_to_ind which provides translation between PDB_id and
         PyDesc integers (inds).
 
-        For structures containing few models - performs Smith-Waterman algoritm to establish correct order
+        For structures containing few models - performs Smith-Waterman algorithm to establish correct order
         of mers common for all models.
-        """ #TODO fix docstring
+        """
+        def is_not_water(pdb_residue):
+            import pdb; pdb.set_trace()
+            return False if pdb_residue.get_resname() in ConfigManager.mers.solvent else True
 
-        is_not_water = lambda pdb_residue: False if pdb_residue.get_id()[0] == "W" else True
-        models_ids = [map(PDB_id.create_from_pdb_residue, filter(is_not_water, pdb_model.get_residues())) for pdb_model in pdb_models]
+        models_ids = []
+        for pdb_model in pdb_models:
+            no_solvent_ids = filter(is_not_water, pdb_model.get_residues())
+            models_ids.append([PDBid.create_from_pdb_residue(id_) for id_ in no_solvent_ids])
 
         if len(models_ids) > 1:
-            models_ids = perform_Smith_Waterman(models_ids)
+            models_ids = perform_smith_waterman(models_ids)
 
         self.dict_ind_to_pdb = dict([(pair[0] + 1, pair[1]) for pair in enumerate(models_ids[0])])
         self.dict_pdb_to_ind = dict(map(tuple, map(reversed, self.dict_ind_to_pdb.items())))
@@ -265,6 +268,7 @@ class NumberConverter(object):
                 msg = "Given PDB_id contains ' ' instead of None"
             else:
                 raise KeyError(pdb_id)
-            warn(DeprecationWarning("' ' as empty insertion code is no longer supperted. Use None insetad. (%s)." % msg))
+            warn(
+                DeprecationWarning("' ' as empty insertion code is no longer supperted. Use None insetad. (%s)." % msg))
 
             return self.dict_pdb_to_ind[pdb_id]

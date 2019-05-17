@@ -12,7 +12,8 @@ import os.path
 from abc import ABCMeta
 from abc import abstractmethod
 from Bio.PDB import DSSP
-from StringIO import StringIO
+from io import StringIO
+from functools import reduce
 
 import pydesc.dbhandler
 import pydesc.geometry
@@ -176,25 +177,23 @@ class StructureLoader(object):
             raise ValueError('Got empty dict.')
 
         mers = []
-
         hits = dict((klass, 0) for klass in self.mer_factory.chainable)
 
         for pdb_residue in pdb_chain:
-            mer_dct, warns = self.mer_factory.create_from_biopdb(pdb_residue,
-                                                                 structure_obj=structure,
-                                                                 warn_in_place=False)
+            mer_dct, warns = self.mer_factory.create_from_biopdb(
+                pdb_residue=pdb_residue,
+                structure_obj=structure,
+                warn_in_place=False
+            )
             if mer_dct is None:
                 continue
 
             mers.append((mer_dct, warns))
-
             for mer_class in hits:
                 hits[mer_class] += int(mer_class in mer_dct)
 
         winner = max(hits, key=lambda hit: hits[hit])
-
         others = self.mer_factory.other
-
         chain_mers = []
         for mer_dct, warns in mers:
             accepted_mer = pick_mer(mer_dct, winner, others)
@@ -237,11 +236,8 @@ class StructureLoader(object):
         """
 
         set_filters()
-
         path, open_files = self._get_files_and_path(code, path)
-
         code = self._get_code(code, path)
-
         models = self._get_models(open_files, code)
 
         try:
@@ -324,8 +320,8 @@ class AbstractStructure(object):
             """
             if isinstance(param, str):
                 # strings are converted to PDB_id
-                param = pydesc.numberconverter.PDB_id.create_from_string(param)
-            if isinstance(param, pydesc.numberconverter.PDB_id) or isinstance(param, tuple):
+                param = pydesc.numberconverter.PDBid.create_from_string(param)
+            if isinstance(param, pydesc.numberconverter.PDBid) or isinstance(param, tuple):
                 # if given parameter already is a PDB_id or a coresponding tuple instance
                 param = self.derived_from.converter.get_ind(param)
             if isinstance(param, pydesc.mers.Monomer):
@@ -1270,14 +1266,13 @@ class ProteinDescriptor(AbstractDescriptor):
         stc = element_obj.derived_from
         contacts_ = sorted(contact_map.get_monomer_contacts(element_obj.central_monomer))
 
-        def create_contact((ind_1, ind_2, value)):
-            """Retruns Contact or None if failed to create one.
+        def create_contact(input_):
+            """Returns Contact or None if failed to create one.
 
             Argument:
-            tuple containing:
-            ind_1, ind_2 -- mers inds.
-            value -- contact value.
+            input_ -- tuple containing: ind_1, ind_2 -- mers inds, value -- contact value.
             """
+            (ind_1, ind_2, value) = input_
             try:
                 return Contact(Element.build(stc[ind_1]), Element.build(stc[ind_2]))
             except (AttributeError, TypeError, ValueError):

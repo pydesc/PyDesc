@@ -6,25 +6,29 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PyDesc is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 from pydesc.warnexcept import *
-import urllib2 as urllib
+import urllib.request as urllib
 import os.path
 import gzip
 import tarfile
 from Bio.PDB import PDBParser
+
 try:
     from Bio.PDB import MMCIFParser
-except:
-    def MMCIFParser(*a, **ka): return None
+except ImportError:
+    def MMCIFParser(*a, **ka):
+        return None
+
+
     warn(Info("No MMCIFParser in Bio.PDB"))
 from pydesc.config import ConfigManager
 
@@ -120,14 +124,14 @@ class DBHandler(object):
         val -- structure id.
         mode -- list of subsequent access modes to be used by handler, by default set to None. If so initialisation argument is used as mode.
         In mode 1 handler tries to download a new file (and overwrite the on ein biodb directory, if needed).
-        Mode 2, if avalible, wokrs the same way, but gets file from local copy of db. Requires additional settings in ConfigManager.
+        Mode 2, if available, works the same way, but gets file from local copy of db. Requires additional settings in ConfigManager.
         In mode 3 handler access file from biodb without earlier attempt at getting file from other sources.
         """
         mode = self.mode if mode is None else mode
-        dct = { 3: (self.assert_val, Info("local copy access to %s" % val)),
-                2: (self.get_from_local_db, Info("picking %s file from local db" % val)),
-                1: (self.download_file, Info("downloading copy of %s" % val)),
-                }
+        dct = {3: (self.assert_val, Info("local copy access to %s" % val)),
+               2: (self.get_from_local_db, Info("picking %s file from local db" % val)),
+               1: (self.download_file, Info("downloading copy of %s" % val)),
+               }
         for i in mode:
             try:
                 mth, info = dct[i]
@@ -147,7 +151,7 @@ class DBHandler(object):
         Argument:
         val -- string, structure code.
 
-        Meant to be overritten in dbhandlers that should return more than one handler.
+        Meant to be overwritten in db handlers that should return more than one handler.
         """
         return open(self.get_file_location(val), 'r')
 
@@ -163,7 +167,8 @@ class SCOPHandler(DBHandler):
         if len(val) != 7:
             return False
 
-        if val[0] != 'd' or not val[1].isdigit() or not val[2:4].isalnum() or not (val[5].isalnum() or val[5] in ['_', '.']) or not (val[6].isalnum() or val[6] == '_'):
+        if val[0] != 'd' or not val[1].isdigit() or not val[2:4].isalnum() or not (
+                val[5].isalnum() or val[5] in ['_', '.']) or not (val[6].isalnum() or val[6] == '_'):
             return False
 
         return True
@@ -182,7 +187,7 @@ class SCOPHandler(DBHandler):
 
 class PDBHandler(DBHandler):
 
-    def __init__(self, mode=[1, 2, 3]):
+    def __init__(self, mode=(1, 2, 3)):
         self.db_name = 'pdb'
         self.url_template = 'http://www.rcsb.org/pdb/files/%s.pdb'
         DBHandler.__init__(self, mode)
@@ -206,13 +211,14 @@ class PDBHandler(DBHandler):
 
     @validate_id
     def get_from_local_db(self, val):
-        with gzip.open(ConfigManager.dbhandler.pdb_handler + 'data/structures/divided/pdb/%s/pdb%s.ent.gz' % (val[1:3], val)) as f:
+        with gzip.open(ConfigManager.dbhandler.pdb_handler + 'data/structures/divided/pdb/%s/pdb%s.ent.gz' % (
+                val[1:3], val)) as f:
             self.save_stream(f, val)
 
 
 class PDBBundleHandler(DBHandler):
 
-    def __init__(self, mode=[1, 2, 3]):
+    def __init__(self, mode=(1, 2, 3)):
         self.db_name = 'pdb-bundle'
         self.url_template = 'ftp://ftp.wwpdb.org/pub/pdb/compatible/pdb_bundle/'
         DBHandler.__init__(self, mode)
@@ -235,9 +241,11 @@ class PDBBundleHandler(DBHandler):
     def get_from_local_db(self, val):
         cache = self.get_cache(val)
         dir = ConfigManager.dbhandler.pdb_handler + 'compatible/pdb_bundle/'
-        tar = tarfile.open(dir + '%s/%s/%s-pdb-bundle.tar.gz' % tuple(map( str.lower, (val[1:3], val, val))), 'r:gz')
-        try: os.makedirs(cache)
-        except OSError: pass
+        tar = tarfile.open(dir + '%s/%s/%s-pdb-bundle.tar.gz' % tuple(map(str.lower, (val[1:3], val, val))), 'r:gz')
+        try:
+            os.makedirs(cache)
+        except OSError:
+            pass
         tar.extractall(cache)
 
     def assert_val(self, val):
@@ -253,7 +261,9 @@ class PDBBundleHandler(DBHandler):
         return [open(i) for i in self.get_file_location(val)]
 
     def get_mapping(self, val):
-        """Returns dict of mmCIF chain names as keys and tuples containing pdb file name and pdb chain name as values."""
+        """Returns dict of mmCIF chain names as keys and tuples containing pdb file name and pdb
+         chain name as values.
+         """
         cache = self.get_cache(val.lower())
         dct = {}
         with open(cache + val.lower() + '-chain-id-mapping.txt') as f:
@@ -266,7 +276,7 @@ class PDBBundleHandler(DBHandler):
 
 class MMCIFHandler(PDBHandler):
 
-    def __init__(self, mode=[1, 2, 3]):
+    def __init__(self, mode=(1, 2, 3)):
         self.db_name = 'mmCIF'
         self.url_template = 'http://www.rcsb.org/pdb/files/%s.cif'
         DBHandler.__init__(self, mode)
@@ -279,7 +289,7 @@ class MMCIFHandler(PDBHandler):
 
 class CATHHandler(DBHandler):
 
-    def __init__(self, mode=[1, 2, 3]):
+    def __init__(self, mode=(1, 2, 3)):
         self.db_name = 'CATH'
         # unpublished path, subject to change w/o notice
         self.url_template = 'http://data.cathdb.info/v4_0_0/pdb/%s'
@@ -302,7 +312,7 @@ class CATHHandler(DBHandler):
 
 class BioUnitHandler(DBHandler):
 
-    def __init__(self, mode=[1, 2, 3]):
+    def __init__(self, mode=(1, 2, 3)):
         self.db_name = 'PDBBioUnit'
         self.url_template = 'http://www.rcsb.org/pdb/files/%s.pdb%d.gz'
         DBHandler.__init__(self, mode)
@@ -335,7 +345,6 @@ class BioUnitHandler(DBHandler):
             raise
 
         f_name = self.get_file_location(val, unit)
-
         dir_name = os.path.dirname(f_name)
 
         if not os.path.isdir(dir_name):
@@ -351,22 +360,22 @@ class BioUnitHandler(DBHandler):
         local_file.close()
 
     @validate_id
-    def get_file(self, val, unit, mode=[3, 2, 1]):
+    def get_file(self, val, unit, mode=(3, 2, 1)):
         import gzip
 
         if unit is not None:
             try:
                 if mode == 1:
                     raise
-                print self.get_file_location(val, unit)
+                print(self.get_file_location(val, unit))
                 fh = gzip.open(self.get_file_location(val, unit), 'r')
-                print val + "_" + str(unit) + ": accessing local copy..."
+                print(val + "_" + str(unit) + ": accessing local copy...")
             except:
                 if mode == 2:
                     raise Exception(
                         'No local ' + str(val) + ' file. Check path or change access mode.')
                 self.download_file(val, unit)
-                print "Downloading " + val + "_" + str(unit) + "..."
+                print("Downloading " + val + "_" + str(unit) + "...")
                 fh = gzip.open(self.get_file_location(val, unit), 'r')
             return [fh]
 
@@ -375,7 +384,7 @@ class BioUnitHandler(DBHandler):
             fh_list = []
             while True:
                 try:
-                    print mode
+                    print(mode)
                     fh_list.append(self.get_file(val, unit, mode))
                     unit += 1
                 except:
@@ -387,12 +396,10 @@ class BioUnitHandler(DBHandler):
 
 class MetaHandler(object):
 
-    # mode: 0 - auto, 1 - force online copy, 2 - force local copy
-
-    def __init__(self, mode=[3, 2, 1]):
+    def __init__(self, mode=(3, 2, 1)):
         self.mode = mode
 
-    def get_file(self, val, mode=[3, 2, 1]):
+    def get_file(self, val, mode=(3, 2, 1)):
 
         db, dummy, filename = val.partition('://')
         db = db.lower()
@@ -409,24 +416,24 @@ class MetaHandler(object):
                    'scop': (SCOPHandler(mode),),
                    'unit': BioUnitHandler(mode)}
 
-        if db in db_dict.iterkeys():
-            if db != 'unit':
-                # when source is given and it is NOT unit
-                for hdlr in db_dict[db]:
-                    try:
-                        return hdlr.get_file(filename, mode)
-                    except InvalidID:
-                        continue
-                raise InvalidID
+        if db in db_dict:
+            if db == 'unit':
+                filename, dummy, unit = filename.partition('/')
+                if not unit:
+                    # when unitDB is to be searched, but no particular unit was given
+                    return BioUnitHandler().get_file(filename, None, mode)
+                # downloading particular units from unitDB
+                return BioUnitHandler().get_file(filename, int(unit), mode)
 
-            filename, dummy, unit = filename.partition('/')
-            if not unit:
-                # when unitDB is to be searched, but no particular unit was given
-                return BioUnitHandler().get_file(filename, None, mode)
-            # downloading particular units from unitDB
-            return BioUnitHandler().get_file(filename, int(unit), mode)
+            # when source is given and it is NOT unit
+            for hdlr in db_dict[db]:
+                try:
+                    return hdlr.get_file(filename, mode)
+                except InvalidID:
+                    continue
+            raise InvalidID
 
-        # if no source -- lookup goes in oreder given by db_tuple
+        # if no source -- lookup goes in order given by db_tuple
         else:
             for i, k in enumerate(db_tuple):
                 for hdlr in db_dict[k]:
@@ -448,4 +455,5 @@ class MetaParser(object):
             except ValueError:  # the only exception known to be raised when proper mmCIF is passed to PDBParser
                 file.seek(0)
                 continue
-        raise ValueError('None of parsers could get %s structure. Tried: %s.' % (stc, ", ".join([type(i).__name__ for i in self.parsers])))
+        raise ValueError('None of parsers could get %s structure. Tried: %s.' % (
+            stc, ", ".join([type(i).__name__ for i in self.parsers])))

@@ -63,6 +63,7 @@ try:
 except ImportError:
     warnings = None
 
+
 class SharedLibrary:
     # analogous to (and copied from) the distutils.extension.Extension class
     def __init__(self, name, sources,
@@ -74,10 +75,10 @@ class SharedLibrary:
                  extra_link_args=None,
                  language=None,
                  **kwargs):
-        assert type(name) is StringType, "'name' must be a string"
-        assert (type(sources) is ListType and
-                map(type, sources) == [StringType]*len(sources)), \
-                "'sources' must be a list of strings"
+        assert type(name) is str, "'name' must be a string"
+        assert (type(sources) is list and
+                [type(i) for i in sources] == [str] * len(sources)), \
+            "'sources' must be a list of strings"
 
         self.name = name
         self.sources = sources
@@ -97,12 +98,13 @@ class SharedLibrary:
             if warnings is not None:
                 warnings.warn(msg)
             else:
-                sys.stderr.write(msg+'\n')
+                sys.stderr.write(msg + '\n')
 
 
-def show_compilers ():
+def show_compilers():
     from distutils.ccompiler import show_compilers
     show_compilers()
+
 
 class build_shlib(Command):
     description = "build C/C++ shared libraries used by Python extensions"
@@ -122,23 +124,22 @@ class build_shlib(Command):
         ('library-dirs=', 'L',
          "directories to search for external libraries" + sep_by),
         ('link-objects=', 'O', "extra explicit link objects to link with")
-        ]
+    ]
     boolean_options = ['debug', 'force']
 
     help_options = [
         ('help-compiler', None, "list available compilers", show_compilers),
-        ]
-
+    ]
 
     def initialize_options(self):
         self.build_temp = None
-        self.build_shlib = None         # destination dir
-        self.shlibs = None              # list of libraries to build
-        self.define = None              # macros to define
-        self.undef = None               # macros to undefine
-        self.include_dirs = None        # header file search path
-        self.libraries = None           # external libraries to link to
-        self.library_dirs = None        # search path for external libraries
+        self.build_shlib = None  # destination dir
+        self.shlibs = None  # list of libraries to build
+        self.define = None  # macros to define
+        self.undef = None  # macros to undefine
+        self.include_dirs = None  # header file search path
+        self.libraries = None  # external libraries to link to
+        self.library_dirs = None  # search path for external libraries
         self.link_objects = None
         self.debug = None
         self.force = 0
@@ -159,17 +160,17 @@ class build_shlib(Command):
         # Much of the following is copied from build_ext
         if self.include_dirs is None:
             self.include_dirs = self.distribution.include_dirs or []
-        if type(self.include_dirs) is StringType:
+        if type(self.include_dirs) is str:
             self.include_dirs = string.split(self.include_dirs, os.pathsep)
 
         if self.libraries is None:
             self.libraries = []
-        elif type(self.libraries) is StringType:
+        elif type(self.libraries) is str:
             self.libraries = self.libraries.split(' ')
 
         if self.library_dirs is None:
             self.library_dirs = []
-        elif type(self.library_dirs) is StringType:
+        elif type(self.library_dirs) is str:
             self.library_dirs = string.split(self.library_dirs, os.pathsep)
 
         # The argument parsing will result in self.define being a string, but
@@ -186,7 +187,6 @@ class build_shlib(Command):
         # be separated with commas here.
         if self.undef:
             self.undef = string.split(self.undef, ',')
-
 
         if self.build_shlib is None:
             self.build_shlib = os.path.join(self.build_temp, 'shlib')
@@ -221,7 +221,7 @@ class build_shlib(Command):
             self.compiler.set_include_dirs(self.include_dirs)
         if self.define is not None:
             # 'define' option is a list of (name,value) tuples
-            for (name,value) in self.define:
+            for (name, value) in self.define:
                 self.compiler.define_macro(name, value)
         if self.undef is not None:
             for macro in self.undef:
@@ -241,20 +241,18 @@ class build_shlib(Command):
         self.build_libraries(self.shlibs)
 
         # if self.inplace:
-            # os.symlink(self.build_shlib, self.symlink_path+'/lib')
+        # os.symlink(self.build_shlib, self.symlink_path+'/lib')
         try:
             os.remove('lib')
         except OSError:
             pass
         os.symlink(self.build_shlib, 'lib')
 
-
-    def build_libraries (self, shlibs):
+    def build_libraries(self, shlibs):
         for shlib in shlibs:
             sources = shlib.sources
-            if sources is None or type(sources) not in (ListType, TupleType):
-                raise DistutilsSetupError, \
-                      "In SharedLibrary %s, 'sources' must be a list of file names" % shlib.name
+            if sources is None or type(sources) not in (list, tuple):
+                raise DistutilsSetupError("In SharedLibrary %s, 'sources' must be a list of file names" % shlib.name)
             sources = list(sources)
 
             log.info("building '%s' library", shlib.name)
@@ -264,7 +262,7 @@ class build_shlib(Command):
             # files in a temporary build directory.)
             language = shlib.language or self.compiler.detect_language(sources)
 
-#            print "build_shlib.py: sources=", sources
+            #            print "build_shlib.py: sources=", sources
 
             objects = self.compiler.compile(sources,
                                             output_dir=self.build_temp,
@@ -273,13 +271,13 @@ class build_shlib(Command):
                                             extra_postargs=shlib.extra_compile_args,
                                             debug=self.debug)
 
-#            print "build_shlib.py: objects=", objects
+            #            print "build_shlib.py: objects=", objects
 
             self.compiler.link(
                 target_desc=self.compiler.SHARED_LIBRARY,
                 objects=objects,
-                output_filename="lib"+
-                    self.compiler.shared_object_filename(shlib.name),
+                output_filename="lib" +
+                                self.compiler.shared_object_filename(shlib.name),
                 output_dir=self.build_shlib,
                 libraries=shlib.libraries,
                 library_dirs=shlib.library_dirs,
@@ -287,7 +285,7 @@ class build_shlib(Command):
                 extra_postargs=shlib.extra_link_args,
                 debug=self.debug,
                 target_lang=language
-                )
+            )
 
     def get_source_files(self):
         ## NOTE: This function is only used by sdist, as far as I can
@@ -296,18 +294,16 @@ class build_shlib(Command):
         ## header files, so there's no way that it can create a
         ## complete list for sdist.  Users will just have to provide a
         ## manifest file some other way.
-        raise DistutilsSetupError, \
-              "build_shlib requires a MANIFEST or MANIFEST.in file."
+        raise DistutilsSetupError("build_shlib requires a MANIFEST or MANIFEST.in file.")
 
     def check_library_list(self, shlibs):
-        if type(shlibs) is not ListType:
-            raise DistutilsSetupError, \
-                  "'shlibs' option must be a list of SharedLibrary objects"
+        if type(shlibs) is not list:
+            raise DistutilsSetupError("'shlibs' option must be a list of SharedLibrary objects")
 
         for shlib in shlibs:
             if not isinstance(shlib, SharedLibrary):
-                raise DistutilsSetupError, \
-                      "'shlibs' option must be a list of SharedLibrary objects"
+                raise DistutilsSetupError("'shlibs' option must be a list of SharedLibrary objects")
+
 
 ##################
 
@@ -372,33 +368,33 @@ def customize_compiler_darwin(compiler):
     ## in the LDSHARED configuration option in fink's 2.5.  Is ldflags
     ## needed anymore?  Is -undefined dynamic_lookup not necessary
     ## with modern compilers?
-#    ldflags = "-dynamiclib -undefined dynamic_lookup -headerpad_max_install_names"
+    #    ldflags = "-dynamiclib -undefined dynamic_lookup -headerpad_max_install_names"
 
-#     if os.environ.has_key('LDFLAGS'):
-#         ldflags = ldflags + ' ' + os.environ['LDFLAGS']
-#     if basecflags:
-#         opt = basecflags + ' ' + opt
-#     if os.environ.has_key('CFLAGS'):
-#         opt = opt + ' ' + os.environ['CFLAGS']
-#         ldflags = ldflags + ' ' + os.environ['CFLAGS']
-#     if os.environ.has_key('CPPFLAGS'):
-#         cpp = cpp + ' ' + os.environ['CPPFLAGS']
-#         opt = opt + ' ' + os.environ['CPPFLAGS']
-#         ldflags = ldflags + '  ' + os.environ['CPPFLAGS']
+    #     if os.environ.has_key('LDFLAGS'):
+    #         ldflags = ldflags + ' ' + os.environ['LDFLAGS']
+    #     if basecflags:
+    #         opt = basecflags + ' ' + opt
+    #     if os.environ.has_key('CFLAGS'):
+    #         opt = opt + ' ' + os.environ['CFLAGS']
+    #         ldflags = ldflags + ' ' + os.environ['CFLAGS']
+    #     if os.environ.has_key('CPPFLAGS'):
+    #         cpp = cpp + ' ' + os.environ['CPPFLAGS']
+    #         opt = opt + ' ' + os.environ['CPPFLAGS']
+    #         ldflags = ldflags + '  ' + os.environ['CPPFLAGS']
 
-#     cc_cmd = cc + ' ' + opt
+    #     cc_cmd = cc + ' ' + opt
 
     cc_cmd = cc + ' ' + cflags
     if not 'clang' in cc_cmd:
         cc_cmd = cc_cmd + ' -dynamiclib '
 
     compiler.set_executables(
-        preprocessor = cpp,
-        compiler = cc_cmd,
-        compiler_cxx = cxx,
-        compiler_so = cc_cmd + ccshared,
-        linker_so = ldshared,
-        )
+        preprocessor=cpp,
+        compiler=cc_cmd,
+        compiler_cxx=cxx,
+        compiler_so=cc_cmd + ccshared,
+        linker_so=ldshared,
+    )
 
     # Some systems, or at least one, have a distutils that uses
     # "compiler_so_cxx" and "linker_so_cxx" instead of "compiler_so"
