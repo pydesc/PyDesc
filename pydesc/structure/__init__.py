@@ -240,10 +240,11 @@ class StructureLoader(object):
         code = self._get_code(code, path)
         models = self._get_models(open_files, code)
 
-        try:
+        if True:
+        # try:
             converter = pydesc.numberconverter.NumberConverter(models)
-        except IndexError:
-            raise ValueError('Failed to load %s -- file seems to be empty.' % code)
+        # except IndexError:
+            # raise ValueError('Failed to load %s -- file seems to be empty.' % code)
 
         structures = [self._create_structure(pdb_model, path, converter) for pdb_model in models]
 

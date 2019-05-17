@@ -22,9 +22,9 @@ created: 13.03.2014, Tymoteusz 'hert' Oleniecki
 """
 
 import re
+import numpy as np
 
 from pydesc.warnexcept import warn
-
 from pydesc.mers import ConfigManager
 
 
@@ -51,13 +51,11 @@ def perform_smith_waterman(models_ids):  # pylint: disable=invalid-name
     for ids in models_ids[1:]:
         # iteration over subsequent models pdb ids
         sw_matrix = build_smith_waterman_matrix(ids, aligned_ids)
-        aligned_ids = go_backwards(sw_matrix, iter(reversed(tuple(ids))), iter(reversed(tuple(aligned_ids))))
+        aligned_ids = go_backwards(sw_matrix)
     return [aligned_ids]
 
 
-def build_smith_waterman_matrix(ids, aligned_ids):  # pylint: disable=invalid-name, too-many-locals
-    # first letters of names should be written with upper case
-    # three locals are defined in order to maintain code in clarity
+def build_smith_waterman_matrix(ids, aligned_ids):
     """Builds and returns Smith-Waterman matrix.
 
     Arguments:
@@ -68,70 +66,67 @@ def build_smith_waterman_matrix(ids, aligned_ids):  # pylint: disable=invalid-na
     represented by current matrix item, traceback (coordinates of next matrix item to choose) and item prefered
     to choose if all adjacent items have the same score.
     """
-    gap_open = 0
+    def compare(col, row, id1, id2):
+        return sw_matrix[row - 1, col - 1, 0] + (match if id1 == id2 else 0)
+
+    def key(insertion_tuple):
+        """
+        Produces tuple of scoring tuple features that are to be submitted to evaluation
+        features to evaluate are, respectively:
+        -- Smith-Waterman value,
+        -- chain character of residue chain
+        -- residue pdb number
+        -- insertion code
+        """
+        return (insertion_tuple[0],) + insertion_tuple[3:]
+
+    def pack_tuple(tup):
+        val, coords2d, pdb_id = tup
+        return val, coords2d[0], coords2d[1], ord(pdb_id[0]), pdb_id[1], ord(pdb_id[2] or '\x00')
+
     match = 1
-    sw_matrix = [[(0, (0, 0))] + [(0, (0, i)) for i, dummy in enumerate(ids)]]
-    # pylint: disable=cell-var-from-loop
-    for row, id1 in enumerate(aligned_ids):
-        # notice that row is delayed by 1 due to additional row
-        sw_matrix.append([(0, (row, 0))])
-        for col, id2 in enumerate(ids):
-            # the same happened with column, while additional column
-            # is constructed
-            compare = lambda: sw_matrix[-2][col][0] + match if id2 == id1 else sw_matrix[-2][col][0]
-            sw_values = (sw_matrix[-1][col][0] + gap_open, sw_matrix[-2][col + 1][0] + gap_open, compare())
+    sw_matrix = np.full((len(aligned_ids) + 1, len(ids) + 1, 6), None)
+    sw_matrix[0, :, 0] = 1
+    sw_matrix[:, 0, 0] = 1
+    # dimes: seq1 + 1, seq2 + 1, (score, back_trace_x_coord, back_trace_y_coord, chain, id, icode)
+    for row, id1 in enumerate(aligned_ids, 1):
+        for col, id2 in enumerate(ids, 1):
+            # notice that row and cols are shifted by 1
+            sw_values = (sw_matrix[row - 1, col, 0], sw_matrix[row, col - 1, 0], compare(col, row, id1, id2))
             # Smith-Waterman values for, respectively: vertical
             # move, horizontal move, match (diagonal move)
-            traceback = ((row + 1, col), (row, col + 1), (row, col))
+            traceback = ((row - 1, col), (row, col - 1), (row - 1, col - 1))
             # traceback is a tuple of matrix coordinates of
             # appropriate matrix entries
             id_to_choose = (id2, id1, id1)
             # ids connected choose of, respectively, vertical,
             # horizontal and diagonal move
-            scoring_tuples = zip(sw_values, traceback, id_to_choose)
-            # scoring_tuple consists of: appropriate Smith-Waterman value, traceback and
-            # id to choose if the value is the highest
-            key = lambda scoring_tuple: (scoring_tuple[0],) + scoring_tuple[2][:2]
-            # key produces tuple of scoring tuple features that are to be submitted to evaluation
-            # features to evaluate are, respectively: --Smith-Waterman value,
-            # -- chain character of residue chain
-            # -- residue pdb number
-            # -- insertion code
-            sw_matrix[-1].append(min(scoring_tuples, key=key))
+            zipper = zip(sw_values, traceback, id_to_choose)
+            scoring_tuples = [pack_tuple(insertion_tuple) for insertion_tuple in zipper]
+            sw_matrix[row, col] = max(scoring_tuples, key=key)
     return sw_matrix
-    # pylint: enable=cell-var-from-loop
-    # creating locals in loop is the point of above loop
 
 
-def go_backwards(sw_matrix, vertical_iterator, horizontal_iterator):
+def go_backwards(sw_matrix):
     """Aligns two sequences contained by Smith-Waterman matrix.
 
     Arguments:
     sw_matrix -- matrix created by build_smith_waterman_matrix function.
-    vertical_iterator, horizontal_iterator -- iterators or generators that iterates over appropriate sequences.
 
     Returns list of aligned items.
     """
-    row = len(sw_matrix) - 1
-    col = len(sw_matrix[0]) - 1
+    def unpack_tuple(tup):
+        return chr(tup[0]), tup[1], None if not tup[2] else chr(tup[2])
+
+    row, col, dummy = sw_matrix.shape
+    row, col = row - 1, col - 1
     new_aligned_ids = []
     while True:
-        break_now = False
-        new_row, new_col = sw_matrix[row][col][1]
-        addition = None
-        if row - 1 == new_row and col - 1 == new_col:
-            addition = next(vertical_iterator)
-            next(horizontal_iterator)
-        elif row - 1 == new_row:
-            addition = next(horizontal_iterator)
-        elif col - 1 == new_col:
-            addition = next(vertical_iterator)
-        if new_row == 0 and new_col == 0:
-            break_now = True
-        row, col = new_row, new_col
-        new_aligned_ids.append(addition)
-        if break_now:
+        new_row, new_col, *tup = sw_matrix[row, col, 1:]
+        new_aligned_ids.append(unpack_tuple(tup))
+        if (new_row, new_col) == (0, 0):
             break
+        row, col = new_row, new_col
     return [i for i in reversed(new_aligned_ids)]
 
 
@@ -208,8 +203,7 @@ class NumberConverter(object):
         of mers common for all models.
         """
         def is_not_water(pdb_residue):
-            import pdb; pdb.set_trace()
-            return False if pdb_residue.get_resname() in ConfigManager.mers.solvent else True
+            return not pdb_residue.get_resname() in ConfigManager.mers.solvent
 
         models_ids = []
         for pdb_model in pdb_models:
@@ -219,7 +213,7 @@ class NumberConverter(object):
         if len(models_ids) > 1:
             models_ids = perform_smith_waterman(models_ids)
 
-        self.dict_ind_to_pdb = dict([(pair[0] + 1, pair[1]) for pair in enumerate(models_ids[0])])
+        self.dict_ind_to_pdb = {ind + 1: pdb_id for ind, pdb_id in enumerate(models_ids[0])}
         self.dict_pdb_to_ind = dict(map(tuple, map(reversed, self.dict_ind_to_pdb.items())))
 
     def get_pdb_id(self, ind):

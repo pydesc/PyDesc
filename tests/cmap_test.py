@@ -45,8 +45,6 @@ def test_golden_standard_pydesc_criterion_protein(structure_file):
     cm_calc = ContactMapCalculator(structure)
     cm = cm_calc.calculate_contact_map()
     res = {frozenset(k): v for k, v in cm._contacts.items()}
-    test = [res[i] == golden_cmap_dict.get(i, None) for i in res]
-    import pdb; pdb.set_trace()
 
     assert golden_cmap_dict == res
 
