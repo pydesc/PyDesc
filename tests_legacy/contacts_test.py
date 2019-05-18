@@ -281,7 +281,7 @@ def make_combcontactbasictest(crit_cls):
                 self.assertEqual(TestCrit.call_count, exp_count, "call_count: %d exp_count: %d i: %d" % (TestCrit.call_count, exp_count, i))
 
         if crit_cls == contacts.ContactsAlternative:
-            @testing(contacts.ContactsAlternative.get_validating_subcriterion)
+            @testing(contacts.ContactsAlternative.get_validating_sub_criterion)
             def test_get_validating_subcriterion(self):
                 mers = [1,2,3,4,5,6]
                 tc = {(1,2): TestCrit1(1,2), (3,4): TestCrit1(3,4), (5,6): TestCrit1(5,6)}
@@ -289,7 +289,7 @@ def make_combcontactbasictest(crit_cls):
                 for i in mers:
                     for j in mers:
                         try:
-                            sbc = crit.get_validating_subcriterion(i, j)
+                            sbc = crit.get_validating_sub_criterion(i, j)
                         except ValueError:
                             self.assertTrue((i, j) not in tc and (j, i) not in tc, "mers %i and %i has no contact while they should")
                         else:

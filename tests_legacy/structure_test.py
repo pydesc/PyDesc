@@ -182,7 +182,7 @@ def make_structuretest(strname):
 
         def test_continuity(self):
             for mer in self.struct:
-                if isinstance(mer, monomer.MonomerChainable):
+                if isinstance(mer, monomer.MerChainable):
                     if mer.next_mer:
                         self.assertEqual(mer, mer.next_mer.previous_mer)
                     if mer.previous_mer:
@@ -223,7 +223,7 @@ def make_structuretest(strname):
                                 #~ self.assertEqual(slc.next_mer(m1), m2)
                             # TO is_next is deprecated, so:
                             if len(slc) == 1:
-                                seg = True if isinstance(slc[0], monomer.MonomerChainable) else False
+                                seg = True if isinstance(slc[0], monomer.MerChainable) else False
                                 break
                             if m1.next_mer == m2:
                                 self.assertEqual(slc.next_mer(m1), m2)
@@ -292,7 +292,7 @@ def make_structuretest(strname):
         def test_getsequence(self):
             for ch in self.struct.chains:
                 seq = ch.get_sequence()
-                chainable = filter(lambda x: isinstance(x, monomer.MonomerChainable), ch)
+                chainable = filter(lambda x: isinstance(x, monomer.MerChainable), ch)
                 self.assertEqual(len(seq), len(chainable), "Wrong len of sequence of %s chain" % ch.chain_char)
 
         def test_select(self):
@@ -328,7 +328,7 @@ def make_structuretest(strname):
             config.ConfigManager.element.set("element_chainable_length", 5)
 
             for (i, m) in enumerate(whole):
-                if isinstance(m, monomer.MonomerChainable):
+                if isinstance(m, monomer.MerChainable):
                     willfail = False
                     mer_ch = max([ch for ch in chs if m in ch])
                     index = mer_ch.index(m)
@@ -363,7 +363,7 @@ def make_structuretest(strname):
                         self.assertEqual(el.start, s)
                         self.assertEqual(el.end, e)
 
-                elif isinstance(m, monomer.MonomerOther):
+                elif isinstance(m, monomer.MerOther):
                     tests_performed['ElementOther'] = True
                     el = structure.ElementOther(m)
 
@@ -459,7 +459,7 @@ def make_structuretest(strname):
                     for i, j in zip(slc[:-2], slc[-len(slc) + 1:]):
                         if i.next_mer == j:
                             continue
-                        if isinstance(i, monomer.MonomerChainable):
+                        if isinstance(i, monomer.MerChainable):
                             conts += 1
                     self.assertTrue(conts <= slc.adjusted_number())
 
@@ -611,7 +611,7 @@ def make_descriptortest(strname):
                 if isinstance(desc, structure.ProteinDescriptor):
                     self.assertSetEqual(set(desc._monomers), set(reduce(operator.add, desc.segments)))
                 else:
-                    self.assertSetEqual(set(filter(lambda i: isinstance(i, monomer.MonomerChainable), desc._monomers)), set(reduce(operator.add, desc.segments)))
+                    self.assertSetEqual(set(filter(lambda i: isinstance(i, monomer.MerChainable), desc._monomers)), set(reduce(operator.add, desc.segments)))
 
                 self.assertEqual(len(list(desc)), len(set(desc)))
 

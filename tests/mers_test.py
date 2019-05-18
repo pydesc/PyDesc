@@ -2,7 +2,7 @@ import pytest
 import os.path
 import Bio.PDB
 
-from pydesc.mers import MonomerFactory
+from pydesc.mers import MerFactory
 from pydesc.mers import Nucleotide
 from pydesc.mers import Residue
 from pydesc.mers import Ion
@@ -23,7 +23,7 @@ class TestMonomerFactory(object):
     @pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_TYPE)
     def test_default_monomer_factory_create_from_pdb_res(self, type_, struc_file):
 
-        factory = MonomerFactory()
+        factory = MerFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
             struc_file,
             os.path.join(
@@ -54,7 +54,7 @@ class TestMonomerFactory(object):
             '%i out of %i residues are of expected type' % (points[True], length)
 
     def test_create_residue_from_pdb_res(self):
-        factory = MonomerFactory()
+        factory = MerFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
             '5MPV.pdb',
             os.path.join(
@@ -94,7 +94,7 @@ class MerTest(object):
 
     @staticmethod
     def iter_structure(dir_, file_, class_):
-        factory = MonomerFactory()
+        factory = MerFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
             file_,
             os.path.join(

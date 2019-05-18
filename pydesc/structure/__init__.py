@@ -49,7 +49,7 @@ class StructureLoader(object):
     def __init__(self,
                  handler=pydesc.dbhandler.MetaHandler(),
                  parser=pydesc.dbhandler.MetaParser(QUIET=True),
-                 mer_factory=pydesc.mers.MonomerFactory(),
+                 mer_factory=pydesc.mers.MerFactory(),
                  ):
         """Structure loader constructor.
 
@@ -319,7 +319,7 @@ class AbstractStructure(object):
             if isinstance(param, pydesc.numberconverter.PDBid) or isinstance(param, tuple):
                 # if given parameter already is a PDB_id or a coresponding tuple instance
                 param = self.derived_from.converter.get_ind(param)
-            if isinstance(param, pydesc.mers.Monomer):
+            if isinstance(param, pydesc.mers.Mer):
                 return self._mers.index(param)
             try:
                 # if parameter is an integer - it is probably monomer ind
@@ -470,7 +470,7 @@ class AbstractStructure(object):
         skip_other -- True or False; by default set on True. If so - only chainable mers are considered.
         """
         if skip_other:
-            objs = [i for i in self if isinstance(i, pydesc.mers.MonomerChainable)]
+            objs = [i for i in self if isinstance(i, pydesc.mers.MerChainable)]
         else:
             objs = list(self)
         sequence = map(operator.attrgetter(attr), objs)
@@ -651,7 +651,7 @@ class Structure(AbstractStructure):
         elif not isinstance(file_path, str):
             file_path = file_path.name
         sec_stc = DSSP(self.pdb_model, file_path, dssp)
-        for mer in pydesc.selection.MonomerType(pydesc.mers.MonomerChainable).create_structure(self):
+        for mer in pydesc.selection.MonomerType(pydesc.mers.MerChainable).create_structure(self):
             pdbid = mer.get_pdb_id()
             try:
                 restup = sec_stc[mer.my_chain, (' ', pdbid[1], ' ' if pdbid[2] is None else pdbid[2])]
@@ -931,7 +931,7 @@ class ElementChainable(Element, Segment):
 
         Sets ElementChainable's list of Monomers.
         """
-        if not isinstance(monomer_obj, pydesc.mers.MonomerChainable):
+        if not isinstance(monomer_obj, pydesc.mers.MerChainable):
             raise WrongMerType("Cannot create chainable element using given mer: %i." % monomer_obj.ind)
         Element.__init__(self, monomer_obj)
         length = ConfigManager.element.element_chainable_length  # pylint: disable=no-member
@@ -955,7 +955,7 @@ class ElementOther(Element):
         Argument:
         monomer_obj -- instance of any pydesc.monomer.MonomerOther subclass.
         """
-        if not isinstance(monomer_obj, pydesc.mers.MonomerOther):
+        if not isinstance(monomer_obj, pydesc.mers.MerOther):
             raise TypeError("Wrong monomer given to create ElementOther instance: %s" % str(monomer_obj.get_pdb_id()))
         super(ElementOther, self).__init__(monomer_obj)
 
@@ -1166,7 +1166,7 @@ class AbstractDescriptor(AbstractStructure):
 
         NOTE: First number in a file is always a number of its lines and num of central monomer
         """
-        monomer_types = sorted([mon_type for mon_class in pydesc.mers.Monomer.__subclasses__() for mon_type in
+        monomer_types = sorted([mon_type for mon_class in pydesc.mers.Mer.__subclasses__() for mon_type in
                                 mon_class.__subclasses__()], key=lambda x: x.__name__)  # pylint: disable=no-member
         # subclasses are avalible
         locations = [[0, monomer_obj.ind, 0] for monomer_obj in self._mers]

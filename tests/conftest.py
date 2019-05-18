@@ -26,6 +26,7 @@ TYPE_DICT = {
     'dna_only': Nucleotide,
     'rna_only': Nucleotide,
     'prots_only': Residue,
+    'prots_only_nmr': Residue,
     'PorCA_only': Ion}
 
 DIR_DICT = {v: k for k, v in TYPE_DICT.items()}

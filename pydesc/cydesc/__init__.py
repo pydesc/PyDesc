@@ -52,7 +52,7 @@ def load_library(name):
 
     try:
         req = pkg_resources.get_distribution('pydesc').as_requirement()  # pylint: disable=E1103
-        if pydesc.__file__ != pkg_resources.resource_filename(req, 'pydesc/__init__.py'):  # pylint: disable=E1101
+        if pydesc.__file__ != pkg_resources.resource_filename(req, 'pydesc/maps.py'):  # pylint: disable=E1101
             req = None
 
     except pkg_resources.DistributionNotFound:

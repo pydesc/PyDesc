@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Unit tests_legacy for cydesc/__init__.py.
+Unit tests_legacy for cydesc/maps.py.
 
 Usage:
     python cydesc_test.py [-v] [--fast]

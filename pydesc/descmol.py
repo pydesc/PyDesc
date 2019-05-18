@@ -527,7 +527,7 @@ if __name__ == "pydesc.descmol":
     geometry.TRTMatrix.transform = transform_decorator(geometry.TRTMatrix.transform)
     geometry.TRTMatrix.convert_to_flat_pymol_matrix = convert_to_pml_mtx
     # MONOMER
-    mers.Monomer.iter_pseudoatoms = iter_pseudoatoms
+    mers.Mer.iter_pseudoatoms = iter_pseudoatoms
     # CONTACTMAP
     contactmap.ContactMap.show_contacts = show_contacts
 # pylint: enable=protected-access

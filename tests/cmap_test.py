@@ -61,3 +61,14 @@ def test_golden_standard_rc_protein(structure_file):
     res = {frozenset(k): v for k, v in cm._contacts.items()}
 
     assert golden_cmap_dict == res
+
+
+@pytest.mark.system
+def test_1no5_default_criteria_cmap():
+    sl = StructureLoader()
+    structure, = sl.load_structures('1no5')
+
+    cmc = ContactMapCalculator(structure)
+    cmap = cmc.calculate_contact_map()
+
+    assert len(cmap) > 30

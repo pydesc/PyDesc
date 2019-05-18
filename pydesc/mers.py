@@ -219,7 +219,7 @@ ConfigManager.structure_mon.set_default("simple_secondary_structure_code", {
 # pylint: enable=no-member
 
 
-class MonomerFactory(object):
+class MerFactory(object):
     """Factory class for Monomer subclass instances."""
 
     def __init__(self, classes=None):
@@ -236,11 +236,11 @@ class MonomerFactory(object):
 
     @property
     def chainable(self):
-        return [i for i in self.classes if issubclass(i, MonomerChainable)]
+        return [i for i in self.classes if issubclass(i, MerChainable)]
 
     @property
     def other(self):
-        return [i for i in self.classes if issubclass(i, MonomerOther)]
+        return [i for i in self.classes if issubclass(i, MerOther)]
 
     def copy_mer(self, mer):
         """Return copy of given mer.
@@ -293,7 +293,7 @@ class MonomerFactory(object):
             ind = None
 
         if base is None:
-            base = Monomer(
+            base = Mer(
                 structure_obj,
                 ind,
                 *self.unpack_pdb_residue(pdb_residue, name)
@@ -304,7 +304,7 @@ class MonomerFactory(object):
             for class_ in self.classes:
                 warnings_.raise_all(class_)
 
-        mers[Monomer] = base
+        mers[Mer] = base
         return mers, warnings_
 
     def _create_possible_monomers(self, base_monomer, warnings_, classes):
@@ -476,7 +476,7 @@ class DynamicPropertiesDict(dict):
             object.__getattribute__(self.owner, "calculate_%s" % key)()
 
 
-class Monomer(object):
+class Mer(object):
     """Abstract class, representation of mers and particles present in molecular structures.
 
     Subclasses:
@@ -521,12 +521,12 @@ class Monomer(object):
             cls_name = cls.__name__.lower()
 
             branch = ConfigManager.mers  # pylint: disable=no-member
-            if cls_name != 'monomer':
+            if cls_name != 'mer':
                 branch = getattr(branch, cls_name)
 
             res = getattr(branch, prop_name)
         except AttributeError:
-            if issubclass(cls.__base__, Monomer):  # pylint: disable=no-member
+            if issubclass(cls.__base__, Mer):  # pylint: disable=no-member
                 res = cls.__base__.get_config(
                     prop_name)  # pylint:disable=no-member, protected-access
                 # __base__ is not absent
@@ -680,7 +680,7 @@ class Monomer(object):
                 additional_dictionary = {}
             return code_dictionary[seq] if seq in code_dictionary else additional_dictionary[seq]
         except AttributeError:
-            if issubclass(cls.__base__, Monomer):  # pylint:disable=no-member
+            if issubclass(cls.__base__, Mer):  # pylint:disable=no-member
                 # ??? Monomer has no __base__
                 return cls.__base__.seq_3to1(seq)  # pylint:disable=no-member
                 # ??? same here
@@ -702,7 +702,7 @@ class Monomer(object):
             raise KeyError('Cannot translate %s to 3 letter code' %
                            (cls_name + " symbol " + let,))
         except AttributeError:
-            if issubclass(cls.__base__, Monomer):  # pylint:disable=no-member
+            if issubclass(cls.__base__, Mer):  # pylint:disable=no-member
                 return cls.__base__.seq_1to3(let)  # pylint:disable=no-member
                 # Monomer has __base__ attr
             raise AttributeError(
@@ -773,7 +773,7 @@ class Monomer(object):
         return temp[self._ss]
 
 
-class MonomerChainable(Monomer):
+class MerChainable(Mer):
     """Abstract class, representation of residue or nucleotide.
 
     Subclasses:
@@ -786,7 +786,7 @@ class MonomerChainable(Monomer):
 
         Extends superclass method.
         """
-        Monomer.__init__(self, structure_obj, ind, name, chain, atoms)
+        Mer.__init__(self, structure_obj, ind, name, chain, atoms)
 
         try:
             if self.get_config('check_distances'):
@@ -903,7 +903,7 @@ class MonomerChainable(Monomer):
             return None
 
 
-class Residue(MonomerChainable):
+class Residue(MerChainable):
     """Representation of a residue."""
 
     @staticmethod
@@ -983,7 +983,7 @@ class Residue(MonomerChainable):
         max_c_o_dist
         old_cbx_calculation -- True or False
         """
-        MonomerChainable.__init__(self, structure_obj, ind, name, chain, atoms)
+        MerChainable.__init__(self, structure_obj, ind, name, chain, atoms)
         self.calculate_cbx()
 
     def finalize(self):
@@ -1161,7 +1161,7 @@ class Residue(MonomerChainable):
         self.pseudoatoms['cbx'] = Pseudoatom(*pattern[2], name='cbx')
 
 
-class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
+class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
 
     """Representation of a nucleotide."""
 
@@ -1188,7 +1188,7 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
         min_c3'_o3'_dist
         max_c3'_o3'_dist
         """
-        MonomerChainable.__init__(self, structure_obj, ind, name, chain, atoms)
+        MerChainable.__init__(self, structure_obj, ind, name, chain, atoms)
 
         rats = self.get_config('ring_atoms')
 
@@ -1225,7 +1225,7 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
         # current method is called by init
 
     def calculate_proximate_ring_center(self):
-        """Adds pseudoatom representing center of the base ring beeing closer to glycosidic bond."""
+        """Adds pseudoatom representing center of the base ring being closer to glycosidic bond."""
         try:
             vec = numpy.array([0., 0., 0.])
             for at in ('C4', 'C5', 'N7', 'C8', 'N9'):
@@ -1233,7 +1233,7 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
             vec /= 5.
             self.pseudoatoms['prc'] = Pseudoatom(numpy_vec=vec, name='prc')
         except KeyError:
-            self.pseudoatoms['prc'] = None
+            pass
 
     @property
     def prc(self):
@@ -1258,7 +1258,7 @@ class Nucleotide(MonomerChainable):  # TODO: Improve ConfigManager access
         self.pseudoatoms['nx'] = Pseudoatom(numpy_vec=nx, name='nx')
 
 
-class MonomerOther(Monomer):
+class MerOther(Mer):
     """Abstract class, representation for ligands.
 
     Subclasses:
@@ -1276,7 +1276,7 @@ class MonomerOther(Monomer):
 
         Extends superclass method.
         """
-        Monomer.__init__(self, structure_obj, ind, name, chain, atoms)
+        Mer.__init__(self, structure_obj, ind, name, chain, atoms)
 
     # pylint:disable=no-self-use
     # following methods are needed and should not be a function
@@ -1304,7 +1304,7 @@ class MonomerOther(Monomer):
 # pylint:enable=no-self-use
 
 
-class Ion(MonomerOther):
+class Ion(MerOther):
     """Representation of an ion ligand."""
 
     def __init__(self, structure_obj, ind, name, chain, atoms):
@@ -1331,7 +1331,7 @@ class Ion(MonomerOther):
             return 2.5
 
 
-class Ligand(MonomerOther):
+class Ligand(MerOther):
     """Representation of any ligand except ions."""
 
     def __init__(self, structure_obj, ind, name, chain, atoms):
@@ -1346,4 +1346,4 @@ class Ligand(MonomerOther):
         super(Ligand, self).__init__(structure_obj, ind, name, chain, atoms)
 
 
-Monomer.reset_config_cache()
+Mer.reset_config_cache()

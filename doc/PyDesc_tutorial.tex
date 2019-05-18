@@ -758,7 +758,7 @@ class PaACrt(SetDistanceCriterion):
     monomer_hallmark = 'pseudoatoms'
     monomer_hallmark2 = 'atoms'
 
-crt = PaACrt(criterion_distance=4.5, undecidable_range=.5, num_of_checked_pairs=2)
+crt = PaACrt(distance_threshold=4.5, undecidable_range=.5, num_of_checked_pairs=2)
 \end{lstlisting}
 
 Initializator of such criteria can be feed with threshold and undecidable range, but also with number of pairs to meet those criteria. By default it is set to 2.

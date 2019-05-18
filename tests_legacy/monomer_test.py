@@ -68,7 +68,7 @@ def make_monomertestinits(strname, test_structure_dir, cls, names, crucial_atoms
 
         @classmethod
         def setUpClass(clss):
-            clss.mf = monomer.MonomerFactory()
+            clss.mf = monomer.MerFactory()
 
         def setUp(self):
             self.pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(strname, os.path.join(data_dir, test_structure_dir, strname))
@@ -112,7 +112,7 @@ def make_monomertestbasic(strname, test_structure_dir, cls, names):
             config.ConfigManager.monomer.ion.set_default('test', 4)
             test_dict = {monomer.Residue: 1, monomer.Nucleotide: 2, monomer.Ligand: 3, monomer.Ion: 4}
             for n, res in enumerate(self.pdb_structure.get_residues()):
-                if cls == monomer.MonomerOther:
+                if cls == monomer.MerOther:
                     cls = res.__class__
                 self.assertEqual(test_dict[cls], res.get_config('test'), "")
 
@@ -283,14 +283,14 @@ def make_monomercreatetest(strname):
         def test_init(self):
             for res in self.pdb_structure.get_residues():
                 res_id = res.get_id()[0]
-                m = monomer.Monomer.create_monomers(res)
+                m = monomer.Mer.create_monomers(res)
                 if res_id.startswith('W'):
                     self.assertIsNone(m, "%s is water. No monomer should be created." % str(res.get_id()))
                     continue
                 elif res_id.startswith('H_'):
                     #~ self.assertIsInstance(m, monomer.MonomerOther, "%s is hetero. MonomerOther should be created." % str(res.get_id()))
                     # since create_monomers has been changed and returns dictionary, I need to change the test:
-                    self.assertTrue(any(isinstance(i, monomer.MonomerOther) for i in m.values()), "%s is hetero. MonomerOther should be created (struc %s)." % (str(res.get_id()), self.pdb_structure.id))
+                    self.assertTrue(any(isinstance(i, monomer.MerOther) for i in m.values()), "%s is hetero. MonomerOther should be created (struc %s)." % (str(res.get_id()), self.pdb_structure.id))
                 else:
 
                     def hasitem(obj, name):
@@ -299,7 +299,7 @@ def make_monomercreatetest(strname):
                             return True
                         except KeyError:
                             return False
-                    mch = [i for i in m.values() if isinstance(i, monomer.MonomerChainable)]
+                    mch = [i for i in m.values() if isinstance(i, monomer.MerChainable)]
                     if len(mch) == 0:
                         for cls, additionally in [[monomer.Residue, ('CB',)], [monomer.Nucleotide, ('',)]]:
                             needed_atoms = cls.get_config('backbone_atoms') + additionally
@@ -330,7 +330,7 @@ def make_monomerfactorytest(strname, test_structure_dir, cls_):
             cls.cls = cls_
 
         def setUp(self):
-            self.mf = monomer.MonomerFactory()
+            self.mf = monomer.MerFactory()
 
         def test_init(self):
             pass

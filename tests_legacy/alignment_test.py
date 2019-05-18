@@ -81,7 +81,7 @@ class AlignmentTest(unittest.TestCase):
             def __init__(self):
                 pass
 
-        class TestMer(monomer.Monomer):
+        class TestMer(monomer.Mer):
             def __init__(self, ind, struc):
                 self.ind = ind
                 self.structure = struc
