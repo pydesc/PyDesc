@@ -146,11 +146,12 @@ class TestNucleotide(MerTest):
                     ('prc', Nucleotide.calculate_proximate_ring_center),
                     ('ring_center', Nucleotide.calculate_ring_center),
             ):
-                assert feat in result.pseudoatoms
-                del result.pseudoatoms[feat]
+                assert getattr(result, feat)
+                try:
+                    del result.pseudoatoms[feat]
+                except KeyError:
+                    pass
                 mth(result)
-                if result.pseudoatoms[feat] is None:  # like 'prc'
-                    continue
                 assert (result.rc - getattr(result, feat)).calculate_length() < 10
             checked += 1
         assert checked != 0

@@ -562,7 +562,7 @@ print structure.contact_map
 with open("2dlc_cmap.csv", "w") as fhobj:
     structure.contact_map.dump(fhobj)
 
-print structure.contact_map.get_monomer_contacts(90)
+print structure.contact_map.get_mer_contacts(90)
 
 print structure.contact_map.get_contact_value(90, 50)
 print structure.contact_map.get_contact_value(90, 96)
@@ -614,7 +614,7 @@ from pydesc.contacts import CaContact
 
 structure = StructureLoader().load_structures('2dlc')[0]
 structure.set_contact_map(CaContact())
-print structure.contact_map.get_monomer_contacts(90)
+print structure.contact_map.get_mer_contacts(90)
 \end{lstlisting}
 Output:
 \begin{lstlisting}
@@ -627,7 +627,7 @@ By default that criterion uses threshold equals to 6.00 and so called \textit{un
 
 \begin{lstlisting}
 structure.set_contact_map(CaContact(8., .75))
-print structure.contact_map.get_monomer_contacts(90)
+print structure.contact_map.get_mer_contacts(90)
 \end{lstlisting}
 Output:
 \begin{lstlisting}
@@ -638,11 +638,11 @@ If no arguments is passed to initializator, settings from configuration manager:
 
 \begin{lstlisting}
 structure.set_contact_map(CaContact())
-print structure.contact_map.get_monomer_contacts(90)
+print structure.contact_map.get_mer_contacts(90)
 ConfigManager.contacts.ca_contact_distance = 8.0
 ConfigManager.contacts.ca_contact_undecidable_range = 0.75
 structure.set_contact_map(CaContact())
-print structure.contact_map.get_monomer_contacts(90)
+print structure.contact_map.get_mer_contacts(90)
 \end{lstlisting}
 Output:
 \begin{lstlisting}
@@ -659,9 +659,9 @@ ca_crit_SD = CaContact()
 ca_crit_8_75 = CaContact(8., .75)
 
 structure.set_contact_map(ca_crit_SD)
-print structure.contact_map.get_monomer_contacts(90)
+print structure.contact_map.get_mer_contacts(90)
 structure.set_contact_map(ca_crit_8_75)
-print structure.contact_map.get_monomer_contacts(90)
+print structure.contact_map.get_mer_contacts(90)
 \end{lstlisting}
 Output:
 \begin{lstlisting}
@@ -676,9 +676,9 @@ ConfigManager.contacts.ca_contact_distance = 6.0
 ConfigManager.contacts.ca_contact_undecidable_range = 0.50
 
 structure.set_contact_map(ca_crit_SD)
-print structure.contact_map.get_monomer_contacts(90)
+print structure.contact_map.get_mer_contacts(90)
 structure.set_contact_map(ca_crit_8_75)
-print structure.contact_map.get_monomer_contacts(90)
+print structure.contact_map.get_mer_contacts(90)
 \end{lstlisting}
 Output:
 \begin{lstlisting}

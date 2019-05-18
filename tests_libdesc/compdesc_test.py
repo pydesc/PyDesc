@@ -199,7 +199,7 @@ def prep_desc(desc_name):
         struct = load_struct(str_name)
 
     ind = struct.converter.get_ind(pdb_id)
-    desc = structure.AbstractDescriptor.build(structure.Element.build(struct[ind]))
+    desc = structure.AbstractDescriptor.build(structure.AbstractElement.build(struct[ind]))
 
     return desc
 
@@ -217,7 +217,7 @@ def build_descs(structure_obj):
 
     for mer in structure_obj:
         try:
-            desc = structure.AbstractDescriptor.build(structure.Element.build(mer))
+            desc = structure.AbstractDescriptor.build(structure.AbstractElement.build(mer))
         except:
             pass
         else:

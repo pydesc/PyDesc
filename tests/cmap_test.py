@@ -12,7 +12,7 @@ from pydesc.contacts import ContactMapCalculator
 from pydesc.contacts.contacts import RcContact
 from pydesc.config import ConfigManager
 
-ConfigManager.warnings_and_exceptions.set("quiet", True)
+ConfigManager.warnings.set("quiet", True)
 
 PROTS_DIR = 'prots_only'
 

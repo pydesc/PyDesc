@@ -9,7 +9,7 @@ from pydesc.structure import StructureLoader
 
 from pydesc.config import ConfigManager
 
-ConfigManager.warnings_and_exceptions.set("quiet", True)
+ConfigManager.warnings.set("quiet", True)
 
 
 def assert_structure(structure):

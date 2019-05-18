@@ -199,55 +199,30 @@ class ContactMap(object):
         try:
             return self.get_contact_value(*item)
         except TypeError:
-            return self.get_monomer_contacts(item)
+            return self.get_mer_contacts(item)
 
-    def get_monomer_contacts(self, monomer_id, raw_numbering=False):
+    def get_mer_contacts(self, mer_id):
         """Returns list of given monomer contacts.
 
         Contact is a tuple containing given monomer ind, ind of monomer that stays in contacts with it and
         contact value in three-valued logic. Distance evaluation is based on settings in configuration manager.
 
         Arguments:
-        monomer_id -- monomer instance, PDB_id instance (or tuple containing proper values; see number converter
+        mer_id -- monomer instance, PDB_id instance (or tuple containing proper values; see number converter
         docstring for more information), PyDesc ind or monomer index on a list of structure mers.
-        raw_numbering -- True or False. Idicates if monomer_id is a PyDesc ind (False) or a monomer list index (True).
         """
-        ind = self._convert_to_ind(monomer_id, raw_numbering)
-        return self._contacts[ind].items()
+        return self._contacts[mer_id].items()
 
-    def get_contact_value(self, monomer_id_1, monomer_id_2, raw_numbering=False):
+    def get_contact_value(self, mer_id1, mer_id2):
         """Returns value of contact between two given mers according to three-valued logic.
 
         Arguments:
-        monomer_id_1 -- reference to first monomer in concatc which value is to be checked. Reference could be:
+        mer_id1 -- reference to first monomer in contact which value is to be checked. Reference could be:
         monomer instance itself, its PyDesc ind, its PDB_id instance (or tuple containing proper values; see number
         converter docstring for more information) or monomer index on a list of structure mers.
-        monomer_id_2 -- reference to second monomer corresponding to monomer_id_1.
-        raw_numbering -- True or False. Idicates if given ids are PyDesc inds (False) or a monomer list indexes (True).
+        mer_id2 -- reference to second monomer corresponding to mer_id1.
         """
-        ind1 = self._convert_to_ind(monomer_id_1, raw_numbering=raw_numbering)
-        ind2 = self._convert_to_ind(monomer_id_2, raw_numbering=raw_numbering)
-        return self._contacts[ind1, ind2]
-
-    def _convert_to_ind(self, monomer_id, raw_numbering=False):
-        """Returns PyDesc ind based on any given reference to monomer.
-
-        Arguments:
-        monomer_id -- reference that could be monomer instance itself, its PyDesc ind, its PDB_id instance (or tuple
-        containing proper values; see numberconverter docstring for more information) or monomer index on a list
-        of structure mers.
-        raw_numbering -- True or False. Indicates if given ids are PyDesc inds (False) or a monomer list indexes (True).
-        """
-        if raw_numbering:
-            monomer_id = tuple(self.structure)[monomer_id]
-
-        try:
-            return monomer_id.ind
-        except AttributeError:
-            try:
-                return self.structure.derived_from.converter.get_ind(monomer_id)
-            except Exception as e:  # TODO: what error is raised?
-                return monomer_id  # should be int in that case
+        return self._contacts[mer_id1, mer_id2]
 
     def to_string(self, stream_out):
         """Dumps pairs of mers in contacts to a given file-like object in CSV format."""

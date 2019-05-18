@@ -4,6 +4,10 @@ from pydesc.mers import Nucleotide
 from pydesc.mers import Residue
 from pydesc.mers import Ion
 
+from pydesc.config import ConfigManager
+
+ConfigManager.warnings.class_filters.UnknownParticleName = 'ignore'
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_STRUCTURES_DIR = os.path.join(BASE_DIR, 'data', 'test_structures')
 TEST_CMAPS_DIR = os.path.join(BASE_DIR, 'data', 'validated_cmaps')
@@ -24,9 +28,12 @@ for type_ in os.listdir(TEST_STRUCTURES_DIR):
 
 TYPE_DICT = {
     'dna_only': Nucleotide,
+    'dna_only_nmr': Nucleotide,
     'rna_only': Nucleotide,
+    'rna_only_nmr': Nucleotide,
     'prots_only': Residue,
     'prots_only_nmr': Residue,
-    'PorCA_only': Ion}
+    'PorCA_only': Ion,
+}
 
 DIR_DICT = {v: k for k, v in TYPE_DICT.items()}

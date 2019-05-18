@@ -15,18 +15,4 @@
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
-class PropertiesRecord(object):
 
-    """Class that stores properties values."""
-
-    def __init__(self, initial_annotations):
-        """Record constructor.
-
-        Argument:
-        initial_annotations -- dict; keys are attrs names (strings), while values are any pyhon objects.
-        """
-        for name, value in initial_annotations.items():
-            setattr(self, name, value)
-
-    def __repr__(self):
-        return "".join(["<Rec:"] + [name + " - " + str(value) + "; " for name, value in self.__dict__.items()] + [">"])

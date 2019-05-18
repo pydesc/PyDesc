@@ -9,7 +9,7 @@ from pydesc.structure import StructureLoader, AbstractStructure
 from pydesc import selection
 from pydesc.config import ConfigManager
 
-ConfigManager.warnings_and_exceptions.quiet = True
+ConfigManager.warnings.quiet = True
 
 
 @pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_TYPE_SHORT)

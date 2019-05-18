@@ -387,7 +387,7 @@ def make_cdescriptortest(strname):
 
             for m in cls.struct:
                 try:
-                    cls.descriptors.append(structure.AbstractDescriptor.build(structure.Element.build(m)))
+                    cls.descriptors.append(structure.AbstractDescriptor.build(structure.AbstractElement.build(m)))
                 except (TypeError, ValueError):
                     pass
 

@@ -250,7 +250,7 @@ def make_dscstructuretest(name):
 
             for desc_ind in self.dscfile.contacts.keys():
                 try:
-                    dummy = structure.Element.build(dscstructure[desc_ind])
+                    dummy = structure.AbstractElement.build(dscstructure[desc_ind])
                 except:
                     self.fail("Couldn't build an element around residue with contacts: %s" % str(self.dscfile.main[desc_ind]))
 

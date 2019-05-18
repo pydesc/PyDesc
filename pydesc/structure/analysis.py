@@ -32,7 +32,8 @@ def calc_R(vec):
     """Returns Re and Im parts for sum of given angles vector."""
     return numpy.sum(numpy.sin(vec)), numpy.sum(numpy.cos(vec))
 
-def adi(vec): #  ADI
+
+def adi(vec):  # ADI
     """Calculates and returns ADI value.
 
     Argument:
@@ -48,6 +49,7 @@ def adi(vec): #  ADI
 
     return res
 
+
 def adis(vec):
     """Calculates and returns ADI with sign.
 
@@ -59,7 +61,8 @@ def adis(vec):
     r2 = calc_R(vec[len(vec) - n:])
     return numpy.sign(numpy.cross(r1, r2)) * adi(vec)
 
-def adicum(vec): #  ADI
+
+def adicum(vec):  # ADI
     """Calculates cumulative ADI for vector of phi and psi angles sums."""
 
     sums = 0
@@ -73,20 +76,21 @@ def adicum(vec): #  ADI
     for angle in vec:
         sums1 += numpy.sin(angle)
         sumc1 += numpy.cos(angle)
-        angle = numpy.arctan2(sums1,sumc1)
+        angle = numpy.arctan2(sums1, sumc1)
         sums += numpy.sin(angle)
         sumc += numpy.cos(angle)
         sumss += numpy.sin(2 * angle)
         sumcc += numpy.cos(2 * angle)
 
-    mod = numpy.sqrt(sums**2 + sumc**2)
-    modd = numpy.sqrt(sumss**2 + sumcc**2)
+    mod = numpy.sqrt(sums ** 2 + sumc ** 2)
+    modd = numpy.sqrt(sumss ** 2 + sumcc ** 2)
     nval = nlines
-    res = nval * (nval - modd) / (2 * mod**2)
+    res = nval * (nval - modd) / (2 * mod ** 2)
 
     return res
 
-def atip(vec): #  ATIP
+
+def atip(vec):  # ATIP
     """Calculates ATIP index for vector of phi and psi angles sums."""
 
     nlines = len(vec)
@@ -94,7 +98,7 @@ def atip(vec): #  ATIP
     numbseries = int(nlines / float(minframes))
     rangeold = 0
 
-    #~ import pdb; pdb.set_trace()
+    # ~ import pdb; pdb.set_trace()
 
     for p in range(2, numbseries):
         numbstep = int(nlines / float(p))
@@ -119,7 +123,8 @@ def atip(vec): #  ATIP
 
     return rangeold
 
-def atin(vec): #  ATIN
+
+def atin(vec):  # ATIN
     """Calculates ATIN index for vector of phi and psi angles sums."""
 
     nlines = len(vec)
@@ -143,7 +148,7 @@ def atin(vec): #  ATIN
             imin = imax
             imax = imin + numbstep
             if imax > nlines:
-                    break
+                break
 
     numbstep = 2
     numbseries = int(nlines / float(numbstep))
@@ -163,23 +168,23 @@ def atin(vec): #  ATIN
             iadi = adi(vec[imin:imax])
             if itry == 0:
                 aveadi1 = aveadi1 + iadi
-                sdadi1 = sdadi1 + iadi**2
+                sdadi1 = sdadi1 + iadi ** 2
             else:
                 aveadi2 = aveadi2 + iadi
-                sdadi2 = sdadi2 +  iadi**2
+                sdadi2 = sdadi2 + iadi ** 2
             imin = imax
             imax = imin + numbstep
             if imax > nlines:
-                    break
+                break
 
         if itry == 0:
             aveadi1 = aveadi1 / float(numbseries)
             sdadi1 = sdadi1 / float(numbseries)
-            sdadi1 = numpy.sqrt(sdadi1 - aveadi1**2)
+            sdadi1 = numpy.sqrt(sdadi1 - aveadi1 ** 2)
         else:
             aveadi2 = aveadi2 / float(numbseries)
             sdadi2 = sdadi2 / float(numbseries)
-            sdadi2 = numpy.sqrt(sdadi2 - aveadi2**2)
+            sdadi2 = numpy.sqrt(sdadi2 - aveadi2 ** 2)
 
     sdadi = max(sdadi1, sdadi2)
     q = adimin
@@ -189,7 +194,8 @@ def atin(vec): #  ATIN
 
     return atin
 
-def tai(adi1,adi2,ati1,ati2,mai,pai): #  TAI
+
+def tai(adi1, adi2, ati1, ati2, mai, pai):  # TAI
     ndef = 3
     pai1 = numpy.arctan2(ati1, adi1)
     pai2 = numpy.arctan2(ati2, adi2)
@@ -201,20 +207,21 @@ def tai(adi1,adi2,ati1,ati2,mai,pai): #  TAI
         if mai2 < eps:
             mai = mai1
             pai = numpy.sqrt(pai1 * pai2)
-    elif ndef==2:
-            sumwt = adi1 + adi2
-            mai = (mai1 * adi1 + mai2 * adi2) / sumwt
-            pai = numpy.sqrt(pai1 * pai2)
+    elif ndef == 2:
+        sumwt = adi1 + adi2
+        mai = (mai1 * adi1 + mai2 * adi2) / sumwt
+        pai = numpy.sqrt(pai1 * pai2)
     elif ndef == 3:
-            sums = mai1 * numpy.sin(pai1) + mai2 * numpy.sin(pai2)
-            sumc = mai1 * numpy.cos(pai1) + mai2 * numpy.cos(pai2)
-            mai = numpy.sqrt(numpy.pow(sums, 2) + numpy.pow(sumc, 2))
-            pai = numpy.arctan2(sums, sumc)
+        sums = mai1 * numpy.sin(pai1) + mai2 * numpy.sin(pai2)
+        sumc = mai1 * numpy.cos(pai1) + mai2 * numpy.cos(pai2)
+        mai = numpy.sqrt(numpy.pow(sums, 2) + numpy.pow(sumc, 2))
+        pai = numpy.arctan2(sums, sumc)
 
     mai = rtod * numpy.arccos((1 - mai) / (1 + mai))
     pai = rtod * pai
 
     return atin
+
 
 def pad(adi_i):
     """Returns PAD value.
@@ -223,6 +230,7 @@ def pad(adi_i):
     adi_i -- ADI calue.
     """
     return rtod * numpy.arccos((1 - adi_i) / (1 + adi_i))
+
 
 def pai(atip_i, adi_i):
     """Returns PAI.
@@ -233,6 +241,7 @@ def pai(atip_i, adi_i):
     """
     return rtod * numpy.arctan2(atip_i, adi_i)
 
+
 def padcum(adicum_i):
     """Return PADcum value.
 
@@ -240,6 +249,7 @@ def padcum(adicum_i):
     adicum_i -- ADIcum value.
     """
     return rtod * numpy.arccos((1 - adicum_i) / (1 + adicum_i))
+
 
 def tag(padcum, pai):
     """Returns tag for given values of PADcum and pai.
@@ -254,6 +264,7 @@ def tag(padcum, pai):
         return "t"
     return "T"
 
+
 def corre(thetas):
     """
 
@@ -264,17 +275,19 @@ def corre(thetas):
     res = numpy.zeros(len(lst), len(lst))
     for i, mer in enumerate(lst):
         for k, mer2 in enumerate(lst[i + 1:]):
-            res[i, k] = numpy.mean(numpy.exp((0+1j) * mer) * numpy.exp((0-1j) * mer2))
+            res[i, k] = numpy.mean(numpy.exp((0 + 1j) * mer) * numpy.exp((0 - 1j) * mer2))
 
     return res
 
-def corre1(vec,vec1):
+
+def corre1(vec, vec1):
     """
 
     Argument:
     vec and vec1 contains time series of angular values, with the same number of elements
     """
-    return  numpy.mean(numpy.exp((0+1j) * numpy.array(vec[1:])) * numpy.exp((0-1j) * numpy.array(vec1)))
+    return numpy.mean(numpy.exp((0 + 1j) * numpy.array(vec[1:])) * numpy.exp((0 - 1j) * numpy.array(vec1)))
+
 
 def calculate_omega(stc):
     """Returns dictionary of all dihedral angles for each mer in subsequent trajectory frames.
@@ -286,7 +299,7 @@ def calculate_omega(stc):
     mangs = {m: [] for m in stc}
 
     stc.frame = 0
-    #~ stc.frame = 1
+    # ~ stc.frame = 1
     while True:
         Residue.calculate_angles_static(stc)
 
@@ -302,6 +315,7 @@ def calculate_omega(stc):
         mangs[k] = numpy.array(v)
 
     return mangs
+
 
 def calculate_theta(stc, mer_ind):
     """Returns theta angles for given mer over all frames of its structure trajectory."""
@@ -326,6 +340,7 @@ def calculate_theta(stc, mer_ind):
 
     return res
 
+
 def calculate_indices(angle_vec):
     """Returns array of indices for each mer of given structure.
 
@@ -335,9 +350,9 @@ def calculate_indices(angle_vec):
     adi_i = adi(angle_vec)
     pad_i = pad(adi_i)
     adicum_i = adicum(angle_vec)
-    padcum_i =  padcum(adicum_i)
+    padcum_i = padcum(adicum_i)
     atip_i = atip(angle_vec)
-    erre = numpy.sqrt(adi_i**2 + atip_i**2)
+    erre = numpy.sqrt(adi_i ** 2 + atip_i ** 2)
     tai_i = rtod * numpy.arccos((1 - erre) / (1 + erre))
     pai_i = rtod * numpy.arctan2(atip_i, adi_i)
     atin_i = atin(angle_vec)

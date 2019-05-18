@@ -214,8 +214,6 @@ ConfigManager.mers.ligand.set_default("indicators", ("rc",))
 ConfigManager.new_branch("structure_mon")
 ConfigManager.structure_mon.set_default("simple_secondary_structure_code", {
     'H': 'H', 'B': 'E', 'E': 'E', 'G': 'H', 'I': 'H', 'T': 'C', 'S': 'C', '-': 'C', '=': '='})
-
-
 # pylint: enable=no-member
 
 
@@ -637,6 +635,9 @@ class Mer(object):
         """
         self.calculate_rc()
 
+    def has_bond(self, mer):
+        return False
+
     def calculate_rc(self):
         """Sets Monomer's attribute rc (geometrical center).
 
@@ -804,26 +805,6 @@ class MerChainable(Mer):
         self._previous_monomer = None
         self._check_name()
 
-    def _has_bond(self, monomer):
-        """Returns True if the Monomer is followed by a given Monomer.
-
-        Argument:
-        monomer -- MonomerChainable instance.
-
-        Calculates distance between backbone atoms of Monomers. Returns True or False according to the configurable
-        monomer_acceptable_distance.
-        """
-        if type(monomer) != type(self):
-            return False
-        bb_atoms = self.get_config('backbone_atoms')
-        last_atom = self.atoms[bb_atoms[-1]]
-        next_atom = monomer.atoms[bb_atoms[0]]
-        try:
-            distance = (last_atom - next_atom).calculate_length()
-            return distance <= ConfigManager.mers.monomer_acceptable_distance  # pylint:disable=no-member
-        except UnboundLocalError:
-            return False
-
     def _check_name(self):
         """Method that raises warning if unknown particle name was found in pdb file."""
         try:
@@ -882,6 +863,26 @@ class MerChainable(Mer):
         """Property that returns monomer preceding current mer in its structure."""
         self._previous_monomer = value  # pylint:disable=attribute-defined-outside-init
         # same as in next_mer.setter
+
+    def has_bond(self, monomer):
+        """Returns True if the Monomer is followed by a given Monomer.
+
+        Argument:
+        monomer -- MonomerChainable instance.
+
+        Calculates distance between backbone atoms of Monomers. Returns True or False according to the configurable
+        monomer_acceptable_distance.
+        """
+        if type(monomer) != type(self):
+            return False
+        bb_atoms = self.get_config('backbone_atoms')
+        last_atom = self.atoms[bb_atoms[-1]]
+        next_atom = monomer.atoms[bb_atoms[0]]
+        try:
+            distance = (last_atom - next_atom).calculate_length()
+            return distance <= ConfigManager.mers.monomer_acceptable_distance  # pylint:disable=no-member
+        except UnboundLocalError:
+            return False
 
     def iter_bb_atoms(self):
         """Returns iterator that iterates over monomer's backbone atoms."""

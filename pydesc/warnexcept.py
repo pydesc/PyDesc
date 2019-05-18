@@ -20,7 +20,7 @@ PyDesc Warnings and Exceptions.
 
 Usage: to use Exceptions simply import this module and raise them.
 To use configurable warnings import this module and use static method warn in class Warn.
-In configuration manager set fileter values in branch warnings_and_exceptions.class_filters.<Warning Class> to one of values from list below:
+In configuration manager set fileter values in branch warnings.class_filters.<Warning Class> to one of values from list below:
 error -- raises error instead of printing warning.
 ignore -- skips warnings.
 always -- always prints warnings.
@@ -48,16 +48,16 @@ import operator
 from pydesc.config import ConfigManager
 
 # pylint: disable=no-member
-ConfigManager.new_branch("warnings_and_exceptions")
-ConfigManager.warnings_and_exceptions.set_default("quiet", False)
-ConfigManager.warnings_and_exceptions.new_branch("class_filters")
-ConfigManager.warnings_and_exceptions.class_filters.set_default("IncompleteChainableParticle", "always")
-ConfigManager.warnings_and_exceptions.class_filters.set_default("Info", "always")
-ConfigManager.warnings_and_exceptions.class_filters.set_default("DeprecationWarning", "default")
-ConfigManager.warnings_and_exceptions.class_filters.set_default("NoConfiguration", "error")
-ConfigManager.warnings_and_exceptions.class_filters.set_default("UnknownParticleName", "always")
-ConfigManager.warnings_and_exceptions.class_filters.set_default("UserWarning", "always")
-#ConfigManager.warnings_and_exceptions.class_filters.set_default("WrongMonomerType", "always")
+ConfigManager.new_branch("warnings")
+ConfigManager.warnings.set_default("quiet", False)
+ConfigManager.warnings.new_branch("class_filters")
+ConfigManager.warnings.class_filters.set_default("IncompleteChainableParticle", "always")
+ConfigManager.warnings.class_filters.set_default("Info", "always")
+ConfigManager.warnings.class_filters.set_default("DeprecationWarning", "default")
+ConfigManager.warnings.class_filters.set_default("NoConfiguration", "error")
+ConfigManager.warnings.class_filters.set_default("UnknownParticleName", "always")
+ConfigManager.warnings.class_filters.set_default("UserWarning", "always")
+#ConfigManager.warnings.class_filters.set_default("WrongMonomerType", "always")
 # pylint: enable=no-member
 
 
@@ -68,7 +68,7 @@ def warn(warn_inst, stack_level=0):
     warn_inst -- instance of warning to be called.
     stack_level -- int, describes level of traceback to be printed.
     """
-    if not ConfigManager.warnings_and_exceptions.quiet:     # pylint: disable=no-member
+    if not ConfigManager.warnings.quiet:     # pylint: disable=no-member
         stack_level += 2
         warnings.warn(warn_inst, stacklevel=stack_level)
 
@@ -80,7 +80,7 @@ def set_filters():
     # TODO: Scan for warnings and exceptions automatically. Add checks for
     # warnings without entries in ConfigManager.
     for wrn_cls in (Info, DeprecationWarning, NoConfiguration, UnknownParticleName, UserWarning):
-        filter_ = getattr(ConfigManager.warnings_and_exceptions.class_filters, wrn_cls.__name__)  # pylint: disable=no-member
+        filter_ = getattr(ConfigManager.warnings.class_filters, wrn_cls.__name__)  # pylint: disable=no-member
         warnings.filterwarnings(filter_, category=wrn_cls)
 
 

@@ -357,7 +357,7 @@ def make_structuretest(strname):
                             valerr = True
                     else:
                         el = structure.ElementChainable(m)
-                        elb = structure.Element.build(m)
+                        elb = structure.AbstractElement.build(m)
                         self.assertEqual(type(el), type(elb))
                         self.assertEqual(len(el), config.ConfigManager.element.element_chainable_length)
                         self.assertEqual(el.start, s)
@@ -555,11 +555,11 @@ def make_descriptortest(strname):
 
                 tests_performed[name] = True
 
-                if self.struct.contact_map.get_monomer_contacts(m) == []:
+                if self.struct.contact_map.get_mer_contacts(m) == []:
                     self.assertRaises(ValueError, lambda: desc_class.build(el))
                     continue
                 staph = False
-                for i in self.struct.contact_map.get_monomer_contacts(m):
+                for i in self.struct.contact_map.get_mer_contacts(m):
                     try:
                         structure.Contact(i[0], i[1], self.struct)
                     except:
