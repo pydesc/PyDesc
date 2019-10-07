@@ -1,10 +1,10 @@
 import os.path
+
 import pytest
-
 from Bio.PDB import PDBParser
-from pydesc import numberconverter
-from pydesc import config
 
+from pydesc import config
+from pydesc import numberconverter
 from tests.conftest import TEST_STRUCTURES_DIR
 
 
@@ -27,13 +27,13 @@ class TestSmithWaterman:
         res_mtx = numberconverter.build_smith_waterman_matrix(ids, ids2)
 
         assert res_mtx.shape == (6, 5, 6)
-        #assert chains are stored
+        # assert chains are stored
         for i in res_mtx[1:, 1:, 3].ravel():
             assert chr(i) in ('a', 'b', 'c')
-        #assert i_codes are 0
+        # assert i_codes are 0
         for i in res_mtx[3:, 3:, 5].ravel():
             assert i == 0
-        #asert other icodes are not 0
+        # asert other icodes are not 0
         assert res_mtx[2, 2, 5] != 0
 
     def test_back_trace(self):

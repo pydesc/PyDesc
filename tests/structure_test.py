@@ -1,13 +1,12 @@
-import pytest
 import os.path
 
+import pytest
+
+from pydesc.config import ConfigManager
+from pydesc.structure import StructureLoader
 from tests.conftest import PDB_FILES_WITH_TYPE
 from tests.conftest import TEST_STRUCTURES_DIR
 from tests.conftest import TYPE_DICT
-
-from pydesc.structure import StructureLoader
-
-from pydesc.config import ConfigManager
 
 ConfigManager.warnings.set("quiet", True)
 
@@ -21,9 +20,9 @@ def assert_structure(structure):
 
 @pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_TYPE)
 def test_default_structure_loader_load_local(type_, struc_file):
-
     sl = StructureLoader()
-    structures = sl.load_structures(path=os.path.join(TEST_STRUCTURES_DIR, type_, struc_file))
+    path_str = os.path.join(TEST_STRUCTURES_DIR, type_, struc_file)
+    structures = sl.load_structures(path=path_str)
     expected_main_mer_type = TYPE_DICT[type_]
 
     for structure in structures:

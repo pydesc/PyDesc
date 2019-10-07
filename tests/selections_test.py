@@ -1,13 +1,14 @@
 import os.path
 import time
+
 import pytest
 
-from tests.conftest import TEST_STRUCTURES_DIR
-from tests.conftest import PDB_FILES_WITH_TYPE_SHORT
-
-from pydesc.structure import StructureLoader, AbstractStructure
 from pydesc import selection
 from pydesc.config import ConfigManager
+from pydesc.structure import AbstractStructure
+from pydesc.structure import StructureLoader
+from tests.conftest import PDB_FILES_WITH_TYPE_SHORT
+from tests.conftest import TEST_STRUCTURES_DIR
 
 ConfigManager.warnings.quiet = True
 
@@ -19,7 +20,8 @@ class TestEverythingSelection:
     @staticmethod
     def get_structure(type_, structure_file):
         sl = StructureLoader()
-        structures = sl.load_structures(path=os.path.join(TEST_STRUCTURES_DIR, type_, structure_file))
+        path_str = os.path.join(TEST_STRUCTURES_DIR, type_, structure_file)
+        structures = sl.load_structures(path=path_str)
         return structures
 
     def test_everything_create_structure(self, type_, struc_file):
@@ -29,7 +31,8 @@ class TestEverythingSelection:
             assert isinstance(stc, AbstractStructure)
             assert len(stc) == len(structure)
             assert stc[0] is structure[0]
-            assert sorted(stc[0].atoms.keys()) == sorted(structure[0].atoms.keys())
+            assert sorted(stc[0].atoms.keys()) == sorted(
+                structure[0].atoms.keys())
 
     @pytest.mark.long
     def test_everything_create_new_structure(self, type_, struc_file):
@@ -45,8 +48,10 @@ class TestEverythingSelection:
             assert isinstance(new_stc, AbstractStructure)
             assert len(new_stc) == len(structure)
             assert new_stc[0] is not structure[0]
-            assert sorted(new_stc[0].atoms.keys()) == sorted(structure[0].atoms.keys())
-            assert sorted(new_stc[0].pseudoatoms.keys()) == sorted(structure[0].pseudoatoms.keys())
+            assert sorted(new_stc[0].atoms.keys()) == sorted(
+                structure[0].atoms.keys())
+            assert sorted(new_stc[0].pseudoatoms.keys()) == sorted(
+                structure[0].pseudoatoms.keys())
             assert select_time <= load_time
 
     def test_everything_specify(self, type_, struc_file):
@@ -63,7 +68,8 @@ class TestSetSelection:
     @staticmethod
     def get_structure(type_, structure_file):
         sl = StructureLoader()
-        structures = sl.load_structures(path=os.path.join(TEST_STRUCTURES_DIR, type_, structure_file))
+        structures = sl.load_structures(
+            path=os.path.join(TEST_STRUCTURES_DIR, type_, structure_file))
         return structures
 
     def test_set_specify(self, type_, struc_file):
@@ -85,7 +91,8 @@ class TestSetSelection:
             assert isinstance(stc, AbstractStructure)
             assert len(stc) == 6
             assert stc[0] is structure[0]
-            assert sorted(stc[0].atoms.keys()) == sorted(structure[0].atoms.keys())
+            assert sorted(stc[0].atoms.keys()) == sorted(
+                structure[0].atoms.keys())
 
     def test_set_create_new_structure(self, type_, struc_file):
         structures = self.get_structure(type_, struc_file)
@@ -95,4 +102,5 @@ class TestSetSelection:
             assert isinstance(stc, AbstractStructure)
             assert len(stc) == 6
             assert stc[0] is not structure[0]
-            assert sorted(stc[0].atoms.keys()) == sorted(structure[0].atoms.keys())
+            assert sorted(stc[0].atoms.keys()) == sorted(
+                structure[0].atoms.keys())
