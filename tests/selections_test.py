@@ -98,6 +98,7 @@ class TestSetSelection:
         structures = self.get_structure(type_, struc_file)
         for structure in structures:
             sel = selection.Set([i.get_pdb_id() for i in tuple(structure)[:6]])
+
             stc = sel.create_new_structure(structure)
             assert isinstance(stc, AbstractStructure)
             assert len(stc) == 6

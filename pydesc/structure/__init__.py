@@ -5,28 +5,26 @@ Classes that represents molecular structures and their substructures.
 created: 10.07.2013 - , Tymoteusz 'hert' Oleniecki
 """
 
-import operator
 import math
+import operator
 import os.path
-
 from abc import ABCMeta
 from abc import abstractmethod
-from Bio.PDB import DSSP
-from io import StringIO
 from functools import reduce
+from io import StringIO
+
+from Bio.PDB import DSSP
 
 import pydesc.dbhandler
 import pydesc.geometry
 import pydesc.mers
 import pydesc.numberconverter
 import pydesc.selection
-import pydesc.contacts
 from pydesc.config import ConfigManager
-from pydesc.warnexcept import warn
-from pydesc.warnexcept import set_filters
 from pydesc.warnexcept import DiscontinuityError
-from pydesc.warnexcept import WrongMerType
 from pydesc.warnexcept import Info
+from pydesc.warnexcept import set_filters
+from pydesc.warnexcept import warn
 
 try:
     import prody
@@ -38,6 +36,8 @@ ConfigManager.new_branch("element")
 ConfigManager.element.set_default("element_chainable_length", 5)
 ConfigManager.new_branch("structure")
 ConfigManager.structure.set_default("dssp_path", "dssp")
+
+
 # pylint: enable=no-member
 
 
@@ -70,8 +70,11 @@ class StructureLoader(object):
 
         Method designed to deal with PDB bundles, but can be used to load any structure given in a few PDB files.
         """
-        paths = self.handler.get_file(code) if paths is None else [open(path) for path in paths]
-        mapping = self.handler.get_mapping(code) if mapping is None else mapping
+        paths = self.handler.get_file(code) if paths is None else [open(path)
+                                                                   for path in
+                                                                   paths]
+        mapping = self.handler.get_mapping(
+            code) if mapping is None else mapping
 
         def map_chain_char(mdl, dct, pth):
             """Returns model with re-named chains."""
@@ -81,8 +84,8 @@ class StructureLoader(object):
             return mdl
 
         class TempMdl(object):
-
-            """Temporary model used to store data while loading few PDB files."""
+            """Temporary model used to store data while loading few PDB
+            files."""
 
             def __init__(self, *args):
                 """TempMdl init. Stores all args in args attribute."""
@@ -90,7 +93,8 @@ class StructureLoader(object):
 
             def __iter__(self):
                 """TempMdl iterator."""
-                return iter(reduce(operator.add, map(list, map(operator.methodcaller('get_chains'), self.args))))
+                return iter(reduce(operator.add, map(list, map(
+                    operator.methodcaller('get_chains'), self.args))))
 
             def get_full_id(self):
                 """Returns PDB mer full id."""
@@ -105,15 +109,19 @@ class StructureLoader(object):
             tmp.append(pdb_structure)
             for j, pdb_model in enumerate(pdb_structure):
                 try:
-                    chsll[j].append(map_chain_char(pdb_model, mapping, path.name))
+                    chsll[j].append(
+                        map_chain_char(pdb_model, mapping, path.name))
                 except IndexError:
-                    chsll.append([map_chain_char(pdb_model, mapping, path.name)])
+                    chsll.append(
+                        [map_chain_char(pdb_model, mapping, path.name)])
                 stcll[i].append(list(pdb_model.get_residues()))
         mrlst = [reduce(operator.add, mdls_tup) for mdls_tup in zip(*stcll)]
-        # list of lists of mers. each sublist contains mers from all pdb files from bundle
-        # (structure divided into separate pdb files) for one model.
+        # list of lists of mers. each sublist contains mers from all pdb
+        # files from bundle (structure divided into separate pdb files)
+        # for one model.
         numcon = pydesc.numberconverter.NumberConverter(pdb_mers_list=mrlst)
-        return [Structure(TempMdl(*chs_tpl), numcon, [i.name for i in paths]) for chs_tpl in chsll]
+        return [Structure(TempMdl(*chs_tpl), numcon, [i.name for i in paths])
+                for chs_tpl in chsll]
 
     def _get_files_and_path(self, code, path):
         """Return path and list of open handlers to pdb files to be read.
@@ -122,7 +130,8 @@ class StructureLoader(object):
             code -- code passed by user (str or None if local file was passed).
             path -- path to local file.
         """
-        open_files = self.handler.get_file(code) if path is None else [open(path)]
+        open_files = self.handler.get_file(code) if path is None else [
+            open(path)]
         path = open_files[0].name
         return path, open_files
 
@@ -211,7 +220,8 @@ class StructureLoader(object):
         name = model.get_full_id()[0]
         structure = Structure(name, path, converter)
 
-        chains = [self._create_chain(pdb_chain, structure) for pdb_chain in model]
+        chains = [self._create_chain(pdb_chain, structure) for pdb_chain in
+                  model]
 
         structure.finalize(chains)
         return structure
@@ -238,7 +248,8 @@ class StructureLoader(object):
         code = self._get_code(code, path)
         models = self._get_models(open_files, code)
         converter = pydesc.numberconverter.NumberConverter(models)
-        structures = [self._create_structure(pdb_model, path, converter) for pdb_model in models]
+        structures = [self._create_structure(pdb_model, path, converter) for
+                      pdb_model in models]
 
         return structures
 
@@ -294,7 +305,8 @@ class AbstractStructure(object):
 
         If given mers contained in two added structures are subsequent mers - Segment is returned.
         """
-        mers = sorted(set(list(self) + list(structure_obj)), key=operator.attrgetter('ind'))
+        mers = sorted(set(list(self) + list(structure_obj)),
+                      key=operator.attrgetter('ind'))
         try:
             return Segment(mers=mers)
         except (ValueError, DiscontinuityError):
@@ -302,14 +314,18 @@ class AbstractStructure(object):
             return PartialStructure(mers, self.derived_from.converter)
 
     def __contains__(self, monomer_obj):
-        """Checks if given mer is present in current structure (mer needs to have ind attr)."""
+        """Checks if given mer is present in current structure (mer needs
+        to have ind attr).
+        """
         return monomer_obj in self._mers
 
     def __getitem__(self, key):
         """Returns mer or list of mers.
 
         Argument:
-        key -- slice or int. If slice, returns list of mer INCLUDING SECOND INDICATED MER with specific PyDesc integers (inds), otherwise returns specified mer.
+        key -- slice or int. If slice, returns list of mer INCLUDING SECOND
+        INDICATED MER with specific PyDesc integers (inds), otherwise
+        returns specified mer.
         """
 
         # pylint: disable=no-member
@@ -327,7 +343,8 @@ class AbstractStructure(object):
             if isinstance(param, str):
                 # strings are converted to PDB_id
                 param = pydesc.numberconverter.PDBid.create_from_string(param)
-            if isinstance(param, pydesc.numberconverter.PDBid) or isinstance(param, tuple):
+            if isinstance(param, pydesc.numberconverter.PDBid) or isinstance(
+                    param, tuple):
                 # if given parameter already is a PDB_id or a coresponding tuple instance
                 param = self.derived_from.converter.get_ind(param)
             if isinstance(param, pydesc.mers.Mer):
@@ -357,7 +374,8 @@ class AbstractStructure(object):
                 return segment
             except (DiscontinuityError, ValueError):
                 end = end + 1 if end != -1 else None
-                return PartialStructure(self._mers[start: end], self.derived_from.converter)
+                return PartialStructure(self._mers[start: end],
+                                        self.derived_from.converter)
         else:
             return self._mers[get_hash_if_possible(key)]
         # pylint: enable=no-member
@@ -387,7 +405,9 @@ class AbstractStructure(object):
         _has_monomers is dictionary containing all mers inds as keys and their indexes on _mers list as values.
         It is used by __getitem__ as hashlist.
         """
-        self._hash_monomers = dict((monomer_obj.ind, index) for index, monomer_obj in enumerate(self._mers))
+        self._hash_monomers = dict(
+            (monomer_obj.ind, index) for index, monomer_obj in
+            enumerate(self._mers))
 
     def create_pdb_string(self, transformed=True):
         """Returns an StringIO pdb-like object.
@@ -400,7 +420,8 @@ class AbstractStructure(object):
         for monomer_obj in self:
             for atom in monomer_obj.iter_atoms():
                 pdb_id = monomer_obj.get_pdb_id()
-                coord = atom.get_coord(self.trt_matrix) if transformed else atom.get_coord()
+                coord = atom.get_coord(
+                    self.trt_matrix) if transformed else atom.get_coord()
                 insertion_code = pdb_id.icode if pdb_id.icode is not None else ' '
                 values = (line_n,
                           atom.name,
@@ -418,7 +439,8 @@ class AbstractStructure(object):
                 components.append(values)
                 line_n += 1
         pdb_line = "ATOM  %5i %4s %3s%2s%4i%1s%11.3f%8.3f% 8.3f%6.2f %5.2f      %3s%2s"
-        components = [pdb_line % v for v in sorted(components, key=lambda vals: vals[0])]
+        components = [pdb_line % v for v in
+                      sorted(components, key=lambda vals: vals[0])]
         components.append("END")
         return StringIO("\n".join(components))
 
@@ -458,7 +480,8 @@ class AbstractStructure(object):
 
         Overridden in frequently used types of structures for creation of most intuituv selection type.
         """
-        return pydesc.selection.Set(map(self.derived_from.converter.get_pdb_id, map(operator.attrgetter('ind'), self)))
+        return pydesc.selection.Set(map(self.derived_from.converter.get_pdb_id,
+                                        map(operator.attrgetter('ind'), self)))
 
     def adjusted_number(self):
         """
@@ -496,7 +519,8 @@ class AbstractStructure(object):
         for chn in self.chains:
             if chn.chain_char == char:
                 return chn
-        raise AttributeError('No chain %s in structure %s.' % (char, str(self)))
+        raise AttributeError(
+            'No chain %s in structure %s.' % (char, str(self)))
 
     def save_pdb(self, path):
         """Writes (sub)structure into pdb file.
@@ -662,10 +686,12 @@ class Structure(AbstractStructure):
         elif not isinstance(file_path, str):
             file_path = file_path.name
         sec_stc = DSSP(self.pdb_model, file_path, dssp)
-        for mer in pydesc.selection.MonomerType(pydesc.mers.MerChainable).create_structure(self):
+        for mer in pydesc.selection.MonomerType(
+                pydesc.mers.MerChainable).create_structure(self):
             pdbid = mer.get_pdb_id()
             try:
-                restup = sec_stc[mer.my_chain, (' ', pdbid[1], ' ' if pdbid[2] is None else pdbid[2])]
+                restup = sec_stc[mer.my_chain, (
+                    ' ', pdbid[1], ' ' if pdbid[2] is None else pdbid[2])]
             except KeyError:
                 continue
             mer._ss = restup[2]
@@ -690,7 +716,8 @@ class PartialStructure(BackbonedMixIn, AbstractStructure):
         self.name = name
         self.converter = None
         self.segments = None
-        derived_from = set(monomer_obj.structure for monomer_obj in list_of_monomers)
+        derived_from = set(
+            monomer_obj.structure for monomer_obj in list_of_monomers)
         if number_converter:
             self.converter = number_converter
         n_derived = len(derived_from)
@@ -703,7 +730,8 @@ class PartialStructure(BackbonedMixIn, AbstractStructure):
         elif n_derived == 0:
             AbstractStructure.__init__(self, self)
         else:
-            NotImplementedError("PartialStructure cannot be prepared from mers coming from different mers (yet)")
+            NotImplementedError(
+                "PartialStructure cannot be prepared from mers coming from different mers (yet)")
 
     def __repr__(self):
         return "<PartialStructure: %s>" % self.name
@@ -812,7 +840,9 @@ class Segment(AbstractStructure):
 
         Returns range selection of all related mers.
         """
-        return pydesc.selection.Range(*map(self.derived_from.converter.get_pdb_id, [self.start.ind, self.end.ind]))
+        return pydesc.selection.Range(
+            *map(self.derived_from.converter.get_pdb_id,
+                 [self.start.ind, self.end.ind]))
 
     def adjusted_number(self):
         """
@@ -834,7 +864,8 @@ class Segment(AbstractStructure):
             return 1
 
         try:
-            return int(math.ceil(length / self._mers[0].get_config('adjusted_segment_length')))
+            return int(math.ceil(
+                length / self._mers[0].get_config('adjusted_segment_length')))
         except AttributeError:
             return 1
 
@@ -898,7 +929,9 @@ class AbstractElement(AbstractStructure):
 
     def __repr__(self, mode=0):
         return '<%s of %s>' % (
-            str(self.__class__.__name__), str(self.derived_from.converter.get_pdb_id(self.central_monomer.ind)))
+            str(self.__class__.__name__), str(
+                self.derived_from.converter.get_pdb_id(
+                    self.central_monomer.ind)))
 
 
 class ElementChainable(AbstractElement, Segment):
@@ -918,13 +951,15 @@ class ElementChainable(AbstractElement, Segment):
         AbstractElement.__init__(self, mer)
         length = ConfigManager.element.element_chainable_length
         if not length % 2 == 1:
-            raise ValueError("Wrong element chainable length. Length should be odd.")
+            raise ValueError(
+                "Wrong element chainable length. Length should be odd.")
         value_error_msg = "Cannot create chainable element for mer %i." % mer.ind
         for dummy_step in range(length // 2):
             start = self._mers[0]
             end = self._mers[-1]
             try:
-                self._mers = (start.previous_mer,) + self._mers + (end.next_mer,)
+                self._mers = (start.previous_mer,) + self._mers + (
+                    end.next_mer,)
             except AttributeError:
                 raise ValueError(value_error_msg)
         if self._mers.count(None) != 0:
@@ -957,7 +992,8 @@ class Contact(AbstractStructure):
         """
         self.elements = {element1, element2}
         if element1.derived_from is not element2.derived_from:
-            raise ValueError("Impossible to create contact instance with elements derived from different structures")
+            raise ValueError(
+                "Impossible to create contact instance with elements derived from different structures")
         if element1.central_monomer.ind == element2.central_monomer.ind:
             raise ValueError("Impossible to create contact using one element")
         AbstractStructure.__init__(self, element1.derived_from)
@@ -965,8 +1001,9 @@ class Contact(AbstractStructure):
 
     def __sub__(self, val):
         """Deprecated."""
-        warn("""Subtracting contacts is no longer supported. Please, use get_other_element instead.""",
-             DeprecationWarning)
+        warn(
+            """Subtracting contacts is no longer supported. Please, use get_other_element instead.""",
+            DeprecationWarning)
         return self.get_other_element(val)
 
     def __repr__(self):
@@ -979,8 +1016,10 @@ class Contact(AbstractStructure):
         Argument:
         element_obj -- instance of Element class.
         """
-        if element_obj.central_monomer not in [i.central_monomer for i in self.elements]:
-            raise ValueError("Given element is not included in contact instance, cannot get other element")
+        if element_obj.central_monomer not in [i.central_monomer for i in
+                                               self.elements]:
+            raise ValueError(
+                "Given element is not included in contact instance, cannot get other element")
         if element_obj.central_monomer == self.elements[0].central_monomer:
             return self.elements[1]
         else:
@@ -988,7 +1027,8 @@ class Contact(AbstractStructure):
 
     def select(self):
         """Returns SelectionsUnion containing both contact elements selections."""
-        return pydesc.selection.SelectionsUnion(map(Segment.select, self.elements))
+        return pydesc.selection.SelectionsUnion(
+            map(Segment.select, self.elements))
 
     def value(self, cmap):
         """
@@ -996,4 +1036,5 @@ class Contact(AbstractStructure):
 
         This property is required by contacts.DescriptorCriterion.
         """
-        return cmap.get_contact_value(*[i.central_monomer.ind for i in self.elements])
+        return cmap.get_contact_value(
+            *[i.central_monomer.ind for i in self.elements])

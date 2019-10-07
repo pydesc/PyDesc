@@ -69,151 +69,172 @@ ConfigManager.mers.residue.set_default("residue_code", {
     'MET': 'M', 'LEU': 'L',
     'ARG': 'R', 'TYR': 'Y'})
 ConfigManager.mers.residue.set_default("residue_additional_code", {
-    'DNP': 'A', 'ABI': 'A', 'ALM': 'A', 'MAA': 'A', 'TIH': 'A', 'FLA': 'A', 'DAL': 'A', 'CSD': 'A',
-    'BNN': 'A', 'HAC': 'A', 'PRR': 'A', 'AYA': 'A', 'CHG': 'A', 'DHA': 'A', 'TPQ': 'A', 'SEG': 'A',
+    'DNP': 'A', 'ABI': 'A', 'ALM': 'A', 'MAA': 'A', 'TIH': 'A', 'FLA': 'A',
+    'DAL': 'A', 'CSD': 'A',
+    'BNN': 'A', 'HAC': 'A', 'PRR': 'A', 'AYA': 'A', 'CHG': 'A', 'DHA': 'A',
+    'TPQ': 'A', 'SEG': 'A',
     'DIV': 'V', 'MVA': 'V', 'DVA': 'V',
-    'BUG': 'L', 'DLE': 'L', 'CLE': 'L', 'NLN': 'L', 'NLE': 'L', 'NLP': 'L', 'MLE': 'L', 'LEF': 'L',
+    'BUG': 'L', 'DLE': 'L', 'CLE': 'L', 'NLN': 'L', 'NLE': 'L', 'NLP': 'L',
+    'MLE': 'L', 'LEF': 'L',
     'DIL': 'I', 'IIL': 'I',
     'DPR': 'P', 'HYP': 'P',
     'MSE': 'M', 'OMT': 'M', 'CXM': 'M', 'FME': 'M', 'MME': 'M',
     'DAH': 'F', 'PHI': 'F', 'DPN': 'F', 'HPQ': 'F', 'PHL': 'F',
     'LTR': 'W', 'TPL': 'W', 'DTR': 'W', 'TRO': 'W', 'HTR': 'W',
-    'MSA': 'G', 'SAR': 'G', 'MPQ': 'G', 'GLZ': 'G', 'GSC': 'G', 'GL3': 'G', 'NMC': 'G',
-    'DSN': 'S', 'SEL': 'S', 'SEP': 'S', 'SET': 'S', 'SAC': 'S', 'SVA': 'S', 'MIS': 'S', 'OAS': 'S',
+    'MSA': 'G', 'SAR': 'G', 'MPQ': 'G', 'GLZ': 'G', 'GSC': 'G', 'GL3': 'G',
+    'NMC': 'G',
+    'DSN': 'S', 'SEL': 'S', 'SEP': 'S', 'SET': 'S', 'SAC': 'S', 'SVA': 'S',
+    'MIS': 'S', 'OAS': 'S',
     'TPO': 'T', 'ALO': 'T', 'DTH': 'T', 'BMT': 'T',
-    'BCS': 'C', 'SOC': 'C', 'C5C': 'C', 'C6C': 'C', 'SCS': 'C', 'PEC': 'C', 'DCY': 'C', 'EFC': 'C',
-    'SCY': 'C', 'SMC': 'C', 'CSX': 'C', 'BUC': 'C', 'CSO': 'C', 'PR3': 'C', 'CCS': 'C', 'CEA': 'C', 'CME': 'C',
-    'CSP': 'C', 'CSS': 'C', 'CSW': 'C', 'CY1': 'C', 'CY3': 'C', 'CYG': 'C', 'CYM': 'C', 'CYQ': 'C', 'SCH': 'C',
+    'BCS': 'C', 'SOC': 'C', 'C5C': 'C', 'C6C': 'C', 'SCS': 'C', 'PEC': 'C',
+    'DCY': 'C', 'EFC': 'C',
+    'SCY': 'C', 'SMC': 'C', 'CSX': 'C', 'BUC': 'C', 'CSO': 'C', 'PR3': 'C',
+    'CCS': 'C', 'CEA': 'C', 'CME': 'C',
+    'CSP': 'C', 'CSS': 'C', 'CSW': 'C', 'CY1': 'C', 'CY3': 'C', 'CYG': 'C',
+    'CYM': 'C', 'CYQ': 'C', 'SCH': 'C',
     'SHC': 'C', 'OCS': 'C', 'CAS': 'C',
-    'TYQ': 'Y', 'TYS': 'Y', 'TYB': 'Y', 'STY': 'Y', 'DTY': 'Y', 'IYR': 'Y', 'PAQ': 'Y', 'TYY': 'Y',
+    'TYQ': 'Y', 'TYS': 'Y', 'TYB': 'Y', 'STY': 'Y', 'DTY': 'Y', 'IYR': 'Y',
+    'PAQ': 'Y', 'TYY': 'Y',
     'PTR': 'Y', 'TYI': 'Y',
     'MEN': 'N',
     'DGN': 'Q', 'MGN': 'Q',
-    '2AS': 'D', 'ASB': 'D', 'DAS': 'D', 'ASK': 'D', 'ASL': 'D', 'ASQ': 'D', 'BHD': 'D', 'ASA': 'D',
+    '2AS': 'D', 'ASB': 'D', 'DAS': 'D', 'ASK': 'D', 'ASL': 'D', 'ASQ': 'D',
+    'BHD': 'D', 'ASA': 'D',
     'DSP': 'D',
     '5HP': 'E', 'CGU': 'E', 'DGL': 'E', 'GMA': 'E', 'GGL': 'E', 'PCA': 'E',
-    'DLY': 'K', 'LYM': 'K', 'LLY': 'K', 'LYZ': 'K', 'KCX': 'K', 'LLP': 'K', 'TRG': 'K', 'SHR': 'K',
+    'DLY': 'K', 'LYM': 'K', 'LLY': 'K', 'LYZ': 'K', 'KCX': 'K', 'LLP': 'K',
+    'TRG': 'K', 'SHR': 'K',
     'ALY': 'K',
     'ARM': 'R', 'ACL': 'R', 'HAR': 'R', 'HMR': 'R', 'AGM': 'R', 'DAR': 'R',
-    'HIC': 'H', '3AH': 'H', 'NEM': 'H', 'NEP': 'H', 'DHI': 'H', 'MHS': 'H', 'HIP': 'H', })
+    'HIC': 'H', '3AH': 'H', 'NEM': 'H', 'NEP': 'H', 'DHI': 'H', 'MHS': 'H',
+    'HIP': 'H', })
 ConfigManager.mers.residue.set_default("backbone_atoms", ('N', 'CA', 'C'))
 ConfigManager.mers.residue.set_default("check_distances", False)
 ConfigManager.mers.residue.set_default(
-    "crucial_atom_distances", (('C', 'CA', 1.35, 1.71), ('CA', 'N', 1.35, 1.75)))
+    "crucial_atom_distances",
+    (('C', 'CA', 1.35, 1.71), ('CA', 'N', 1.35, 1.75)))
 ConfigManager.mers.residue.set_default("indicators", ('CA', 'cbx'))
 ConfigManager.mers.residue.set_default("legacy_cbx_calculation", False)
 ConfigManager.mers.residue.set_default("adjusted_segment_length", 18.0)
 ConfigManager.mers.nucleotide.set_default("nucleotide_code", {
-    'G': 'G', 'C': 'C', 'U': 'U', 'A': 'A', 'DG': 'G', 'DA': 'A', 'DT': 'T', 'DC': 'C'})
+    'G': 'G', 'C': 'C', 'U': 'U', 'A': 'A', 'DG': 'G', 'DA': 'A', 'DT': 'T',
+    'DC': 'C'})
 ConfigManager.mers.nucleotide.set_default(
     "backbone_atoms", ("P", "O5'", "C5'", "C4'", "C3'", "O3'"))
 ConfigManager.mers.nucleotide.set_default(
     "ring_atoms", ("N1", "C2", "N3", "C4", "C5", "C6", "N7", "C8", "N9"))
 ConfigManager.mers.nucleotide.set_default("check_distances", False)
-ConfigManager.mers.nucleotide.set_default("crucial_atom_distances", (('P', "O5'", 1.54, 1.66), (
-    "O5'", "C5'", 1.34, 1.54), ("C5'", "C4'", 1.44, 1.56), ("C4'", "C3'", 1.46, 1.58), ("C3'", "O3'", 1.37, 1.49)))
+ConfigManager.mers.nucleotide.set_default("crucial_atom_distances",
+                                          (('P', "O5'", 1.54, 1.66), (
+                                              "O5'", "C5'", 1.34, 1.54),
+                                           ("C5'", "C4'", 1.44, 1.56),
+                                           ("C4'", "C3'", 1.46, 1.58),
+                                           ("C3'", "O3'", 1.37, 1.49)))
 ConfigManager.mers.nucleotide.set_default(
     "indicators", ("C3'", 'P', 'ring_center'))
 ConfigManager.mers.set_default("moving_average", 3)
 ConfigManager.mers.ion.set_default("indicators", ("rc",))
 ConfigManager.mers.ion.set_default("radii", {'BE': 0.59,
-                                                'BA': 1.49,
-                                                'BI': 1.17,
-                                                'BK': 1.1,
-                                                'BR': 1.82,
-                                                'RU': 0.82,
-                                                'RE': 0.77,
-                                                'TM': 1.17,
-                                                'RA': 1.62,
-                                                'RB': 1.66,
-                                                'RH': 0.805,
-                                                'P': 0.58,
-                                                'GE': 0.87,
-                                                'GD': 1.078,
-                                                'GA': 0.76,
-                                                'OS': 0.77,
-                                                'C': 0.3,
-                                                'HO': 1.041,
-                                                'HF': 0.85,
-                                                'HG': 1.33,
-                                                'PR': 1.13,
-                                                'PT': 0.94,
-                                                'PU': 1.14,
-                                                'PB': 1.33,
-                                                'PA': 1.16,
-                                                'PD': 1.0,
-                                                'PO': 1.08,
-                                                'PM': 1.11,
-                                                'ZN': 0.88,
-                                                'K': 1.52,
-                                                'O': 1.26,
-                                                'S': 1.7,
-                                                'W': 0.8,
-                                                'EU': 1.31,
-                                                'ZR': 0.86,
-                                                'ER': 1.03,
-                                                'MG': 0.86,
-                                                'MO': 0.83,
-                                                'MN': 0.97,
-                                                'AU': 1.51,
-                                                'FR': 1.94,
-                                                'FE': 0.92,
-                                                'NI': 0.83,
-                                                'NA': 1.16,
-                                                'NB': 0.86,
-                                                'ND': 1.43,
-                                                'ES': 0.928,
-                                                'NP': 1.24,
-                                                'B': 0.41,
-                                                'CO': 0.885,
-                                                'CM': 1.11,
-                                                'CL': 1.67,
-                                                'CA': 1.14,
-                                                'CF': 1.09,
-                                                'CE': 1.15,
-                                                'N': 1.32,
-                                                'V': 0.93,
-                                                'CS': 1.81,
-                                                'CR': 0.94,
-                                                'CU': 0.91,
-                                                'SR': 1.32,
-                                                'SI': 0.54,
-                                                'SN': 0.83,
-                                                'SM': 1.36,
-                                                'SC': 0.885,
-                                                'SB': 0.9,
-                                                'SE': 1.84,
-                                                'YB': 1.16,
-                                                'DY': 1.21,
-                                                'LA': 1.172,
-                                                'F': 1.19,
-                                                'LI': 0.9,
-                                                'TL': 1.64,
-                                                'LU': 1.001,
-                                                'TH': 1.08,
-                                                'TI': 1.0,
-                                                'TE': 2.07,
-                                                'TB': 1.063,
-                                                'TC': 0.785,
-                                                'TA': 0.86,
-                                                'AC': 1.26,
-                                                'AG': 1.29,
-                                                'I': 2.06,
-                                                'IR': 0.82,
-                                                'AM': 1.4,
-                                                'AL': 0.675,
-                                                'AS': 0.72,
-                                                'U': 1.165,
-                                                'AT': 0.76,
-                                                'IN': 0.94,
-                                                'Y': 1.04,
-                                                'CD': 1.09,
-                                                'XE': 0.62})
+                                             'BA': 1.49,
+                                             'BI': 1.17,
+                                             'BK': 1.1,
+                                             'BR': 1.82,
+                                             'RU': 0.82,
+                                             'RE': 0.77,
+                                             'TM': 1.17,
+                                             'RA': 1.62,
+                                             'RB': 1.66,
+                                             'RH': 0.805,
+                                             'P': 0.58,
+                                             'GE': 0.87,
+                                             'GD': 1.078,
+                                             'GA': 0.76,
+                                             'OS': 0.77,
+                                             'C': 0.3,
+                                             'HO': 1.041,
+                                             'HF': 0.85,
+                                             'HG': 1.33,
+                                             'PR': 1.13,
+                                             'PT': 0.94,
+                                             'PU': 1.14,
+                                             'PB': 1.33,
+                                             'PA': 1.16,
+                                             'PD': 1.0,
+                                             'PO': 1.08,
+                                             'PM': 1.11,
+                                             'ZN': 0.88,
+                                             'K': 1.52,
+                                             'O': 1.26,
+                                             'S': 1.7,
+                                             'W': 0.8,
+                                             'EU': 1.31,
+                                             'ZR': 0.86,
+                                             'ER': 1.03,
+                                             'MG': 0.86,
+                                             'MO': 0.83,
+                                             'MN': 0.97,
+                                             'AU': 1.51,
+                                             'FR': 1.94,
+                                             'FE': 0.92,
+                                             'NI': 0.83,
+                                             'NA': 1.16,
+                                             'NB': 0.86,
+                                             'ND': 1.43,
+                                             'ES': 0.928,
+                                             'NP': 1.24,
+                                             'B': 0.41,
+                                             'CO': 0.885,
+                                             'CM': 1.11,
+                                             'CL': 1.67,
+                                             'CA': 1.14,
+                                             'CF': 1.09,
+                                             'CE': 1.15,
+                                             'N': 1.32,
+                                             'V': 0.93,
+                                             'CS': 1.81,
+                                             'CR': 0.94,
+                                             'CU': 0.91,
+                                             'SR': 1.32,
+                                             'SI': 0.54,
+                                             'SN': 0.83,
+                                             'SM': 1.36,
+                                             'SC': 0.885,
+                                             'SB': 0.9,
+                                             'SE': 1.84,
+                                             'YB': 1.16,
+                                             'DY': 1.21,
+                                             'LA': 1.172,
+                                             'F': 1.19,
+                                             'LI': 0.9,
+                                             'TL': 1.64,
+                                             'LU': 1.001,
+                                             'TH': 1.08,
+                                             'TI': 1.0,
+                                             'TE': 2.07,
+                                             'TB': 1.063,
+                                             'TC': 0.785,
+                                             'TA': 0.86,
+                                             'AC': 1.26,
+                                             'AG': 1.29,
+                                             'I': 2.06,
+                                             'IR': 0.82,
+                                             'AM': 1.4,
+                                             'AL': 0.675,
+                                             'AS': 0.72,
+                                             'U': 1.165,
+                                             'AT': 0.76,
+                                             'IN': 0.94,
+                                             'Y': 1.04,
+                                             'CD': 1.09,
+                                             'XE': 0.62})
 
 ConfigManager.mers.ligand.set_default("indicators", ("rc",))
 ConfigManager.new_branch("structure_mon")
 ConfigManager.structure_mon.set_default("simple_secondary_structure_code", {
-    'H': 'H', 'B': 'E', 'E': 'E', 'G': 'H', 'I': 'H', 'T': 'C', 'S': 'C', '-': 'C', '=': '='})
+    'H': 'H', 'B': 'E', 'E': 'E', 'G': 'H', 'I': 'H', 'T': 'C', 'S': 'C',
+    '-': 'C', '=': '='})
+
+
 # pylint: enable=no-member
 
 
@@ -247,7 +268,8 @@ class MerFactory(object):
         mer -- mer subclass instance.
         """
         base_data = self.unpack_base(mer)
-        mer = self._create_mer_of_type(type(mer), base_data[:-1] + (deepcopy(base_data[-1]),))
+        mer = self._create_mer_of_type(type(mer), base_data[:-1] + (
+        deepcopy(base_data[-1]),))
         mer.finalize()
         return mer
 
@@ -286,7 +308,8 @@ class MerFactory(object):
             warnings_ = WarnManager(pdb_residue)
 
         try:
-            ind = structure_obj.converter.get_ind(PDBid.create_from_pdb_residue(pdb_residue))
+            ind = structure_obj.converter.get_ind(
+                PDBid.create_from_pdb_residue(pdb_residue))
         except (AttributeError, KeyError):
             ind = None
 
@@ -297,7 +320,8 @@ class MerFactory(object):
                 *self.unpack_pdb_residue(pdb_residue, name)
             )
 
-        mers, warnings_ = self._create_possible_monomers(base, warnings_, self.classes)
+        mers, warnings_ = self._create_possible_monomers(base, warnings_,
+                                                         self.classes)
         if warn_in_place:
             for class_ in self.classes:
                 warnings_.raise_all(class_)
@@ -320,7 +344,8 @@ class MerFactory(object):
         for monomer_type in classes:
             try:
                 with warnings_(monomer_type):
-                    mers[monomer_type] = self._create_mer_of_type(monomer_type, base_data)
+                    mers[monomer_type] = self._create_mer_of_type(monomer_type,
+                                                                  base_data)
             except (IncompleteParticle, WrongAtomDistances, WrongMerType) as e:
                 # import pdb; pdb.set_trace()
                 pass
@@ -381,7 +406,8 @@ class Atom(pydesc.geometry.Coord):
     pdb_atom -- instance of BioPython Atom class.
     """
 
-    def __init__(self, coords, element, occupancy=.0, b_factor=.0):  # pylint:disable=super-init-not-called
+    def __init__(self, coords, element, occupancy=.0,
+                 b_factor=.0):  # pylint:disable=super-init-not-called
         # there is no need to call dict.__init__
         """Atom constructor.
 
@@ -410,9 +436,11 @@ class Pseudoatom(pydesc.geometry.Coord):
     """
 
     def __repr__(self):
-        return "<Pseudoatom %s: %f %f %f>" % ((self.name,) + tuple(self.vector))
+        return "<Pseudoatom %s: %f %f %f>" % (
+                    (self.name,) + tuple(self.vector))
 
-    def __init__(self, x=.0, y=.0, z=.0, numpy_vec=None, name=''):  # pylint:disable=super-init-not-called
+    def __init__(self, x=.0, y=.0, z=.0, numpy_vec=None,
+                 name=''):  # pylint:disable=super-init-not-called
         # there is no need to call dict.__init__
         """Pseudoatom constructor.
 
@@ -570,7 +598,9 @@ class Mer(object):
 
     def __repr__(self):
         try:
-            return '<%s: %s no. %i, PDB: %s>' % (self.__class__.__name__, self.name, self.ind, str(self.get_pdb_id()))
+            return '<%s: %s no. %i, PDB: %s>' % (
+            self.__class__.__name__, self.name, self.ind,
+            str(self.get_pdb_id()))
         except (TypeError, KeyError):
             return '<%s: %s>' % (self.__class__.__name__, self.name)
 
@@ -579,8 +609,9 @@ class Mer(object):
 
         Monomer iterator iterates over its atoms and pseudoatoms dictionaries.
         """
-        return iter([self.atoms[atom] for atom in sorted(self.atoms)] + [self.pseudoatoms[point] for point in
-                                                                         sorted(self.pseudoatoms)])
+        return iter([self.atoms[atom] for atom in sorted(self.atoms)] + [
+            self.pseudoatoms[point] for point in
+            sorted(self.pseudoatoms)])
 
     def __getattr__(self, name):
         """Returns proper attribute value.
@@ -596,7 +627,8 @@ class Mer(object):
                 return self.pseudoatoms[name]
             except (AttributeError, KeyError):
                 repr_ = self.ind if self.ind is not None else str(self)
-                raise AttributeError("Monomer %s has no attribute %s" % (repr_, name))
+                raise AttributeError(
+                    "Monomer %s has no attribute %s" % (repr_, name))
 
     def __getitem__(self, name):
         """Deprecated method. Returns proper attribute value.
@@ -673,13 +705,16 @@ class Mer(object):
         try:
             cls_name = cls.__name__.lower()
             code_dictionary = getattr(
-                getattr(ConfigManager.mers, cls_name), cls_name + "_code")  # pylint:disable=no-member
+                getattr(ConfigManager.mers, cls_name),
+                cls_name + "_code")  # pylint:disable=no-member
             try:
                 additional_dictionary = getattr(
-                    getattr(ConfigManager.mers, cls_name), cls_name + "_additional_code")  # pylint:disable=no-member
+                    getattr(ConfigManager.mers, cls_name),
+                    cls_name + "_additional_code")  # pylint:disable=no-member
             except AttributeError:
                 additional_dictionary = {}
-            return code_dictionary[seq] if seq in code_dictionary else additional_dictionary[seq]
+            return code_dictionary[seq] if seq in code_dictionary else \
+            additional_dictionary[seq]
         except AttributeError:
             if issubclass(cls.__base__, Mer):  # pylint:disable=no-member
                 # ??? Monomer has no __base__
@@ -696,7 +731,8 @@ class Mer(object):
         try:
             cls_name = cls.__name__.lower()
             code_dictionary = getattr(
-                getattr(ConfigManager.mers, cls_name), cls_name + "_code")  # pylint:disable=no-member
+                getattr(ConfigManager.mers, cls_name),
+                cls_name + "_code")  # pylint:disable=no-member
             for seq3, seq1 in code_dictionary.items():
                 if seq1 == let:
                     return seq3
@@ -734,7 +770,8 @@ class Mer(object):
     @property
     def representation(self):
         """Returns indicators of current monomer set in configuration manager."""
-        return [getattr(self, indicator) for indicator in self.get_config('indicators')]
+        return [getattr(self, indicator) for indicator in
+                self.get_config('indicators')]
 
     def get_pdb_id(self):
         """Returns pdb id if possible, otherwise returns None."""
@@ -791,7 +828,8 @@ class MerChainable(Mer):
 
         try:
             if self.get_config('check_distances'):
-                backbone_atoms = dict((atom_name, None) for atom_name in self.get_config('backbone_atoms'))
+                backbone_atoms = dict((atom_name, None) for atom_name in
+                                      self.get_config('backbone_atoms'))
                 for atom_pair in self.get_config("crucial_atom_distances"):
                     self._check_distance(backbone_atoms, *atom_pair)
             self._check_bbatoms()
@@ -815,7 +853,8 @@ class MerChainable(Mer):
                    self.ind or 0, \
                    str(self.structure), \
                    self.name
-            warn(UnknownParticleName("%s %s (no. %i) from %s has incorrect name: %s." % data))
+            warn(UnknownParticleName(
+                "%s %s (no. %i) from %s has incorrect name: %s." % data))
 
     def _check_bbatoms(self):
         tuple(self.iter_bb_atoms())
@@ -892,7 +931,8 @@ class MerChainable(Mer):
     def iter_nbb_atoms(self):
         """Returns iterator that iterates over monomer's all atoms except backbone."""
         bb_atoms = self.get_config('backbone_atoms')
-        return iter([atom for atom_name, atom in self.atoms.items() if atom_name not in bb_atoms])
+        return iter([atom for atom_name, atom in self.atoms.items() if
+                     atom_name not in bb_atoms])
 
     def adjusted_length(self):
         """Returns distance between backbone_average pseudoatoms of this and the next monomer
@@ -921,7 +961,9 @@ class Residue(MerChainable):
         if nres == 0:
             return
         n, ca, c = numpy.transpose(
-            numpy.array([[a.vector for a in r.iter_bb_atoms()] for r in residues]), (1, 0, 2))[[0, 1, 2]]
+            numpy.array(
+                [[a.vector for a in r.iter_bb_atoms()] for r in residues]),
+            (1, 0, 2))[[0, 1, 2]]
         pc = numpy.empty((nres, 3), dtype=numpy.float32)
         nn = numpy.empty((nres, 3), dtype=numpy.float32)
 
@@ -946,8 +988,9 @@ class Residue(MerChainable):
         pl3 = numpy.cross(npc, nca)  # vectors perpendicular to plane 3
 
         with numpy.errstate(divide='ignore', invalid='ignore'):
-            pl1, pl2, pl3 = (pl / numpy.sqrt(numpy.einsum('ij,ij->i', pl, pl)).reshape(-1, 1)
-                             for pl in (pl1, pl2, pl3))
+            pl1, pl2, pl3 = (
+            pl / numpy.sqrt(numpy.einsum('ij,ij->i', pl, pl)).reshape(-1, 1)
+            for pl in (pl1, pl2, pl3))
 
         angs = []
         for planes, direction in (((pl1, pl2), -cca), ((pl2, pl3), nca)):
@@ -1016,7 +1059,8 @@ class Residue(MerChainable):
             # they have no next/previous mers
             pass
 
-        self.pseudoatoms['backbone_average'] = Pseudoatom(numpy_vec=(average_ca / cnt))
+        self.pseudoatoms['backbone_average'] = Pseudoatom(
+            numpy_vec=(average_ca / cnt))
 
     @property
     def angles(self):
@@ -1079,13 +1123,15 @@ class Residue(MerChainable):
             n_2_ca = self.atoms['N'] - self.atoms['CA']
             c_2_ca = self.atoms['C'] - self.atoms['CA']
             average_ca_cb_distance = 1.53
-            cbx = (n_2_ca + c_2_ca).get_unit_vector() * (average_ca_cb_distance + 1)
+            cbx = (n_2_ca + c_2_ca).get_unit_vector() * (
+                        average_ca_cb_distance + 1)
         else:
             try:
                 ca = self.atoms['CA'].vector
                 cb = self.atoms['CB'].vector
             except KeyError:
-                raise IncompleteParticle("Mer lacks CA or CB, cannot calculate residue's cbx.")
+                raise IncompleteParticle(
+                    "Mer lacks CA or CB, cannot calculate residue's cbx.")
             vec = cb - ca
             nrm = norm(vec)
             vec = vec * ((nrm + 1) / nrm)
@@ -1108,8 +1154,10 @@ class Residue(MerChainable):
         try:
             coords = [self.atoms[i] for i in ("C", "CA", "CB", "N")]
         except KeyError:
-            coords = (self.atoms['C'], self.atoms['CA'], (self.atoms['CA'] - self.atoms['C']) + (
-                    self.atoms['CA'] - self.atoms['N']), self.atoms['N'])
+            coords = (self.atoms['C'], self.atoms['CA'],
+                      (self.atoms['CA'] - self.atoms['C']) + (
+                              self.atoms['CA'] - self.atoms['N']),
+                      self.atoms['N'])
         bb_coords = [coord_obj.get_coord() for coord_obj in coords]
         #
 
@@ -1200,7 +1248,8 @@ class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
             atom.ring_flag = False
 
         self.ring_atoms = {
-            name: atom for name, atom in self.atoms.items() if flag(name, atom)}
+            name: atom for name, atom in self.atoms.items() if
+            flag(name, atom)}
 
         self.calculate_ring_center()
         self.calculate_proximate_ring_center()
@@ -1212,15 +1261,18 @@ class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
     def calculate_ring_center(self):
         """Adds pseudoatom representing base ring center."""
         try:
-            vec = (self.ring_atoms['N1'].vector + self.ring_atoms['C4'].vector) * 0.5
+            vec = (self.ring_atoms['N1'].vector + self.ring_atoms[
+                'C4'].vector) * 0.5
         except KeyError:
-            raise IncompleteParticle('Lacking N1 or C4, unable to create Nucleotide.')
+            raise IncompleteParticle(
+                'Lacking N1 or C4, unable to create Nucleotide.')
         self.pseudoatoms['ring_center'] = Pseudoatom(
             numpy_vec=vec, name='ring_center')
 
     def calculate_ring_plane(self):
         """Adds pydesc.geometry.Plane object representing base to current nucleotide pseudoatom dictionary."""
-        at1, at2, at3 = self.ring_atoms['C2'], self.ring_atoms['C4'], self.ring_atoms['C6']
+        at1, at2, at3 = self.ring_atoms['C2'], self.ring_atoms['C4'], \
+                        self.ring_atoms['C6']
         self.ring_plane = pydesc.geometry.Plane.build(
             at1, at2, at3)  # pylint:disable=attribute-defined-outside-init
         # current method is called by init
