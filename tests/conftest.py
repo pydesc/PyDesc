@@ -11,21 +11,39 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_STRUCTURES_DIR = os.path.join(BASE_DIR, 'data', 'test_structures')
 TEST_CMAPS_DIR = os.path.join(BASE_DIR, 'data', 'validated_cmaps')
 
-PDB_FILE_TYPES = []
+CIF_FILES_WITH_TYPE = []
+
+
+FILE_TYPES = []
 PDB_FILES_WITH_TYPE = []
 PDB_FILES_WITH_TYPE_SHORT = []
 PDB_FILES_DICT = {}
 
 for type_ in os.listdir(TEST_STRUCTURES_DIR):
-    PDB_FILE_TYPES.append(type_)
+    FILE_TYPES.append(type_)
+
     files_list = os.listdir(os.path.join(TEST_STRUCTURES_DIR, type_))
+
     PDB_FILES_WITH_TYPE_SHORT.append((type_, files_list[0]))
     PDB_FILES_DICT[type_] = []
-    for struc_file in files_list:
-        PDB_FILES_WITH_TYPE.append((type_, struc_file))
-        PDB_FILES_DICT[type_].append(struc_file)
 
-TYPE_DICT = {
+    for structure_file in files_list:
+        if structure_file.endswith('.pdb'):
+            PDB_FILES_WITH_TYPE.append((type_, structure_file))
+            PDB_FILES_DICT[type_].append(structure_file)
+        elif structure_file.endswith('.cif'):
+            CIF_FILES_WITH_TYPE.append((type_, structure_file))
+
+PDB_FILES_WITH_PURE_TYPE = [
+    (type_, file_name) for type_, file_name in PDB_FILES_WITH_TYPE
+    if 'only' in type_
+]
+PDB_FILES_WITH_PURE_TYPE_SHORT = [
+    (type_, file_name) for type_, file_name in PDB_FILES_WITH_TYPE_SHORT
+    if 'only' in type_
+]
+
+PURE_TYPES_2_MERS_DICT = {
     'dna_only': Nucleotide,
     'dna_only_nmr': Nucleotide,
     'rna_only': Nucleotide,
@@ -35,4 +53,4 @@ TYPE_DICT = {
     'PorCA_only': Ion,
 }
 
-DIR_DICT = {v: k for k, v in TYPE_DICT.items()}
+DIR_DICT = {v: k for k, v in PURE_TYPES_2_MERS_DICT.items()}

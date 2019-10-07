@@ -10,7 +10,7 @@ from pydesc.structure import StructureLoader
 from pydesc.structure.descriptors import DescriptorBuilderDriver
 from pydesc.structure.descriptors import ElementFactory
 from tests.conftest import PDB_FILES_DICT
-from tests.conftest import PDB_FILES_WITH_TYPE
+from tests.conftest import PDB_FILES_WITH_PURE_TYPE
 from tests.conftest import TEST_STRUCTURES_DIR
 
 
@@ -18,7 +18,7 @@ class TestElementBuilder:
 
     @pytest.mark.parametrize(
         'type_, pdb_file',
-        [i for i in PDB_FILES_WITH_TYPE if 'nmr' not in i[0]])
+        [i for i in PDB_FILES_WITH_PURE_TYPE if 'nmr' not in i[0]])
     def test_build(self, type_, pdb_file):
         s, = StructureLoader().load_structures(
             path=os.path.join(

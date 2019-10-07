@@ -42,22 +42,27 @@ UserWarning -- default warning.
 created: 04.02.2014 , Tymoteusz 'hert' Oleniecki
 """
 
-
-import warnings
 import operator
+import warnings
+
 from pydesc.config import ConfigManager
 
 # pylint: disable=no-member
 ConfigManager.new_branch("warnings")
 ConfigManager.warnings.set_default("quiet", False)
 ConfigManager.warnings.new_branch("class_filters")
-ConfigManager.warnings.class_filters.set_default("IncompleteChainableParticle", "always")
+ConfigManager.warnings.class_filters.set_default("IncompleteChainableParticle",
+                                                 "always")
 ConfigManager.warnings.class_filters.set_default("Info", "always")
-ConfigManager.warnings.class_filters.set_default("DeprecationWarning", "default")
+ConfigManager.warnings.class_filters.set_default("DeprecationWarning",
+                                                 "default")
 ConfigManager.warnings.class_filters.set_default("NoConfiguration", "error")
-ConfigManager.warnings.class_filters.set_default("UnknownParticleName", "always")
+ConfigManager.warnings.class_filters.set_default("UnknownParticleName",
+                                                 "always")
 ConfigManager.warnings.class_filters.set_default("UserWarning", "always")
-#ConfigManager.warnings.class_filters.set_default("WrongMonomerType", "always")
+ConfigManager.warnings.class_filters.set_default("WrongMonomerType", "always")
+
+
 # pylint: enable=no-member
 
 
@@ -68,7 +73,7 @@ def warn(warn_inst, stack_level=0):
     warn_inst -- instance of warning to be called.
     stack_level -- int, describes level of traceback to be printed.
     """
-    if not ConfigManager.warnings.quiet:     # pylint: disable=no-member
+    if not ConfigManager.warnings.quiet:  # pylint: disable=no-member
         stack_level += 2
         warnings.warn(warn_inst, stacklevel=stack_level)
 
@@ -79,24 +84,29 @@ def set_filters():
 
     # TODO: Scan for warnings and exceptions automatically. Add checks for
     # warnings without entries in ConfigManager.
-    for wrn_cls in (Info, DeprecationWarning, NoConfiguration, UnknownParticleName, UserWarning):
-        filter_ = getattr(ConfigManager.warnings.class_filters, wrn_cls.__name__)  # pylint: disable=no-member
+    for wrn_cls in (
+            Info, DeprecationWarning, NoConfiguration, UnknownParticleName,
+            UserWarning):
+        filter_ = getattr(ConfigManager.warnings.class_filters,
+                          wrn_cls.__name__)  # pylint: disable=no-member
         warnings.filterwarnings(filter_, category=wrn_cls)
 
 
 class WarnManager(warnings.catch_warnings):
-
     """Context manager that handles warnings raised in different contexts.
 
-    Used in pydesc.structure and pydesc.monomer modules to avoid raising warnings during creation of unused monomer instances.
-    Subclass of warnings.catch_warnings class. Extends __init__ and __enter__ methods. Overrides __repr__, __call__ and __exit__ methods.
+    Used in pydesc.structure and pydesc.monomer modules to avoid raising
+    warnings during creation of unused monomer instances.
+    Subclass of warnings.catch_warnings class. Extends __init__ and
+    __enter__ methods. Overrides __repr__, __call__ and __exit__ methods.
     """
 
     def __init__(self, obj=None):
         """WarnManager constructor.
 
         Argument:
-        obj -- an object that is to be tested in different contexts. Used only for recognition purpose. None by default.
+        obj -- an object that is to be tested in different contexts. Used
+        only for recognition purpose. None by default.
         """
         self.obj = obj
         self.exceptions = {None: [], '__internal__': []}
@@ -117,25 +127,33 @@ class WarnManager(warnings.catch_warnings):
         return self
 
     def __enter__(self):
-        """Extended super class method called at the beggining of 'with' statement code block.
+        """Extended super class method called at the beginning of 'with'
+        statement code block.
 
-        This method provides possibility of catching warnings as warnings.catch_warnings do.
+        This method provides possibility of catching warnings as
+        warnings.catch_warnings do.
         """
         self._entered = False
-        self.exceptions['__internal__'] = warnings.catch_warnings.__enter__(self)
+        self.exceptions['__internal__'] = warnings.catch_warnings.__enter__(
+            self)
         return self
 
-    def __exit__(self, warning_type, warning_instance, traceback, *args, **kwargs):
-        """Overridden super class method called in 'with' statement when warning or exception was raised in code block.
+    def __exit__(self, warning_type, warning_instance, traceback, *args,
+                 **kwargs):
+        """Overridden super class method called in 'with' statement when
+        warning or exception was raised in code block.
 
         Arguments:
         warning_type -- type of raised warning or exception.
         warning_value -- value of raised warning or exception.
         traceback -- raised exception traceback.
 
-        Exceptions that are not Warning subclass are raised immediately, while warnings are stored for future usage.
+        Exceptions that are not Warning subclass are raised immediately,
+        while warnings are stored for future usage.
         """
-        self.exceptions[self.last_context].extend([self.exceptions['__internal__'].pop(0).message for wrn in self.exceptions['__internal__']])
+        self.exceptions[self.last_context].extend(
+            [self.exceptions['__internal__'].pop(0).message for wrn in
+             self.exceptions['__internal__']])
         warnings.catch_warnings.__exit__(self)
         if warning_type is None:
             return True
@@ -151,16 +169,17 @@ class WarnManager(warnings.catch_warnings):
         """Method that raises all stored warnings.
 
         Argument:
-        context -- any object (e.g. string) that specifies context of warnings to be raise.
+        context -- any object (e.g. string) that specifies context of
+        warnings to be raise.
 
-        Method use pydesc.warnexcept.warn function to throw warnings, therefore pydesc configuration affects warnings filtering.
+        Method use pydesc.warnexcept.warn function to throw warnings,
+        therefore pydesc configuration affects warnings filtering.
         """
         for warning in self.exceptions.get(context, []):
             warn(warning, 4)
 
 
 class DiscontinuityError(Exception):
-
     """Class of exceptions raised due to disnotinuity between chainable mers.
 
     Arguments:
@@ -169,13 +188,14 @@ class DiscontinuityError(Exception):
     """
 
     def __str__(self):
-        ending = "." if len(self.args) == 0 else "between: %s and %s" % tuple(map(operator.methodcaller("get_pdb_id", self.args)))
+        ending = "." if len(self.args) == 0 else "between: %s and %s" % tuple(
+            map(operator.methodcaller("get_pdb_id", self.args)))
         return "Discontinuity occurred" + ending
 
 
 class IncompleteParticle(Exception):
-
-    """Class of exceptions reised when incomplete particle is given to create monomer insence.
+    """Class of exceptions reised when incomplete particle is given to
+    create monomer insence.
 
     Argument:
     arg1 -- BioPython Residue instance.
@@ -183,8 +203,8 @@ class IncompleteParticle(Exception):
 
 
 class CannotCalculateContact(Exception):
-
-    """Class of exceptions raised by contact criterions whenever given mers lack attributes or properties needed to calculate contact.
+    """Class of exceptions raised by contact criterions whenever given mers
+    lack attributes or properties needed to calculate contact.
 
     Arguments:
     arg1 -- mer obj 1.
@@ -194,8 +214,8 @@ class CannotCalculateContact(Exception):
 
 
 class WrongAtomDistances(Exception):
-
-    """Class of exceptions raised due to wrong distance between atoms occuring in structures.
+    """Class of exceptions raised due to wrong distance between atoms
+    occurring in structures.
 
     Arguments:
     arg1 -- pydesc.monomer.Atom instance 1.
@@ -204,38 +224,29 @@ class WrongAtomDistances(Exception):
     """
 
     def __str__(self):
-        tpl = self.args[:2] + (self.args[2].ind, )
-        return "Wrong %s-%s distance in %s. Check if distance criteria in config manager are not to strict." % tpl
+        tpl = self.args[:2] + (self.args[2].ind,)
+        return "Wrong %s-%s distance in %s. Check if distance criteria in " \
+               "config manager are not to strict." % tpl
 
 
 class WrongMerType(Exception):
-
-    """Class of warnings. Warning against wrong type of mers given for contact calculation under specific criteria. Printed by default.
-
-    Arguments:
-    arg1 -- pydesc.monomer.Monomer subclass instance 1.
-    arg2 -- pydesc.monomer.Monomer subclass instance 2.
-    arg3 -- pydesc.monomer.Monomer subclass 1 or None.
-    arg4 -- pydesc.monomer.Monomer subclass 2 or None.
+    """Class of warnings. Warning against wrong type of mers given for
+    contact calculation under specific criteria. Printed by default.
     """
-
-    def __str__(self):
-        mrs = map(str, map(operator.methodcaller("get_pdb_id"), self.args[:2]))
-        tps = [i.__name__ if i is not None else "any type" for i in self.args[2:5]]
-        tps[0] = tps[0].capitalize()
-        return "Contact criterion does not apply to mers %s and %s. %s and %s are required." % tuple(mrs + tps)
+    pass
 
 
 class Info(Warning):
-
     """Class of warnings. Standard informations. Printed by default."""
 
 
 class NoConfiguration(Warning):
-
-    """Class of warnings given while no appropriate configuration in configuration manager is found. Raised as an error by default."""
+    """Class of warnings given while no appropriate configuration in
+    configuration manager is found. Raised as an error by default.
+    """
 
 
 class UnknownParticleName(Warning):
-
-    """Class of warnings. Information about particles that have unknown names. Printed by default."""
+    """Class of warnings. Information about particles that have unknown
+    names. Printed by default.
+    """

@@ -6,7 +6,7 @@ from pydesc.config import ConfigManager
 from pydesc.structure import StructureLoader
 from tests.conftest import PDB_FILES_WITH_TYPE
 from tests.conftest import TEST_STRUCTURES_DIR
-from tests.conftest import TYPE_DICT
+from tests.conftest import PURE_TYPES_2_MERS_DICT
 
 ConfigManager.warnings.set("quiet", True)
 
@@ -23,7 +23,7 @@ def test_default_structure_loader_load_local(type_, struc_file):
     sl = StructureLoader()
     path_str = os.path.join(TEST_STRUCTURES_DIR, type_, struc_file)
     structures = sl.load_structures(path=path_str)
-    expected_main_mer_type = TYPE_DICT[type_]
+    expected_main_mer_type = PURE_TYPES_2_MERS_DICT[type_]
 
     for structure in structures:
         types = map(type, structure)
@@ -41,7 +41,7 @@ def test_default_structure_loader_load_from_pdb(type_, struc_file):
     sl = StructureLoader()
     code = os.path.splitext(struc_file)[0]
     structures = sl.load_structures(code=code)
-    expected_main_mer_type = TYPE_DICT[type_]
+    expected_main_mer_type = PURE_TYPES_2_MERS_DICT[type_]
 
     for structure in structures:
         types = map(type, structure)

@@ -8,9 +8,9 @@ from pydesc.mers import MerFactory
 from pydesc.mers import Nucleotide
 from pydesc.mers import Residue
 from tests.conftest import DIR_DICT
-from tests.conftest import PDB_FILES_WITH_TYPE
+from tests.conftest import PDB_FILES_WITH_PURE_TYPE
 from tests.conftest import TEST_STRUCTURES_DIR
-from tests.conftest import TYPE_DICT
+from tests.conftest import PURE_TYPES_2_MERS_DICT
 
 TYPE_THRESHOLDS = {
     Nucleotide: .25,
@@ -21,7 +21,7 @@ TYPE_THRESHOLDS = {
 
 class TestMonomerFactory(object):
 
-    @pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_TYPE)
+    @pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_PURE_TYPE)
     def test_default_mer_factory_create_from_pdb_res(self, type_, struc_file):
 
         factory = MerFactory()
@@ -33,7 +33,7 @@ class TestMonomerFactory(object):
                 struc_file)
         )
 
-        expected_type = TYPE_DICT[type_]
+        expected_type = PURE_TYPES_2_MERS_DICT[type_]
         type_threshold = TYPE_THRESHOLDS[expected_type]
 
         points = {True: 0, False: 1}
@@ -123,7 +123,7 @@ class TestResidue(MerTest):
 
     @pytest.mark.parametrize(
         'type_, structure_file',
-        [i for i in PDB_FILES_WITH_TYPE if i[0] == DIR_DICT[Residue]])
+        [i for i in PDB_FILES_WITH_PURE_TYPE if i[0] == DIR_DICT[Residue]])
     def test_calculate_cbx(self, type_, structure_file):
         checked = 0
         for result in self.iter_structure(type_, structure_file, Residue):
@@ -145,7 +145,7 @@ class TestNucleotide(MerTest):
 
     @pytest.mark.parametrize(
         'type_, structure_file',
-        [i for i in PDB_FILES_WITH_TYPE if i[0] == DIR_DICT[Nucleotide]])
+        [i for i in PDB_FILES_WITH_PURE_TYPE if i[0] == DIR_DICT[Nucleotide]])
     def test_calculate_features(self, type_, structure_file):
         checked = 0
         for result in self.iter_structure(type_, structure_file, Nucleotide):

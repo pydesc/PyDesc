@@ -267,7 +267,7 @@ class BackbonedMixIn:
                 pair[1].previous_mer = pair[0]
 
 
-class AbstractStructure(object):
+class AbstractStructure(metaclass=ABCMeta):
     """Abstract class, representation of all the structures and their derivatives.
 
     NOTE:
@@ -280,8 +280,6 @@ class AbstractStructure(object):
     Contact -- two Elements in contact.
     Descriptor -- all Contacts containing central Element.
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, derived_from):
         """(Sub)structure constructor.
@@ -514,13 +512,14 @@ class AbstractStructure(object):
         """Returns (sub)structure sequence (one letter code)."""
         return self._map_mers_with_attr('seq')
 
-    def get_chain(self, char):
-        """Returns chain of given name or None if no such chain is available."""
+    def get_chain(self, name):
+        """Returns chain of given name if it is available, otherwise raises
+        AttributeError.
+        """
         for chn in self.chains:
-            if chn.chain_char == char:
+            if chn.chain_name == name:
                 return chn
-        raise AttributeError(
-            'No chain %s in structure %s.' % (char, str(self)))
+        raise AttributeError('No chain %s in %s.' % (name, str(self)))
 
     def save_pdb(self, path):
         """Writes (sub)structure into pdb file.
@@ -783,7 +782,9 @@ class PartialStructure(BackbonedMixIn, AbstractStructure):
 
 
 class Segment(AbstractStructure):
-    """Representation of continuous substructures of DNA, RNA or protein structure."""
+    """Representation of continuous substructures of DNA, RNA or protein
+    structure.
+    """
 
     def __init__(self, start=None, end=None, mers=None):
         """Segment constructor.
@@ -798,12 +799,14 @@ class Segment(AbstractStructure):
         if mers is None:
             mers = [start]
             current_mer = start
-            try:
-                while mers[-1].next_mer != end:
+            while current_mer != end:
+                try:
                     current_mer = current_mer.next_mer
-                    mers.append(current_mer)
-            except AttributeError:
-                raise DiscontinuityError()
+                except AttributeError:
+                    names = start.get_pdb_id(), end.get_pdb_id()
+                    msg = 'It impossible to reach %s starting from %s.' % names
+                    raise DiscontinuityError(msg)
+                mers.append(current_mer)
         else:
             mers = sorted(mers, key=operator.attrgetter('ind'))
             start = mers[0]

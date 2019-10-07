@@ -47,14 +47,17 @@ except ImportError:
 from shlib.build_shlib import build_shlib, SharedLibrary
 from shlib.install_shlib import install_lib, develop
 
-cmdclass = {'install_lib': install_lib, 'build_shlib': build_shlib, 'develop': develop}
+cmdclass = {'install_lib': install_lib, 'build_shlib': build_shlib,
+            'develop': develop}
 
 if test:
     cmdclass['unittest'] = bitten.util.testrunner.unittest
 
 
 def discover_libdesc(path):
-    """ Searches for libdesc includes in given path. Returns a boolean value and a path or an empty string. """
+    """ Searches for libdesc includes in given path. Returns a boolean value
+    and a path or an empty string.
+    """
 
     inc_path = os.path.join(path, 'include')
 
@@ -71,21 +74,25 @@ has_libdesc = False
 try:
     has_libdesc, libdesc_path = discover_libdesc(os.environ['LIBDESC_PATH'])
 except KeyError:
-    locations = [os.path.join(os.environ['HOME'], 'local'), '/usr/local', '/usr']
+    locations = [os.path.join(os.environ['HOME'], 'local'), '/usr/local',
+                 '/usr']
     for loc in locations:
         has_libdesc, libdesc_path = discover_libdesc(loc)
         if has_libdesc:
             break
 
-compile_args = ['-Wall', '-Wno-unknown-pragmas', '-std=gnu99', '-mmmx', '-msse', '-msse3', '-D_GNU_SOURCE', '-m64',
+compile_args = ['-Wall', '-Wno-unknown-pragmas', '-std=gnu99', '-mmmx',
+                '-msse', '-msse3', '-D_GNU_SOURCE', '-m64',
                 '-fopenmp']
 
-compdesc_sources = ['compdesc.c', 'rmsd.c', 'alignment.c', '01_prelim.c', '02_components.c', '03_build.c', '04_prune.c']
+compdesc_sources = ['compdesc.c', 'rmsd.c', 'alignment.c', '01_prelim.c',
+                    '02_components.c', '03_build.c', '04_prune.c']
 prepend_with_dir = lambda x: 'src/compdesc/' + x
 compdesc_sources = list(map(prepend_with_dir, compdesc_sources))
 
 shlibs = [SharedLibrary(name='cydesc',
-                        sources=['src/cstructures.c', 'src/util/arrays.c', 'src/util/bitops.c', 'src/util/maps.c',
+                        sources=['src/cstructures.c', 'src/util/arrays.c',
+                                 'src/util/bitops.c', 'src/util/maps.c',
                                  'src/util/random.c'],
                         include_dirs=['src/include'],
                         libraries=['m'],
@@ -104,7 +111,9 @@ shlibs = [SharedLibrary(name='cydesc',
                         extra_compile_args=list(compile_args)
                         ),
           SharedLibrary(name='compdesc',
-                        sources=compdesc_sources + ['src/overfit.c', 'src/util/maps.c', 'src/util/arrays.c'],
+                        sources=compdesc_sources + ['src/overfit.c',
+                                                    'src/util/maps.c',
+                                                    'src/util/arrays.c'],
                         include_dirs=['src/include'],
                         libraries=['m'],
                         extra_compile_args=list(compile_args)
@@ -121,9 +130,12 @@ if has_libdesc:
     libdesc_inc_path = os.path.join(libdesc_path, 'include')
     libdesc_lib_path = os.path.join(libdesc_path, 'lib')
     shlibs.append(SharedLibrary(name='compdesc_test',
-                                sources=['src/compdesc_test.c', 'src/util/arrays.c'],
+                                sources=['src/compdesc_test.c',
+                                         'src/util/arrays.c'],
                                 include_dirs=['src/include', libdesc_inc_path],
-                                libraries=['m', 'desc', 'gen_avl', 'overfit', 'desc_comp_domains', 'arrays', 'png',
+                                libraries=['m', 'desc', 'gen_avl', 'overfit',
+                                           'desc_comp_domains', 'arrays',
+                                           'png',
                                            'graph', 'motzkin'],
                                 extra_compile_args=compile_args,
                                 library_dirs=[libdesc_lib_path]

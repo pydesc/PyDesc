@@ -21,22 +21,23 @@ Classes that represents mers present in representations of (sub)structures.
 created: 11.07.2013 - 31.07.2013, Tymoteusz 'hert' Oleniecki
 """
 
-import pydesc.geometry
-import numpy
+from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 
+import numpy
 import scipy.linalg
 
+import pydesc.geometry
 from pydesc.config import ConfigManager
 from pydesc.numberconverter import PDBid
+from pydesc.warnexcept import IncompleteParticle
+from pydesc.warnexcept import Info
+from pydesc.warnexcept import NoConfiguration
+from pydesc.warnexcept import UnknownParticleName
 from pydesc.warnexcept import warn
 from pydesc.warnexcept import WarnManager
-from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import WrongAtomDistances
 from pydesc.warnexcept import WrongMerType
-from pydesc.warnexcept import UnknownParticleName
-from pydesc.warnexcept import NoConfiguration
-from pydesc.warnexcept import Info
 
 try:
     import prody
@@ -238,7 +239,7 @@ ConfigManager.structure_mon.set_default("simple_secondary_structure_code", {
 # pylint: enable=no-member
 
 
-class MerFactory(object):
+class MerFactory:
     """Factory class for Monomer subclass instances."""
 
     def __init__(self, classes=None):
@@ -502,13 +503,18 @@ class DynamicPropertiesDict(dict):
             object.__getattribute__(self.owner, "calculate_%s" % key)()
 
 
-class Mer(object):
+class Mer():
     """Abstract class, representation of mers and particles present in molecular structures.
 
     Subclasses:
     MonomerChainable -- residues and nucleotides.
     MonomerOther -- ligands or their type: ions.
     """
+
+    @staticmethod
+    def is_chainable():
+        """Return True if mer is chainable."""
+        return False
 
     @classmethod
     def reset_config_cache(cls):
@@ -574,7 +580,7 @@ class Mer(object):
         Sets attributes:
         name -- mer or ligand name, up to three letters, according to PDB file.
         structure -- the Structure instance to which the monomer belongs.
-        my_chain -- character of the chain that the mers belong to, according to PDB file.
+        chain -- character of the chain that the mers belong to, according to PDB file.
         atoms - dict of atoms building current monomer represented by Atom instances.
         ind -- PyDesc integer.
         pseudoatoms -- dict of Pseudoatoms.
@@ -662,8 +668,8 @@ class Mer(object):
                         "Monomer %s has no attribute %s" % (repr_, name))
 
     def finalize(self):
-        """Method called by structures to calculate and set attributes that need structural
-        information to be calculated.
+        """Method called by structures to calculate and set attributes that
+        need structural information to be calculated.
         """
         self.calculate_rc()
 
@@ -818,6 +824,11 @@ class MerChainable(Mer):
     Residue
     Nucleotide
     """
+
+    @staticmethod
+    def is_chainable():
+        """Return True if mer is chainable."""
+        return True
 
     def __init__(self, structure_obj, ind, name, chain, atoms):
         """Chainable monomer constructor.
@@ -1319,8 +1330,7 @@ class MerOther(Mer):
     Ligand
     """
 
-    # __metaclass__ = ABCMetamonomer
-
+    @abstractmethod
     def __init__(self, structure_obj, ind, name, chain, atoms):
         """Monomer Other constructor.
 

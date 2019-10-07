@@ -39,7 +39,6 @@ def perform_smith_waterman(models_ids):  # pylint: disable=invalid-name
     """
     aligned_ids = models_ids[0]
     for ids in models_ids[1:]:
-        # iteration over subsequent models pdb ids
         sw_matrix = build_smith_waterman_matrix(ids, aligned_ids)
         aligned_ids = go_backwards(sw_matrix)
     return [aligned_ids]
