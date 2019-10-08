@@ -35,11 +35,13 @@ axpy = scipy.linalg.get_blas_funcs('axpy')
 class TRTMatrix(object):
     """Translation-Rotation-Translation matrices class.
 
-    Stores prerotational translation vector, rotation matrix and postrotational translation vector.
+    Stores prerotational translation vector, rotation matrix and
+    post-rotational translation vector.
     Attributes:
-    prerotational_translation_vector -- list of three floats.
+    pre_vector -- list of three floats.
     rotation_matrix -- list of three lists containing three floats.
-    translation_vector -- postrotational translation vector, list of three floats.
+    post_vector -- post-rotational translation vector, list of three
+    floats.
     """
 
     # pylint: disable=no-member
@@ -47,34 +49,37 @@ class TRTMatrix(object):
         """Translation-Rotation-Translation matrix objects' constructor.
 
         Takes no arguments. Sets three attributes:
-        prerotational_translation_vector -- numpy.array of three floats; by default [.0, .0, .0].
-        translation_vector -- numpy array as above. Represents postrotational vector.
-        rotationa_matrix -- numpy.array. diagonal identity matrix 3x3 by default.
+        pre_vector -- numpy.array of three floats; by
+        default [.0, .0, .0].
+        post_vector -- numpy array as above. Represents
+        post-rotational vector.
+        rotation_matrix -- numpy.array. diagonal identity matrix 3x3 by
+        default.
         """
-        self.prerotational_translation_vector = numpy.array([0.0, 0.0, 0.0])  # pylint: disable=invalid-name
-        # this attr has very informative name
+        self.pre_vector = numpy.array([0.0, 0.0, 0.0])
         self.rotation_matrix = numpy.array([
             [1.0, 0.0, 0.0],
             [0.0, 1.0, 0.0],
             [0.0, 0.0, 1.0]])
-        self.translation_vector = numpy.array([0.0, 0.0, 0.0])
+        self.post_vector = numpy.array([0.0, 0.0, 0.0])
 
     def add_rotation(self, rotation_matrix):
         """Adds rotation to stored rotation matrix.
 
         Argument:
-        rotation_matrix -- numpy.array of floats 3x3 shape."""
+        rotation_matrix -- numpy.array of floats 3x3 shape.
+        """
         rotation_matrix = numpy.array(rotation_matrix).reshape(3, 3)
         self.rotation_matrix = rotation_matrix * self.rotation_matrix
 
     def add_translation(self, vector):
-        """Adds vector to postrotational translation vector.
+        """Adds vector to post-rotational translation vector.
 
         Argument:
         vector -- list of three floats.
         """
         vector = numpy.array(vector)
-        self.translation_vector += vector
+        self.post_vector += vector
 
     def add_prerotational_translation(self, vector):
         """Adds vector to prerotational translation vector.
@@ -83,14 +88,14 @@ class TRTMatrix(object):
         vector -- list of three floats.
         """
         vector = numpy.array(vector)
-        self.prerotational_translation_vector += vector
+        self.pre_vector += vector
 
-    # pylint: disable=invalid-name
     def transform(self, x=None, y=None, z=None, vec=None):
         """Returns transformed coordinates.
 
-        Moves given point by prerotational_translation_vector, rotates the result in accordance with rotation_matrix
-        and in the end moves the point by translation_vector.
+        Moves given point by pre_vector, rotates the
+        result in accordance with rotation_matrix
+        and in the end moves the point by post_vector.
 
         Arguments:
         x, y, z -- spacial coordinates (optional).
@@ -100,16 +105,16 @@ class TRTMatrix(object):
         """
         if vec is None:
             vec = numpy.array((x, y, z))
-        prerotationally_translated_vector = self.prerotational_translation_vector + vec
-        rotated_vector = numpy.squeeze(self.rotation_matrix.dot(prerotationally_translated_vector).A)
-        return rotated_vector + self.translation_vector
+        pre_vector = self.pre_vector + vec
+        rotated_vector = numpy.squeeze(self.rotation_matrix.dot(pre_vector).A)
+        return rotated_vector + self.post_vector
 
     # pylint: enable=invalid-name
     # names x, y and z are the best possible here
 
     def reset_translation(self):
         """Resets translation vector to zero vector."""
-        self.translation_vector = numpy.array([0.0, 0.0, 0.0])
+        self.post_vector = numpy.array([0.0, 0.0, 0.0])
 
     def reset_rotation(self):
         """Resets rotation matrix to diagonal identity matrix."""
@@ -120,10 +125,11 @@ class TRTMatrix(object):
 
     def reset_prerotational_translation(self):
         """Resets prerotational translation vector to zero vector."""
-        self.prerotational_translation_vector = numpy.array([0.0, 0.0, 0.0])
+        self.pre_vector = numpy.array([0.0, 0.0, 0.0])
 
     def reset(self):
-        """Resets rotation, translation and prerotational translation to default values."""
+        """Resets rotation, translation and prerotational translation to
+        default values."""
         self.reset_translation()
         self.reset_rotation()
         self.reset_prerotational_translation()
@@ -133,10 +139,10 @@ class TRTMatrix(object):
 
     def combine(self, other):
         ret = TRTMatrix()
-        ret.add_rotation(numpy.dot(other.rotation_matrix, self.rotation_matrix))
-        ret.add_translation(self.translation_vector + other.translation_vector)
-        ret.add_prerotational_translation(
-            self.prerotational_translation_vector + other.prerotational_translation_vector)
+        rotation = numpy.dot(other.rotation_matrix, self.rotation_matrix)
+        ret.add_rotation(rotation)
+        ret.add_translation(self.post_vector + other.post_vector)
+        ret.add_prerotational_translation(self.pre_vector + other.pre_vector)
         return ret
 
 
@@ -152,17 +158,20 @@ class Coord(object):
 
         Arguments:
         x, y, z -- spatial coordinates.
-        numpy_vec -- NumPy array containing coordinates (if provided XYZ are ignored)
+        numpy_vec -- NumPy array containing coordinates (if provided XYZ are
+        ignored)
         """
         if numpy_vec is not None:
             self.vector = numpy_vec
         else:
-            self.vector = numpy.array((float(x), float(y), float(z)))  # pylint: disable=no-member
+            self.vector = numpy.array(
+                (float(x), float(y), float(z)))  # pylint: disable=no-member
 
     # numpy.array exists
 
     def __add__(self, coord_obj):
-        """Returns result of addition of two vectors represented by Coord instances as new Coord instance.
+        """Returns result of addition of two vectors represented by Coord
+        instances as new Coord instance.
 
         Argument:
         coord_obj -- instance of Coord class.
@@ -170,7 +179,8 @@ class Coord(object):
         return Coord(numpy_vec=(self.vector + coord_obj.vector))
 
     def __sub__(self, coord_obj):
-        """Returns result of subtraction of two vectors represented by Coord instances as new Coord instance.
+        """Returns result of subtraction of two vectors represented by Coord
+        instances as new Coord instance.
 
         Argument:
         coord_obj -- instance of Coord class.
@@ -178,7 +188,8 @@ class Coord(object):
         return Coord(numpy_vec=(self.vector - coord_obj.vector))
 
     def __mul__(self, factor):
-        """Returns result of multiplication of vector a by given number as new Coord instance.
+        """Returns result of multiplication of vector a by given number as
+        new Coord instance.
 
         Argument:
         factor -- a float or an integer.
@@ -186,7 +197,8 @@ class Coord(object):
         return Coord(numpy_vec=(self.vector * factor))
 
     def __div__(self, denominator):
-        """Returns result of division of vector by a given number as new Coord instance.
+        """Returns result of division of vector by a given number as new
+        Coord instance.
 
         Argument:
         denominator -- a float or an integer.
@@ -223,7 +235,9 @@ class Coord(object):
         """Returns a list of stored spacial coordinates.
 
         Argument:
-        transformation_matrix -- instance of TRTMatrix to be used in co-ordinates transformation."""
+        transformation_matrix -- instance of TRTMatrix to be used in
+        coordinates transformation.
+        """
         if transformation_matrix is not None:
             return tuple(transformation_matrix.transform(*self.vector))
         return tuple(self.vector)
@@ -271,8 +285,8 @@ class Plane(object):
     """Stores coordinates as position vector.
 
     Methods:
-    ort_projection -- returns object of class Coord with coordinates of the orthogonal projection of given point
-     onto plane.
+    ort_projection -- returns object of class Coord with coordinates of the
+    orthogonal projection of given point onto plane.
     dihedral_angle_cos -- returns cosines of the angle between two planes.
     bisection_plane -- returns the bisection plane for two given planes.
     """
@@ -281,9 +295,8 @@ class Plane(object):
     def build(v1, v2, v3):
         vec = numpy.cross((v1.vector - v2.vector), (v3.vector - v2.vector))
 
-        d = -numpy.dot(vec, v1.vector)  # pylint:disable=invalid-name
-        # D, a, b, c and d are good names for points and determinant calculated here
-        plane = Plane(numpy_vec=vec, d=d)  # pylint:disable=attribute-defined-outside-init
+        d = -numpy.dot(vec, v1.vector)
+        plane = Plane(numpy_vec=vec, d=d)
 
         return plane
 
@@ -341,8 +354,8 @@ class Plane(object):
         return self.norm_vec
 
     def ort_projection(self, point):
-        """
-        Returns coordinates of the orthogonal projection of given point onto plane.
+        """Returns coordinates of the orthogonal projection of given point onto
+        plane.
 
         Argument:
         point -- object of class Coord.
@@ -367,8 +380,7 @@ class Plane(object):
         return angle
 
     def dihedral_angle_cos(self, plane2):
-        """
-        Returns value of the cosinus of the angle between two planes.
+        """Returns value of the cosinus of the angle between two planes.
 
         Argument:
         plane2 -- object of class Plane.
@@ -376,8 +388,7 @@ class Plane(object):
         return numpy.dot(self.perpendicular_vec, plane2.perpendicular_vec)
 
     def bisection_plane(self, plane2):
-        """
-        Returns coefficients of bisection plane.
+        """Returns coefficients of bisection plane.
 
         Argument:
         plane2 -- object of class Plane.
@@ -399,4 +410,4 @@ class Plane(object):
         return res
 
 # pylint: enable=invalid-name
-# arguments and localc names are informative here
+# arguments and local names are informative here

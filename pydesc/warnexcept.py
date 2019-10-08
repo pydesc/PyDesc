@@ -19,24 +19,29 @@
 PyDesc Warnings and Exceptions.
 
 Usage: to use Exceptions simply import this module and raise them.
-To use configurable warnings import this module and use static method warn in class Warn.
-In configuration manager set fileter values in branch warnings.class_filters.<Warning Class> to one of values from list below:
+To use configurable warnings import this module and use static method warn
+in class Warn.
+In configuration manager set filter values in branch warnings.class_filters.
+<Warning Class> to one of values from list below:
 error -- raises error instead of printing warning.
 ignore -- skips warnings.
 always -- always prints warnings.
 
 Exception classes:
 DiscontinuityError -- exceptions raised when chain discontinuity is found.
-WrongAtomDistances -- exceptions raised when wrong distances between atoms occures in monomer.
+WrongAtomDistances -- exceptions raised when wrong distances between atoms
+occurs in monomer.
 
 Warnings classes:
-CopyDownload -- inforation about creation of local copy of file from data base.
+CopyDownload -- information about creation of local copy of file from data
+base.
 Info -- any information.
 DeprecationWarning -- warning against unsupported methods.
 LocalCopyAccess -- information about access to local copy of file.
 MonomerCreationFailed -- information about failure during monomer creation.
 NoConfiguration -- information about lack of configuration in config manager.
-UnknownParticleName -- information about occurance of particle of unknown name.
+UnknownParticleName -- information about occurrence of particle of unknown
+name.
 UserWarning -- default warning.
 
 created: 04.02.2014 , Tymoteusz 'hert' Oleniecki

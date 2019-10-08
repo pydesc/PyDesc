@@ -64,7 +64,7 @@ class t_transrot(ctypes.Structure):  # pylint: disable=C0103
         for i in range(3):
             for j in range(3):
                 res.rotation_matrix[i, j] = self.U[j][i]
-            res.translation_vector[i] = self.Tr[i]
+            res.post_vector[i] = self.Tr[i]
 
         return res
 
