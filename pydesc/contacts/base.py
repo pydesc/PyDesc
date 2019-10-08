@@ -17,36 +17,45 @@
 
 """
 Base class for contact criteria, combined criteria and utility functions
-that deal helps in dealing with contacts among mers present in PyDesc (sub)structures.
+that deal helps in dealing with contacts among mers present in PyDesc
+(sub)structures.
 
 created: 20.05.2019 - , Tymoteusz 'hert' Oleniecki
 """
 
 import re
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
+from abc import abstractmethod
 from copy import deepcopy
+from functools import wraps
 
 import pydesc.mers
 from pydesc.warnexcept import WrongMerType
 
 
 def for_monomer_type_only(type_1, type_2=None):
-    """Class decorator used to assert correct type of mers for subsequent contact evaluation.
+    """Class decorator used to assert correct type of mers for subsequent
+    contact evaluation.
 
-    This decorator sets type_1 and type_2 class attributes to provided values. It is implemented mostly for backward
+    This decorator sets type_1 and type_2 class attributes to provided
+    values. It is implemented mostly for backward
     compatibility.
 
     Arguments:
     type_1 -- class of monomer for first mer.
-    type_2 -- class of monomer for second mer; initially set to None, if so type_1 is taken as type_2.
+    type_2 -- class of monomer for second mer; initially set to None,
+    if so type_1 is taken as type_2.
     """
 
     def proper_type_decorator(criterion_class):
-        """Decorator returning a criterion class with type_1 and type_2 class attributes set to provided values."""
+        """Decorator returning a criterion class with type_1 and type_2
+        class attributes set to provided values."""
 
         criterion_class.set_types_cls(type_1, type_2)
-        criterion_class.is_in_contact_no_pre_check = check_type(criterion_class.is_in_contact_no_pre_check)
-        criterion_class.calculate_distance = check_type(criterion_class.calculate_distance)
+        criterion_class.is_in_contact_no_pre_check = check_type(
+            criterion_class.is_in_contact_no_pre_check)
+        criterion_class.calculate_distance = check_type(
+            criterion_class.calculate_distance)
 
         return criterion_class
 
@@ -59,14 +68,17 @@ def ignore_exceptions(*exceptions):
     Argument:
     exceptions -- type of errors that are to be ignored.
 
-    Decorator wraps _is_in_contact method that raises CannotCalculateContact error and returns 0 instead.
+    Decorator wraps _is_in_contact method that raises CannotCalculateContact
+    error and returns 0 instead.
     """
 
     def decorator(criterion_class):
         original_is_in_contact = criterion_class._is_in_contact
 
+        @wraps(original_is_in_contact)
         def wrapped_is_in_contact(self, *args, **kwargs):
-            """Wrapped is_in_contact method that returns 0 instead of raising CannotCalculateContact error."""
+            """Wrapped is_in_contact method that returns 0 instead of
+            raising CannotCalculateContact error."""
             try:
                 return original_is_in_contact(self, *args, **kwargs)
             except exceptions:
@@ -84,13 +96,16 @@ def not_decorator(criterion_class):
     Argument:
     criterion_class -- instance of ContactCriterion class.
 
-    Wrapped _is_in_contact method returns opposite values than oryginal method: 0 for 2, 1 for 1 and 2 for 0.
+    Wrapped _is_in_contact method returns opposite values than original
+    method: 0 for 2, 1 for 1 and 2 for 0.
     """
 
     original_is_in_contact = criterion_class._is_in_contact
 
+    @wraps(original_is_in_contact)
     def wrapped_is_in_contact(self, *args, **kwargs):
-        """Wrapped _is_in_contact method that returns 0 instead of raising CannotCalculateContact error."""
+        """Wrapped _is_in_contact method that returns 0 instead of raising
+        CannotCalculateContact error."""
         res = original_is_in_contact(self, *args, **kwargs)
         if res == 0:
             return 2
@@ -108,31 +123,35 @@ def check_type(ory_mth):
     """
     """
 
+    @wraps(ory_mth)
     def new_mth(self, monomer_1, monomer_2, *args, **kwargs):
         if self.type_2 is None or self.type_1 == self.type_2:
             if self.type_1 is None:
                 return ory_mth(self, monomer_1, monomer_2, *args, **kwargs)
             else:
-                if self._test_type(monomer_1, self.type_1) and self._test_type(monomer_2, self.type_1):
+                if self._test_type(monomer_1, self.type_1) and self._test_type(
+                        monomer_2, self.type_1):
                     return ory_mth(self, monomer_1, monomer_2, *args, **kwargs)
         else:
-            if self._test_type(monomer_1, self.type_1) and self._test_type(monomer_2, self.type_2):
+            if self._test_type(monomer_1, self.type_1) and self._test_type(
+                    monomer_2, self.type_2):
                 return ory_mth(self, monomer_1, monomer_2, *args, **kwargs)
-            elif self._test_type(monomer_1, self.type_2) and self._test_type(monomer_2, self.type_1):
+            elif self._test_type(monomer_1, self.type_2) and self._test_type(
+                    monomer_2, self.type_1):
                 return ory_mth(self, monomer_2, monomer_1, *args, **kwargs)
 
-        msg_tup = (monomer_1, monomer_2, self.type_1, self.type_2, self.__class__)
+        msg_tup = (
+            monomer_1, monomer_2, self.type_1, self.type_2, self.__class__)
         raise WrongMerType(*msg_tup)
 
-    new_mth.__doc__ = ory_mth.__doc__ + "\n\nWorks only for certain type of mers."
+    addition = "\n\nWorks only for certain type of mers."
+    new_mth.__doc__ = ory_mth.__doc__ + addition
 
     return new_mth
 
 
-class ContactCriterion(object):
+class ContactCriterion(metaclass=ABCMeta):
     """Abstract class, criteria instances."""
-
-    __metaclass__ = ABCMeta
 
     type_1 = None
     type_2 = None
@@ -173,27 +192,32 @@ class ContactCriterion(object):
         """Calculates distance evaluated by current criterion.
 
         Arguments:
-        monomer_1, monomer_2 -- pydesc.monomer.Monomer subclass instances, for which distance is to be calculated.
+        monomer_1, monomer_2 -- pydesc.monomer.Monomer subclass instances,
+        for which distance is to be calculated.
         """
         return self._calculate_distance(monomer_1, monomer_2, *args, **kwargs)
 
     def is_in_contact(self, monomer_1, monomer_2, *args, **kwargs):
         """Returns three-valued logic contact value.
 
-        This method checks monomer types and calls is_in_contact_no_pre_check which does actual job.
+        This method checks monomer types and calls
+        is_in_contact_no_pre_check which does actual job.
 
         Arguments:
         monomer_1 -- first monomer instance.
         monomer_2 -- second mers instance.
-        lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
+        lazy -- ignored. See CombinedCriteria.is_in_contact to get more
+        information.
         """
 
         if not self._pre_check(monomer_1, monomer_2, **kwargs):
             return 0
 
-        return self.is_in_contact_no_pre_check(monomer_1, monomer_2, *args, **kwargs)
+        return self.is_in_contact_no_pre_check(monomer_1, monomer_2, *args,
+                                               **kwargs)
 
-    def is_in_contact_no_pre_check(self, monomer_1, monomer_2, *args, **kwargs):
+    def is_in_contact_no_pre_check(self, monomer_1, monomer_2, *args,
+                                   **kwargs):
         """Like is_in_contact, but without pre-check."""
         return self._is_in_contact(monomer_1, monomer_2, *args, **kwargs)
 
@@ -202,7 +226,8 @@ class ContactCriterion(object):
         """
         Checks if monomer matches a given type.
 
-        This is a wrapper for the isinstance built-in which caches most frequent queries.
+        This is a wrapper for the isinstance built-in which caches most
+        frequent queries.
 
         Arguments:
             monomer -- monomer
@@ -224,9 +249,11 @@ class ContactCriterion(object):
 
         if isinstance(monomer, mtype):
             try:
-                ContactCriterion._test_type_cache[mtype][0].append(type(monomer))
+                ContactCriterion._test_type_cache[mtype][0].append(
+                    type(monomer))
             except KeyError:
-                ContactCriterion._test_type_cache[mtype] = ([type(monomer)], [])
+                ContactCriterion._test_type_cache[mtype] = (
+                    [type(monomer)], [])
             return True
 
         try:
@@ -239,12 +266,13 @@ class ContactCriterion(object):
     def _pre_check(self, monomer_1, monomer_2, rc_dist=None, **kwargs):
         """A method for checking a quick and easy precondition of a contact.
 
-        This method should be overridden whenever possible to provide a quick and dirty checking,
-        before computing actual criteria.
+        This method should be overridden whenever possible to provide a
+        quick and dirty checking, before computing actual criteria.
 
         This method accepts arguments of any type and returns a boolean.
 
-        Ideally a condition tested here should be simpler even than type checking.
+        Ideally a condition tested here should be simpler even than type
+        checking.
         """
 
         try:
@@ -263,12 +291,14 @@ class ContactCriterion(object):
 
         Returns three-valued logic contact value.
 
-        This method is called by is_in_contact, which is supposed to check monomer types.
+        This method is called by is_in_contact, which is supposed to check
+        monomer types.
 
         Arguments:
         monomer_1_obj -- first monomer instance.
         monomer_2_obj -- second mers instance.
-        lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
+        lazy -- ignored. See CombinedCriteria.is_in_contact to get more
+        information.
         """
         pass
 
@@ -288,17 +318,18 @@ class ContactCriterion(object):
             return False
         return True
 
-    def __or__(self, othercc):
+    def __or__(self, other):
         """Returns ContactsAlternative of self and other contact criterion"""
-        return ContactsAlternative(self, othercc)
+        return ContactsAlternative(self, other)
 
-    def __and__(self, othercc):
+    def __and__(self, other):
         """Returns ContactsConjunction of self and other contact criterion"""
-        return ContactsConjunction(self, othercc)
+        return ContactsConjunction(self, other)
 
-    def __xor__(self, othercc):
-        """Returns ContactsExclusiveDisjuntion of self and other contact criterion"""
-        return ContactsExclusiveDisjunction(self, othercc)
+    def __xor__(self, other):
+        """Returns ContactsExclusiveDisjunction of self and other contact
+        criterion"""
+        return ContactsExclusiveDisjunction(self, other)
 
     def __invert__(self):
         new_class = not_decorator(type(self))
@@ -307,10 +338,9 @@ class ContactCriterion(object):
         return copy
 
 
-class CombinedContact(ContactCriterion):
-    """Abstract class, criteria obtained via logical operations on contact criteria."""
-
-    __metaclass__ = ABCMeta
+class CombinedContact(ContactCriterion, metaclass=ABCMeta):
+    """Abstract class, criteria obtained via logical operations on contact
+    criteria."""
 
     def __init__(self, *criteria_objs):
         """Combined criteria constructor.
@@ -320,37 +350,46 @@ class CombinedContact(ContactCriterion):
         """
         self._criteria = criteria_objs
         if len(self.criteria) < 2:
-            raise AttributeError("Not enough criteria given to create combined contact criterion")
+            raise AttributeError("Need at least two criteria to combine.")
 
     def _repr_operation(self):
-        """Returns regular expression operation to be used in __repr__ and __str__."""
-        pattern = re.compile('[A-Z]{1}[a-z]*')
-        operation = " ".join(
-            re.findall(pattern, self.__class__.__name__.replace("Contacts", ""))).lower()
+        """Returns regular expression operation to be used in __repr__ and
+        __str__."""
+        pattern = re.compile('[A-Z][a-z]*')
+        name = self.__class__.__name__.replace("Contacts", "")
+        operation = " ".join(re.findall(pattern, name)).lower()
         return operation
 
     def __repr__(self):
         return '<%s of criteria based on %s>' % (
-        self._repr_operation().capitalize(), " and ".join(map(str, self.criteria)))
+            self._repr_operation().capitalize(),
+            " and ".join(map(str, self.criteria)))
 
     def __str__(self):
-        return '%s of %s criteria' % (self._repr_operation(), " and ".join(map(str, self.criteria)))
+        return '%s of %s criteria' % (
+            self._repr_operation(), " and ".join(map(str, self.criteria)))
 
     def is_in_contact(self, monomer_1, monomer_2, *args, **kwargs):
-        return self._is_in_contact(monomer_1, monomer_2, *args, no_pre_check=True)
+        return self._is_in_contact(monomer_1, monomer_2, *args,
+                                   no_pre_check=True)
 
-    def is_in_contact_no_pre_check(self, monomer_1, monomer_2, *args, **kwargs):
+    def is_in_contact_no_pre_check(self, monomer_1, monomer_2, *args,
+                                   **kwargs):
         return self._is_in_contact(monomer_1, monomer_2, *args)
 
     @abstractmethod
-    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True, no_pre_check=False, **kwargs):
+    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True,
+                       no_pre_check=False, **kwargs):
         """Returns value of combined contact criterion.
 
         Arguments:
         monomer_1_obj -- first monomer instance.
         monomer_2_obj -- second mers instance.
-        lazy -- True or False, initially set to True. Deremines if subcriteria values are to be calculated lazy or not.
-        Lazy calculation means that if program is able to assume that criterion is not satisfied during calculation subcriterion - further subcriteria are not calculated.
+        lazy -- True or False, initially set to True. Determines if
+        sub-criteria values are to be calculated lazy or not.
+        Lazy calculation means that if program is able to assume that
+        criterion is not satisfied during calculation sub-criterion -
+        further sub-criteria are not calculated.
         """
         pass
 
@@ -366,9 +405,9 @@ class CombinedContact(ContactCriterion):
 class ContactsConjunction(CombinedContact):
     """Conjunction of criteria given in a list.
 
-    Computes criteria type as an intersection of types accepted by sub-criteria.
-    Algorithm used to resolve types may fail if multiple inheritance is used.
-    Given criteria could be a CombinedContact instance.
+    Computes criteria type as an intersection of types accepted by
+    sub-criteria. Algorithm used to resolve types may fail if multiple
+    inheritance is used. Given criteria could be a CombinedContact instance.
     """
 
     def __init__(self, *criteria_objs):
@@ -388,12 +427,14 @@ class ContactsConjunction(CombinedContact):
             if issubclass(t1, type_1):
                 type_1 = t1
             elif not issubclass(type_1, t1):
-                raise AttributeError("Given criteria require incompatible mer types.")
+                raise AttributeError(
+                    "Given criteria require incompatible mer types.")
 
             if issubclass(t2, type_2):
                 type_2 = t2
             elif not issubclass(type_2, t2):
-                raise AttributeError("Given criteria require incompatible mer types.")
+                raise AttributeError(
+                    "Given criteria require incompatible mer types.")
 
             try:
                 d = i.max_rc_dist
@@ -403,15 +444,18 @@ class ContactsConjunction(CombinedContact):
 
         self.set_types(type_1, type_2)
 
-    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True, no_pre_check=False, **kwargs):
+    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True,
+                       no_pre_check=False, **kwargs):
         """Returns contact value under conjunction of the given criteria.
 
         Arguments:
         monomer_1_obj -- first monomer instance.
         monomer_2_obj -- second mers instance.
-        lazy -- True or False, initially set to True. Determines if sub-criteria values are to be calculated lazy or
-        not.
-        Lazy calculation means that if program is able to assume that criterion is not satisfied during calculation subcriterion - further subcriteria are not calculated.
+        lazy -- True or False, initially set to True. Determines if
+        sub-criteria values are to be calculated lazy or not.
+        Lazy calculation means that if program is able to assume that
+        criterion is not satisfied during calculation sub-criterion - further
+        sub-criteria are not calculated.
         """
         values = []
         for contact_criterion in self.criteria:
@@ -437,9 +481,10 @@ class ContactsConjunction(CombinedContact):
 
 class ContactsDisjunction(CombinedContact):
     """
-    Abstract class grouping combined contacts which require only some criteria to be satisfied.
+    Abstract class grouping combined contacts which require only some
+    criteria to be satisfied.
 
-    Computes criteria type to meet any type of subcriterias.
+    Computes criteria type to meet any type of sub-criteria.
     """
 
     def __init__(self, *criteria_objs):
@@ -482,20 +527,26 @@ class ContactsAlternative(ContactsDisjunction):
     Given criteria could be a CombinedContact instance.
     """
 
-    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True, no_pre_check=False, **kwargs):
+    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True,
+                       no_pre_check=False, **kwargs):
         """Returns contact value under an alternative of given criteria.
 
         Arguments:
         monomer_1_obj -- first monomer instance.
         monomer_2_obj -- second mers instance.
-        lazy -- True or False, initially set to True. Determines if subcriteria values are to be calculated lazy or not.
-        Lazy calculation means that if program is able to assume that criterion is not satisfied during calculation subcriterion - further subcriteria are not calculated.
+        lazy -- True or False, initially set to True. Determines if
+        sub-criteria values are to be calculated lazy or not.
+        Lazy calculation means that if program is able to assume that
+        criterion is not satisfied during calculation sub-criterion -
+        further sub-criteria are not calculated.
         """
         attr = 'is_in_contact_no_pre_check' if no_pre_check else 'is_in_contact'
         values = []
         for contact_criterion in self.criteria:
             try:
-                value = getattr(contact_criterion, attr)(monomer_1_obj, monomer_2_obj, lazy=lazy, **kwargs)
+                method = getattr(contact_criterion, attr)
+                value = method(monomer_1_obj, monomer_2_obj, lazy=lazy,
+                               **kwargs)
             except WrongMerType:
                 value = 0
             values.append(value)
@@ -518,8 +569,8 @@ class ContactsAlternative(ContactsDisjunction):
         """
         for contact_criterion in self.criteria:
             try:
-                return contact_criterion.get_validating_sub_criterion(mer_1, mer_2)  # pylint: disable=no-member
-                # some of criteria has this attribute
+                return contact_criterion.get_validating_sub_criterion(mer_1,
+                                                                      mer_2)
             except AttributeError:
                 try:
                     if contact_criterion.is_in_contact(mer_1, mer_2):
@@ -537,19 +588,26 @@ class ContactsExclusiveDisjunction(ContactsDisjunction):
     Given criteria could be a CombinedContact instance.
     """
 
-    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True, **kwargs):
-        """Returns contact value under an exclusive disjunction of given criteria.
+    def _is_in_contact(self, monomer_1_obj, monomer_2_obj, lazy=True,
+                       **kwargs):
+        """Returns contact value under an exclusive disjunction of given
+        criteria.
 
         Arguments:
         monomer_1_obj -- first monomer instance.
         monomer_2_obj -- second mers instance.
-        lazy -- True or False, initially set to True. Deremines if subcriteria values are to be calculated lazy or not.
-        Lazy calculation means that if program is able to assume that criterion is not satisfied during calculation subcriterion - further subcriteria are not calculated.
+        lazy -- True or False, initially set to True. Determines if
+        sub-criteria values are to be calculated lazy or not.
+        Lazy calculation means that if program is able to assume that
+        criterion is not satisfied during calculation sub-criterion -
+        further sub-criteria are not calculated.
         """
         values = []
         for contact_criterion in self.criteria:
             try:
-                value = contact_criterion.is_in_contact(monomer_1_obj, monomer_2_obj, lazy=lazy, **kwargs)
+                value = contact_criterion.is_in_contact(monomer_1_obj,
+                                                        monomer_2_obj,
+                                                        lazy=lazy, **kwargs)
             except WrongMerType:
                 value = 0
             values.append(value)
@@ -578,11 +636,12 @@ class DescriptorCriterion(ContactCriterion):
         self.desc = descriptor_obj
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
-        """Returns value of contact if given mers have their Contact instance in criterion desc attr.
+        """Returns value of contact if given mers have their Contact
+        instance in criterion desc attr.
 
-        Returns contact value if both given mers are central mers for elements in
-        any pydesc.structure.Contact stored in current criterion desc.contacts. Otherwise
-        returns zero.
+        Returns contact value if both given mers are central mers for
+        elements in any pydesc.structure.Contact stored in current criterion
+        desc.contacts. Otherwise returns zero.
 
         Arguments:
         monomer_1_obj -- first monomer instance.
@@ -590,10 +649,12 @@ class DescriptorCriterion(ContactCriterion):
         lazy -- always set to None.
         """
         for contact in self.desc.contacts:
-            if not max(contact.elements).central_monomer in [monomer_1_obj, monomer_2_obj]:
+            if not max(contact.elements).central_monomer in [monomer_1_obj,
+                                                             monomer_2_obj]:
                 continue
 
-            if not min(contact.elements).central_monomer in [monomer_1_obj, monomer_2_obj]:
+            if not min(contact.elements).central_monomer in [monomer_1_obj,
+                                                             monomer_2_obj]:
                 continue
 
             return contact.value

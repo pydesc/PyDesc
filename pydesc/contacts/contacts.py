@@ -21,20 +21,20 @@ Classes that deal with contacts among mers present in PyDesc (sub)structures.
 created: 18.07.2013 - , Tymoteusz 'hert' Oleniecki, Agnieszka Mykowiecka
 """
 
-import scipy.spatial
+from abc import ABCMeta
+from abc import abstractmethod
+
 import numpy
-from abc import ABCMeta, abstractmethod
+import scipy.spatial
 
 import pydesc.mers
-from .base import (
-    ContactCriterion,
-    ContactsAlternative,
-    ContactsConjunction,
-    for_monomer_type_only,
-    check_type,
-)
 from pydesc.config import ConfigManager
 from pydesc.warnexcept import CannotCalculateContact
+from .base import check_type
+from .base import ContactCriterion
+from .base import ContactsAlternative
+from .base import ContactsConjunction
+from .base import for_monomer_type_only
 
 # pylint: disable=no-member
 ConfigManager.new_branch("contacts")
@@ -45,7 +45,8 @@ ConfigManager.contacts.set_default("cbx_contact_undecidable_range", 0.5)
 ConfigManager.contacts.set_default("rc_contact_distance", 7.5)
 ConfigManager.contacts.set_default("rc_contact_undecidable_range", 0.5)
 ConfigManager.contacts.set_default("ring_center_contact_distance", 6.25)
-ConfigManager.contacts.set_default("ring_center_contact_undecidable_range", 0.0)
+ConfigManager.contacts.set_default("ring_center_contact_undecidable_range",
+                                   0.0)
 ConfigManager.contacts.set_default("at_contact_distance", 5.0)
 ConfigManager.contacts.set_default("at_contact_undecidable_range", 0.)
 ConfigManager.contacts.set_default("rpa_contact_distance", 0.9)
@@ -53,7 +54,8 @@ ConfigManager.contacts.set_default("rpa_contact_undecidable_range", 0.)
 ConfigManager.contacts.set_default("rcb_pairing_contact_distance", 7.)
 ConfigManager.contacts.set_default("rcb_pairing_contact_undecidable_range", 0.)
 ConfigManager.contacts.set_default("rcb_stacking_contact_distance", 2.4)
-ConfigManager.contacts.set_default("rcb_stacking_contact_undecidable_range", 0.)
+ConfigManager.contacts.set_default("rcb_stacking_contact_undecidable_range",
+                                   0.)
 ConfigManager.contacts.set_default("rc_pairing_contact_distance", 1.5)
 ConfigManager.contacts.set_default("rc_pairing_contact_undecidable_range", 0.)
 ConfigManager.contacts.set_default("rc_stacking_contact_distance", 4.9)
@@ -79,7 +81,8 @@ def CaCbxContact():  # pylint: disable=invalid-name
     # class-like name is required here
     """Function producing ca-cbx contact criterion.
 
-    Returned criterion is an alternative of basic CaContact and conjunction of basic CbxCriterion and CaCbxSubtractionCriterion.
+    Returned criterion is an alternative of basic CaContact and conjunction
+    of basic CbxCriterion and CaCbxSubtractionCriterion.
     """
     return ContactsAlternative(
         CaContact(),
@@ -88,41 +91,49 @@ def CaCbxContact():  # pylint: disable=invalid-name
             CaCbxSubtractionCriterion()))
 
 
-class PointsDistanceCriterion(ContactCriterion):
+class PointsDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
     """Abstract class, criteria instances."""
 
-    __metaclass__ = ABCMeta
     monomer_hallmark = None
 
     def __init__(self, distance_threshold=None, undecidable_range=None):
         """Contact criterion constructor.
 
         Arguments:
-        distance_threshold -- radius of the sphere of a center at a given point, inside of which all points are in contact with the central point.
-        undecidable_range -- distance from the surface of the sphere, at which all points assume contact value 1 according to the  three-valued logic. Innitially set to 0.
+        distance_threshold -- radius of the sphere of a center at a given
+        point, inside of which all points are in contact with the central
+        point.
+        undecidable_range -- distance from the surface of the sphere,
+        at which all points assume contact value 1 according to the
+        three-valued logic. Initially set to 0.
 
         See also config file docstring.
         """
         self._distance_threshold = distance_threshold
         self._undecidable_range = undecidable_range
-        self.max_rc_dist = self.distance_threshold + self.undecidable_range + 10
+        distance_threshold = self.distance_threshold
+        undecidable_range = self.undecidable_range
+        self.max_rc_dist = distance_threshold + undecidable_range + 10
 
     @property
     def distance_threshold(self):
         """Property returning criterion distance."""
         if self._distance_threshold is not None:
             return self._distance_threshold
-        return getattr(ConfigManager.contacts, self.monomer_hallmark + '_contact_distance')
+        setting_name = '%s_contact_distance' % self.monomer_hallmark
+        return getattr(ConfigManager.contacts, setting_name)
 
     @property
     def undecidable_range(self):
         """Property returning undecidable range."""
         if self._undecidable_range is not None:
             return self._undecidable_range
-        return getattr(ConfigManager.contacts, self.monomer_hallmark + '_contact_undecidable_range')
+        setting_name = '%s_contact_undecidable_range' % self.monomer_hallmark
+        return getattr(ConfigManager.contacts, setting_name)
 
     def __repr__(self):
-        return '<Contact criterion based on %s distance>' % (self.monomer_hallmark,)
+        text = '<Contact criterion based on %s distance>'
+        return text % self.monomer_hallmark
 
     def __str__(self):
         return '%s distance criterion' % (self.monomer_hallmark,)
@@ -168,7 +179,8 @@ class CaContact(PointsDistanceCriterion):
 
 @for_monomer_type_only(pydesc.mers.Residue)
 class CbxContact(PointsDistanceCriterion):
-    """C-beta extended points (carbon beta extended by 1 Angstrom) distance criterion."""
+    """C-beta extended points (carbon beta extended by 1 Angstrom) distance
+    criterion."""
 
     monomer_hallmark = "cbx"
 
@@ -186,9 +198,10 @@ class RingCenterContact(PointsDistanceCriterion):
     monomer_hallmark = "ring_center"
 
     def __init__(self, *args, **kwargs):
-        """RingCenterContact constructor, extended PointsDistanceCriterion method."""
-        PointsDistanceCriterion.__init__(self, *args, **kwargs)  # pylint: disable=no-member
-        self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
+        """RingCenterContact constructor, extended PointsDistanceCriterion
+        method."""
+        PointsDistanceCriterion.__init__(self, *args, **kwargs)
+        self.max_rc_dist = self.max_rc_dist - 2  # for sake of compatibility!
 
 
 @for_monomer_type_only(pydesc.mers.Nucleotide)
@@ -198,10 +211,10 @@ class PrcContact(PointsDistanceCriterion):
     monomer_hallmark = "prc"
 
     def __init__(self, *args, **kwargs):
-        """RingCenterContact constructor, extended PointsDistanceCriterion method."""
-        PointsDistanceCriterion.__init__(
-            self, *args, **kwargs)  # pylint: disable=no-member
-        self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
+        """RingCenterContact constructor, extended PointsDistanceCriterion
+        method."""
+        PointsDistanceCriterion.__init__(self, *args, **kwargs)
+        self.max_rc_dist = self.max_rc_dist - 2
 
 
 @for_monomer_type_only(pydesc.mers.Nucleotide)
@@ -211,25 +224,32 @@ class NxContact(PointsDistanceCriterion):
     monomer_hallmark = "nx"
 
     def __init__(self, *args, **kwargs):
-        """RingCenterContact constructor, extended PointsDistanceCriterion method."""
-        PointsDistanceCriterion.__init__(self, *args, **kwargs)  # pylint: disable=no-member
-        self.max_rc_dist = self.max_rc_dist - 2  # for the sake of compatibilty!
+        """RingCenterContact constructor, extended PointsDistanceCriterion
+        method."""
+        PointsDistanceCriterion.__init__(self, *args, **kwargs)
+        self.max_rc_dist = self.max_rc_dist - 2
 
 
 class DifferentPointsDistanceCriterion(ContactCriterion):
-    """Abstract class for criteria based on distances between two different points from two different mers.
+    """Abstract class for criteria based on distances between two different
+    points from two different mers.
 
     Methods in those classes should be symmetrical, i.e. _is_in_contact
     and _calculate_distance should return the same result when called for
     *(mer1, mer2) and *(mer2, mer1).
     """
 
-    def __init__(self, criterion_distance=None, undecidable_range=None, mer1_hallmark=None, mer2_hallmark=None):
+    def __init__(self, criterion_distance=None, undecidable_range=None,
+                 mer1_hallmark=None, mer2_hallmark=None):
         """Contact criterion constructor.
 
         Arguments:
-        distance_threshold -- radius of the sphere of a center at a given point, inside of which all points are in contact with the central point.
-        undecidable_range -- distance from the surface of the sphere, at which all points assume contact value 1 according to the  three-valued logic. Innitially set to 0.
+        distance_threshold -- radius of the sphere of a center at a given
+        point, inside of which all points are in contact with the central
+        point.
+        undecidable_range -- distance from the surface of the sphere,
+        at which all points assume contact value 1 according to the
+        three-valued logic. Initially set to 0.
 
         See also config file docstring.
         """
@@ -237,7 +257,9 @@ class DifferentPointsDistanceCriterion(ContactCriterion):
         self._undecidable_range = undecidable_range
         self.mer1_hallmark = mer1_hallmark
         self.mer2_hallmark = mer2_hallmark
-        self.max_rc_dist = self.criterion_distance + self.undecidable_range + 10
+        distance = self.criterion_distance
+        buffer = self.undecidable_range
+        self.max_rc_dist = distance + buffer + 10
         self.min_value = self.criterion_distance - self.undecidable_range
         self.max_value = self.criterion_distance + self.undecidable_range
 
@@ -245,21 +267,28 @@ class DifferentPointsDistanceCriterion(ContactCriterion):
     def criterion_distance(self):
         if self._criterion_distance is not None:
             return self._criterion_distance
-        return getattr(ConfigManager.contacts, "_".join((self.mer1_hallmark, self.mer2_hallmark, 'contact_distance')))
+        setting_name = "_".join((
+            self.mer1_hallmark,
+            self.mer2_hallmark,
+            'contact_distance'))
+        return getattr(ConfigManager.contacts, setting_name)
 
     @property
     def undecidable_range(self):
         if self._undecidable_range is not None:
             return self._undecidable_range
-        return getattr(ConfigManager.contacts,
-                       "_".join((self.mer1_hallmark, self.mer2_hallmark, 'contact_undecidable_range')))
+        setting_name = "_".join((
+            self.mer1_hallmark,
+            self.mer2_hallmark,
+            'contact_undecidable_range'))
+        return getattr(ConfigManager.contacts, setting_name)
 
     def _calculate_distance(self, mer1, mer2, *args, **kwargs):
-        # ~ super(DifferentPointsDistanceCriterion, self)._calculate_distance(mer1, mer2, *args, **kwargs)
         res = set([])
         for m1, m2 in ((mer1, mer2), (mer2, mer1)):
             try:
-                res.add((getattr(m1, self.mer1_hallmark) - (getattr(m2, self.mer2_hallmark))).calculate_length())
+                res.add((getattr(m1, self.mer1_hallmark) - (
+                    getattr(m2, self.mer2_hallmark))).calculate_length())
             except AttributeError:
                 pass
         try:
@@ -268,7 +297,6 @@ class DifferentPointsDistanceCriterion(ContactCriterion):
             raise CannotCalculateContact(mer1, mer2, self)
 
     def _is_in_contact(self, mer1, mer2, *args, **kwargs):
-        # ~ super(DifferentPointsDistanceCriterion, self)._is_in_contact(mer1, mer2, *args, **kwargs)
         distance = self.calculate_distance(mer1, mer2, *args, **kwargs)
         if distance <= self.min_value:
             return 2
@@ -278,26 +306,26 @@ class DifferentPointsDistanceCriterion(ContactCriterion):
             return 1
 
 
-class VectorDistanceCriterion(ContactCriterion):  # pylint: disable=abstract-class-little-used
-    # this class will be used more in future
-
-    """Superclass for criteria based on operations made on mers represented by vectors."""
-
-    __metaclass__ = ABCMeta
+class VectorDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
+    """Superclass for criteria based on operations made on mers represented
+    by vectors."""
 
     def __init__(self, monomer_hallmark_1, monomer_hallmark_2):
         """Vector distance criterion constructor.
 
         Arguments:
-        monomer_hallmark_1, monomer_hallmark_2 -- strings, names of monomer atoms, pseudoatoms or attributes that are
-        pydesc.geometry.Coord instances and are to be, respectivelu, beggining and ending of vectore that represents
+        monomer_hallmark_1, monomer_hallmark_2 -- strings, names of monomer
+        atoms, pseudoatoms or attributes that are
+        pydesc.geometry.Coord instances and are to be, respectively,
+        beelining and ending of vector that represents
         monomer in current criterion.
         """
         self.monomer_hallmarks = (monomer_hallmark_1, monomer_hallmark_2)
 
     def __repr__(self):
         strings = tuple(self.monomer_hallmarks)
-        return '<Contact criterion based on operation on vectors of %s and %s>' % strings
+        msg = '<Contact criterion based on operation on vectors of %s and %s>'
+        return msg % strings
 
     def __str__(self):
         strings = tuple(self.monomer_hallmarks)
@@ -310,60 +338,70 @@ class VectorDistanceCriterion(ContactCriterion):  # pylint: disable=abstract-cla
         Arguments:
         monomer_1_obj -- first monomer instance.
         monomer_2_obj -- second mers instance.
-        lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
+        lazy -- ignored. See CombinedCriteria.is_in_contact to get more
+        information.
         """
         pass
 
 
 @for_monomer_type_only(pydesc.mers.Residue)
 class CaCbxSubtractionCriterion(VectorDistanceCriterion):
-    """Criterion based on difference between carbon alpha and extended carbon beta distances.
+    """Criterion based on difference between carbon alpha and extended
+    carbon beta distances.
 
-    Checks if difference of distances between given residues cas' and cbxs' fits given range.
+    Checks if difference of distances between given residues cas' and cbxs'
+    fits given range.
     Range is defined in configuration manager. See:
     pydesc.config.ConfigManager.contacts.cacbx_undecidable_range
     pydesc.config.ConfigManager.contacts.cacbx_contact_distance
     """
 
-    def __init__(self, cirterion_distance=None, udecidable_range=None):
+    def __init__(self, cirterion_distance=None, undecidable_range=None):
         """Ca-cbx subtraction criterion constructor.
 
         Arguments:
-        criterion distance -- acceptable difference of distances between alpha carbons and cbx for two mers to be considered contacted.
-        udecidable_range -- half of the length of undecidable interval spaning above and below criterion distance.
+        criterion distance -- acceptable difference of distances between
+        alpha carbons and cbx for two mers to be considered contacted.
+        undecidable_range -- half of the length of undecidable interval
+        spanning above and below criterion distance.
 
-        Both values are initially set to None. If so - values from configuration manager are taken.
+        Both values are initially set to None. If so - values from
+        configuration manager are taken.
         """
         VectorDistanceCriterion.__init__(self, 'ca', 'cbx')
         if cirterion_distance is None:
-            self.criterion_distance = ConfigManager.contacts.cacbx_contact_distance  # pylint: disable=no-member
+            distance = ConfigManager.contacts.cacbx_contact_distance
+            self.criterion_distance = distance
         else:
             self.criterion_distance = cirterion_distance
-        if udecidable_range is None:
-            self.undecidable_range = ConfigManager.contacts.cacbx_undecidable_range  # pylint: disable=no-member
+        if undecidable_range is None:
+            distance = ConfigManager.contacts.cacbx_undecidable_range
+            self.undecidable_range = distance
         else:
-            self.undecidable_range = udecidable_range
+            self.undecidable_range = undecidable_range
 
     def _is_in_contact(self, monomer_1, monomer_2, **kwargs):
-        """Returns three-valued logic contact value depending on given mers positions.
+        """Returns three-valued logic contact value depending on given mers
+        positions.
 
         Arguments:
         monomer_1_obj -- first monomer instance.
         monomer_2_obj -- second mers instance.
-        lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
+        lazy -- ignored. See CombinedCriteria.is_in_contact to get more
+        information.
         """
-        distances = [(getattr(monomer_1, hallmark) - getattr(monomer_2, hallmark)).calculate_length() for hallmark in
-                     self.monomer_hallmarks]
+        distances = []
+        for hallmark in self.monomer_hallmarks:
+            point1 = getattr(monomer_1, hallmark)
+            point2 = getattr(monomer_2, hallmark)
+            distance = (point1 - point2).calculate_length()
+            distances.append(distance)
         difference = distances[0] - distances[1]
-        upper_treshold = self.criterion_distance + \
-                         self.undecidable_range  # pylint: disable=no-member
-        lower_treshold = self.criterion_distance - \
-                         self.undecidable_range  # pylint: disable=no-member
-        # undecidable_range and distance_threshold are to be overridden in
-        # subclasses (abstract attrs).
-        if difference >= upper_treshold:
+        upper_threshold = self.criterion_distance + self.undecidable_range
+        lower_threshold = self.criterion_distance - self.undecidable_range
+        if difference >= upper_threshold:
             return 2
-        elif difference >= lower_treshold:
+        elif difference >= lower_threshold:
             return 1
         else:
             return 0
@@ -376,14 +414,20 @@ class SetDistanceCriterion(ContactCriterion):
     monomer_hallmark = None
     monomer_hallmark2 = None
 
-    def __init__(self, criterion_distance, undecidable_range=0, num_of_checked_pairs=2):
+    def __init__(self, criterion_distance, undecidable_range=0,
+                 num_of_checked_pairs=2):
         """
         Contact criterion constructor.
 
         Arguments:
-        distance_threshold -- radius of the sphere of a center at a given point, inside of which all points are in contact with the central point.
-        undecidable_range -- distance from the surface of the sphere, at which all points assume contact value 1 according to the  three-valued logic. Innitially set to 0.
-        num_of_checked_pairs -- number of pairs of atoms for which the average distance should be lower than the given cutoff
+        distance_threshold -- radius of the sphere of a center at a given
+        point, inside of which all points are in contact with the central
+        point.
+        undecidable_range -- distance from the surface of the sphere,
+        at which all points assume contact value 1 according to the
+        three-valued logic. Initially set to 0.
+        num_of_checked_pairs -- number of pairs of atoms for which the
+        average distance should be lower than the given cutoff.
 
         See also config file docstring.
         """
@@ -396,9 +440,9 @@ class SetDistanceCriterion(ContactCriterion):
             set(map(str, [self.monomer_hallmark, self.monomer_hallmark2])))
 
     def __str__(self):
-        return '%s distances' % " and ".join(set(map(str, [self.monomer_hallmark, self.monomer_hallmark2])))
+        return '%s distances' % " and ".join(
+            set(map(str, [self.monomer_hallmark, self.monomer_hallmark2])))
 
-    # @profile
     def _calculate_distance(self, monomer_1_obj, monomer_2_obj):
         """Calculates the distance between two given mers.
 
@@ -441,7 +485,8 @@ class SetDistanceCriterion(ContactCriterion):
         Arguments:
         monomer_1_obj -- first monomer instance.
         monomer_2_obj -- second mers instance.
-        lazy -- ignored. See CombinedCriteria.is_in_contact to get more information.
+        lazy -- ignored. See CombinedCriteria.is_in_contact to get more
+        information.
         """
         if not self._pre_check(monomer_1_obj, monomer_2_obj):
             return False
@@ -473,7 +518,8 @@ class SetDistanceCriterion(ContactCriterion):
                 vs -- first layer of vertices.
                 us -- second layer of vertices.
 
-                Edges are created automatically basing on list of neighbours in every vertex from 1st layer.
+                Edges are created automatically basing on list of neighbours in
+                every vertex from 1st layer.
                 """
                 self.vertices1 = vs
                 self.vertices2 = us
@@ -481,7 +527,8 @@ class SetDistanceCriterion(ContactCriterion):
 
             @staticmethod
             def make_from_adjacency_matrix(mtx):
-                """Returns BiparireGraph object based on given adjacency matrix."""
+                """Returns BiparireGraph object based on given adjacency
+                matrix."""
                 vs, us = map(range, mtx.shape)
                 v_s = [Vertex() for i in vs]
                 u_s = [Vertex() for i in us]
@@ -497,11 +544,14 @@ class SetDistanceCriterion(ContactCriterion):
                 """Performs BFS for Hopcroft-Karp algorithm.
 
                 Arguments:
-                verts -- list of free vertices for which augmentation paths are to be found.
+                verts -- list of free vertices for which augmentation paths
+                are to be found.
                 match -- list of already matched edges.
 
-                Method attaches to each vertex its distance (dist attribute) to nearest free vertex from given list.
-                Skips edges that are already matched for odd distances. Skips not matched edges for even distances.
+                Method attaches to each vertex its distance (dist attribute) to
+                nearest free vertex from given list.
+                Skips edges that are already matched for odd distances.
+                Skips not matched edges for even distances.
                 """
                 queue = [i for i in verts]
                 for i in self.vertices1 + self.vertices2:
@@ -529,18 +579,22 @@ class SetDistanceCriterion(ContactCriterion):
                     run += 1
 
             def DFS(self, vert):
-                """Returns a path from given vertes to nearest free vertes marked by BFS.
+                """Returns a path from given vertes to nearest free vertes
+                marked by BFS.
 
                 Argument:
                 vert -- Vertex instance.
 
-                Returns set of tuples representing edges (containing two vertices).
-                Sets dist for each used vertes to infinity, so it could not be used by next DFS.
+                Returns set of tuples representing edges (containing two
+                vertices).
+                Sets dist for each used vertes to infinity, so it could not
+                be used by next DFS.
                 """
                 path = [vert]
                 curr = vert
                 while curr.dist != 0:
-                    prev = min([n for n in curr.edges if n.dist + 1 == vert.dist])
+                    prev = min(
+                        [n for n in curr.edges if n.dist + 1 == vert.dist])
                     path.append(prev)
                     curr.dist = numpy.inf
                     curr = prev
@@ -548,9 +602,11 @@ class SetDistanceCriterion(ContactCriterion):
                 return set([i for i in zip(path[1:], path[:-1])])
 
         for res, val in ((2, min_value), (1, max_value)):
-            bool_mtx = numpy.sign(dist_mat - val)  # -1 indicates contact below threshold
+            bool_mtx = numpy.sign(
+                dist_mat - val)  # -1 indicates contact below threshold
             free_1, free_2 = map(list, map(set, numpy.where(bool_mtx == -1.)))
-            bool_mtx = bool_mtx[free_1,].T[free_2,].T  # removing rows and columns that has no -1
+            bool_mtx = bool_mtx[free_1,].T[
+                free_2,].T  # removing rows and columns that has no -1
             # Hopcroft-Karp algorithm
             graph = BipartiteGraph.make_from_adjacency_matrix(bool_mtx)
             mtchs = set([])
@@ -567,7 +623,8 @@ class SetDistanceCriterion(ContactCriterion):
                     break
                 mtchs_len = len(mtchs)
                 min_d = min([i.dist for i in free_2])
-                for theu in [i for i in free_2 if i.dist == min_d]:  # one iteraion goes only for shortest paths
+                for theu in [i for i in free_2 if
+                             i.dist == min_d]:  # one iteraion goes only for shortest paths
                     try:
                         path = graph.DFS(theu)
                         mtchs = mtchs.symmetric_difference(path)
@@ -591,18 +648,21 @@ class RaContact(SetDistanceCriterion):
     monomer_hallmark2 = "ring_atoms"
 
     def __init__(self, range=None, und_range=None, no_pairs=None):
-        """RingAtomsAverageDistContact constructor, extended SetDistanceCriterion method."""
+        """RingAtomsAverageDistContact constructor, extended
+        SetDistanceCriterion method."""
         # pylint: disable=no-member
         rng = ConfigManager.contacts.at_contact_distance if range is None else range
         urng = ConfigManager.contacts.at_contact_undecidable_range if range is None else und_range
         nprs = 2 if range is None else no_pairs
         # pylint: enable=no-member
-        SetDistanceCriterion.__init__(self, rng, urng, nprs)  # pylint: disable=no-member
+        SetDistanceCriterion.__init__(self, rng, urng,
+                                      nprs)  # pylint: disable=no-member
         self.max_rc_dist = rng + urng + 18
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
         """RaContact _is_in_contact, extended SetDistanceCriterion method."""
-        return SetDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
+        return SetDistanceCriterion._is_in_contact(self, monomer_1_obj,
+                                                   monomer_2_obj, **kwargs)
 
 
 @for_monomer_type_only(pydesc.mers.Nucleotide)
@@ -621,7 +681,8 @@ class AtContact(SetDistanceCriterion):
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
         """AtContact _is_in_contact, extended SetDistanceCriterion method."""
-        return SetDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
+        return SetDistanceCriterion._is_in_contact(self, monomer_1_obj,
+                                                   monomer_2_obj, **kwargs)
 
 
 @for_monomer_type_only(pydesc.mers.Nucleotide, pydesc.mers.Ion)
@@ -630,7 +691,8 @@ class NIContact(SetDistanceCriterion):
 
     def __init__(self):
         """."""
-        SetDistanceCriterion.__init__(self, ConfigManager.contacts.ni_contact_distance,
+        SetDistanceCriterion.__init__(self,
+                                      ConfigManager.contacts.ni_contact_distance,
                                       ConfigManager.contacts.ni_contact_undecidable_range,
                                       1)  # pylint: disable=no-member
         self.monomer_hallmark = None
@@ -639,11 +701,15 @@ class NIContact(SetDistanceCriterion):
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
         """NIContact _is_in_contact, extended SetDistanceCriterion method."""
-        contact_value = SetDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
+        contact_value = SetDistanceCriterion._is_in_contact(self,
+                                                            monomer_1_obj,
+                                                            monomer_2_obj,
+                                                            **kwargs)
         return contact_value
 
     def _calculate_distance(self, *args, **kwargs):
-        return super(NIContact, self)._calculate_distance(*args, **kwargs) - args[1].get_radius()
+        return super(NIContact, self)._calculate_distance(*args, **kwargs) - \
+               args[1].get_radius()
 
 
 class DihedralAngleCriterion(ContactCriterion):
@@ -655,8 +721,12 @@ class DihedralAngleCriterion(ContactCriterion):
         """Contact criterion constructor.
 
         Arguments:
-        distance_threshold -- radius of the sphere of a center at a given point, inside of which all points are in contact with the central point.
-        undecidable_range -- distance from the surface of the sphere, at which all points assume contact value 1 according to the  three-valued logic. Innitially set to 0.
+        distance_threshold -- radius of the sphere of a center at a given
+        point, inside of which all points are in contact with the central
+        point.
+        undecidable_range -- distance from the surface of the sphere,
+        at which all points assume contact value 1 according to the
+        three-valued logic. Innitially set to 0.
 
         See also config file docstring.
         """
@@ -669,7 +739,8 @@ class DihedralAngleCriterion(ContactCriterion):
         # monomer_hallmark is an abstract attr
 
     def __str__(self):
-        return 'dihedral angle between %ss' % (self.monomer_hallmark,)  # pylint: disable=no-member
+        return 'dihedral angle between %ss' % (
+            self.monomer_hallmark,)  # pylint: disable=no-member
         # monomer_hallmark is an abstract attr
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
@@ -678,11 +749,13 @@ class DihedralAngleCriterion(ContactCriterion):
         Arguments:
         monomer_1_obj -- first monomer instance.
         monomer_2_obj -- second mers instance.
-        lazy -- ignored. See CombinedCriteria._is_in_contact to get more information.
+        lazy -- ignored. See CombinedCriteria._is_in_contact to get more
+        information.
         """
         # pylint: disable=no-member
-        angle = abs((getattr(monomer_1_obj, self.monomer_hallmark)).dihedral_angle_cos(
-            getattr(monomer_2_obj, self.monomer_hallmark)))
+        angle = abs(
+            (getattr(monomer_1_obj, self.monomer_hallmark)).dihedral_angle_cos(
+                getattr(monomer_2_obj, self.monomer_hallmark)))
         # pylint: enable=no-member
         # monomer_hallmark is an abstract attr
         min_value = self.criterion_distance - self.undecidable_range
@@ -707,8 +780,10 @@ class RpaContact(DihedralAngleCriterion):
             ConfigManager.contacts.rpa_contact_undecidable_range)  # pylint: disable=no-member
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
-        """RpaContact _is_in_contact, extended DihedralAngleCriterion method."""
-        return DihedralAngleCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
+        """RpaContact _is_in_contact, extended DihedralAngleCriterion
+        method."""
+        return DihedralAngleCriterion._is_in_contact(self, monomer_1_obj,
+                                                     monomer_2_obj, **kwargs)
 
 
 class HorizontalBisectorDistanceCriterion(ContactCriterion):
@@ -725,8 +800,12 @@ class HorizontalBisectorDistanceCriterion(ContactCriterion):
         """Contact criterion constructor.
 
         Arguments:
-        distance_threshold -- radius of the sphere of a center at a given point, inside of which all points are in contact with the central point.
-        undecidable_range -- distance from the surface of the sphere, at which all points assume contact value 1 according to the  three-valued logic. Innitially set to 0.
+        distance_threshold -- radius of the sphere of a center at a given
+        point, inside of which all points are in contact with the central
+        point.
+        undecidable_range -- distance from the surface of the sphere,
+        at which all points assume contact value 1 according to the
+        three-valued logic. Innitially set to 0.
 
         See also config file docstring.
         """
@@ -738,7 +817,8 @@ class HorizontalBisectorDistanceCriterion(ContactCriterion):
             self.monomer_hallmark_plane,)  # pylint: disable=no-member
 
     def __str__(self):
-        return ' bisector distance between %ss' % (self.monomer_hallmark_plane,)  # pylint: disable=no-member
+        return ' bisector distance between %ss' % (
+            self.monomer_hallmark_plane,)  # pylint: disable=no-member
         # monomer_hallmark_x is an abstract attr
 
     def _calculate_distance(self, monomer_1_obj, monomer_2_obj):
@@ -749,13 +829,17 @@ class HorizontalBisectorDistanceCriterion(ContactCriterion):
         monomer_2_obj -- second mers instance.
         """
         # pylint: disable=no-member
-        bisector = (getattr(monomer_1_obj, self.monomer_hallmark_plane)).bisection_plane(
+        bisector = (getattr(monomer_1_obj,
+                            self.monomer_hallmark_plane)).bisection_plane(
             getattr(monomer_2_obj, self.monomer_hallmark_plane))
-        ort_projection_point1 = bisector.ort_projection(getattr(monomer_1_obj, self.monomer_hallmark_point))
-        ort_projection_point2 = bisector.ort_projection(getattr(monomer_2_obj, self.monomer_hallmark_point))
+        ort_projection_point1 = bisector.ort_projection(
+            getattr(monomer_1_obj, self.monomer_hallmark_point))
+        ort_projection_point2 = bisector.ort_projection(
+            getattr(monomer_2_obj, self.monomer_hallmark_point))
         # pylint: enable=no-member
         # monomer_hallmark_x is an abstract attr
-        return (ort_projection_point1 - ort_projection_point2).calculate_length()
+        return (
+                ort_projection_point1 - ort_projection_point2).calculate_length()
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
         """Returns three-valued logic contact value.
@@ -763,7 +847,8 @@ class HorizontalBisectorDistanceCriterion(ContactCriterion):
         Arguments:
         monomer_1_obj -- first monomer instance.
         monomer_2_obj -- second mers instance.
-        lazy -- ignored. See CombinedCriteria._is_in_contact to get more information.
+        lazy -- ignored. See CombinedCriteria._is_in_contact to get more
+        information.
         """
         distance = self._calculate_distance(monomer_1_obj, monomer_2_obj)
         min_value = self.criterion_distance - self.undecidable_range
@@ -778,10 +863,12 @@ class HorizontalBisectorDistanceCriterion(ContactCriterion):
 
 @for_monomer_type_only(pydesc.mers.Nucleotide)
 class RcbpDistance(HorizontalBisectorDistanceCriterion):
-    """Horizontal distance between ring centers contact criterion (for pairing)."""
+    """Horizontal distance between ring centers contact criterion (for
+    pairing)."""
 
     def __init__(self):
-        """RcbpDistance constructor, extended HorizontalBisectorDistanceCriterion method for pairing criterion."""
+        """RcbpDistance constructor, extended
+        HorizontalBisectorDistanceCriterion method for pairing criterion."""
         self.monomer_hallmark_point = "ring_center"
         self.monomer_hallmark_plane = "ring_plane"
         HorizontalBisectorDistanceCriterion.__init__(
@@ -790,16 +877,22 @@ class RcbpDistance(HorizontalBisectorDistanceCriterion):
         self.max_rc_dist = ConfigManager.contacts.rcb_pairing_contact_distance + ConfigManager.contacts.rcb_pairing_contact_undecidable_range + 6
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
-        """RcbpDistance _is_in_contact, extended HorizontalBisectorDistanceCriterion method."""
-        return HorizontalBisectorDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
+        """RcbpDistance _is_in_contact, extended
+        HorizontalBisectorDistanceCriterion method."""
+        return HorizontalBisectorDistanceCriterion._is_in_contact(self,
+                                                                  monomer_1_obj,
+                                                                  monomer_2_obj,
+                                                                  **kwargs)
 
 
 @for_monomer_type_only(pydesc.mers.Nucleotide)
 class RcbsDistance(HorizontalBisectorDistanceCriterion):
-    """Horizontal distance between ring centers contact criterion (for stacking)."""
+    """Horizontal distance between ring centers contact criterion (for
+    stacking)."""
 
     def __init__(self):
-        """RcbsDistance constructor, extended HorizontalBisectorDistanceCriterion method for stacking criterion."""
+        """RcbsDistance constructor, extended
+        HorizontalBisectorDistanceCriterion method for stacking criterion."""
         self.monomer_hallmark_point = "ring_center"
         self.monomer_hallmark_plane = "ring_plane"
         HorizontalBisectorDistanceCriterion.__init__(
@@ -808,8 +901,12 @@ class RcbsDistance(HorizontalBisectorDistanceCriterion):
         self.max_rc_dist = ConfigManager.contacts.rcb_stacking_contact_distance + ConfigManager.contacts.rcb_stacking_contact_undecidable_range + 6
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
-        """RcbsDistance _is_in_contact, extended HorizontalBisectorDistanceCriterion method."""
-        return HorizontalBisectorDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
+        """RcbsDistance _is_in_contact, extended
+        HorizontalBisectorDistanceCriterion method."""
+        return HorizontalBisectorDistanceCriterion._is_in_contact(self,
+                                                                  monomer_1_obj,
+                                                                  monomer_2_obj,
+                                                                  **kwargs)
 
 
 class VerticalBisectorDistanceCriterion(ContactCriterion):
@@ -826,8 +923,12 @@ class VerticalBisectorDistanceCriterion(ContactCriterion):
         """Contact criterion constructor.
 
         Arguments:
-        distance_threshold -- radius of the sphere of a center at a given point, inside of which all points are in contact with the central point.
-        undecidable_range -- distance from the surface of the sphere, at which all points assume contact value 1 according to the  three-valued logic. Innitially set to 0.
+        distance_threshold -- radius of the sphere of a center at a given
+        point, inside of which all points are in contact with the central
+        point.
+        undecidable_range -- distance from the surface of the sphere,
+        at which all points assume contact value 1 according to the
+        three-valued logic. Innitially set to 0.
 
         See also config file docstring.
         """
@@ -839,7 +940,8 @@ class VerticalBisectorDistanceCriterion(ContactCriterion):
             self.monomer_hallmark_plane,)  # pylint: disable=no-member
 
     def __str__(self):
-        return 'bisector distance of %ss' % (self.monomer_hallmark_plane,)  # pylint: disable=no-member
+        return 'bisector distance of %ss' % (
+            self.monomer_hallmark_plane,)  # pylint: disable=no-member
         # monomer_hallmark_x is abstract attr
 
     def _calculate_distance(self, monomer_1_obj, monomer_2_obj):
@@ -850,12 +952,17 @@ class VerticalBisectorDistanceCriterion(ContactCriterion):
         monomer_2_obj -- second mers instance.
         """
         # pylint: disable=no-member
-        bisector = (getattr(monomer_1_obj, self.monomer_hallmark_plane)).bisection_plane(
+        bisector = (getattr(monomer_1_obj,
+                            self.monomer_hallmark_plane)).bisection_plane(
             getattr(monomer_2_obj, self.monomer_hallmark_plane))
-        ort_projection_point1 = bisector.ort_projection(getattr(monomer_1_obj, self.monomer_hallmark_point))
-        ort_projection_point2 = bisector.ort_projection(getattr(monomer_2_obj, self.monomer_hallmark_point))
-        return (ort_projection_point1 - getattr(monomer_1_obj, self.monomer_hallmark_point)).calculate_length() + (
-                ort_projection_point2 - getattr(monomer_2_obj, self.monomer_hallmark_point)).calculate_length()
+        ort_projection_point1 = bisector.ort_projection(
+            getattr(monomer_1_obj, self.monomer_hallmark_point))
+        ort_projection_point2 = bisector.ort_projection(
+            getattr(monomer_2_obj, self.monomer_hallmark_point))
+        return (ort_projection_point1 - getattr(monomer_1_obj,
+                                                self.monomer_hallmark_point)).calculate_length() + (
+                       ort_projection_point2 - getattr(monomer_2_obj,
+                                                       self.monomer_hallmark_point)).calculate_length()
         # pylint: enable=no-member
         # monomer_hallmark_x is abstract attr
 
@@ -865,7 +972,8 @@ class VerticalBisectorDistanceCriterion(ContactCriterion):
         Arguments:
         monomer_1_obj -- first monomer instance.
         monomer_2_obj -- second mers instance.
-        lazy -- ignored. See CombinedCriteria._is_in_contact to get more information.
+        lazy -- ignored. See CombinedCriteria._is_in_contact to get more
+        information.
         """
         distance = self._calculate_distance(monomer_1_obj, monomer_2_obj)
         min_value = self.criterion_distance - self.undecidable_range
@@ -880,10 +988,12 @@ class VerticalBisectorDistanceCriterion(ContactCriterion):
 
 @for_monomer_type_only(pydesc.mers.Nucleotide)
 class RcpDistance(VerticalBisectorDistanceCriterion):
-    """Vertical distance between ring centers contact criterion (for pairing)."""
+    """Vertical distance between ring centers contact criterion (for
+    pairing)."""
 
     def __init__(self):
-        """RcpDistance constructor, extended VerticalBisectorDistanceCriterion method for pairing criterion."""
+        """RcpDistance constructor, extended
+        VerticalBisectorDistanceCriterion method for pairing criterion."""
         self.monomer_hallmark_point = "ring_center"
         self.monomer_hallmark_plane = "ring_plane"
         VerticalBisectorDistanceCriterion.__init__(
@@ -892,16 +1002,22 @@ class RcpDistance(VerticalBisectorDistanceCriterion):
         self.max_rc_dist = ConfigManager.contacts.rc_pairing_contact_distance + ConfigManager.contacts.rc_pairing_contact_undecidable_range + 16
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
-        """RcpDistance _is_in_contact, extended VerticalBisectorDistanceCriterion method."""
-        return VerticalBisectorDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
+        """RcpDistance _is_in_contact, extended
+        VerticalBisectorDistanceCriterion method."""
+        return VerticalBisectorDistanceCriterion._is_in_contact(self,
+                                                                monomer_1_obj,
+                                                                monomer_2_obj,
+                                                                **kwargs)
 
 
 @for_monomer_type_only(pydesc.mers.Nucleotide)
 class RcsDistance(VerticalBisectorDistanceCriterion):
-    """Vertical distance between ring centers contact criterion (for stacking)."""
+    """Vertical distance between ring centers contact criterion (for
+    stacking)."""
 
     def __init__(self):
-        """RcsDistance constructor, extended VerticalBisectorDistanceCriterion method for stacking criterion."""
+        """RcsDistance constructor, extended
+        VerticalBisectorDistanceCriterion method for stacking criterion."""
         self.monomer_hallmark_point = "ring_center"
         self.monomer_hallmark_plane = "ring_plane"
         VerticalBisectorDistanceCriterion.__init__(
@@ -914,5 +1030,9 @@ class RcsDistance(VerticalBisectorDistanceCriterion):
                            16
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
-        """RcsDistance _is_in_contact, extended VerticalBisectorDistanceCriterion method."""
-        return VerticalBisectorDistanceCriterion._is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs)
+        """RcsDistance _is_in_contact, extended
+        VerticalBisectorDistanceCriterion method."""
+        return VerticalBisectorDistanceCriterion._is_in_contact(self,
+                                                                monomer_1_obj,
+                                                                monomer_2_obj,
+                                                                **kwargs)
