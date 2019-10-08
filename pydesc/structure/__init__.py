@@ -19,7 +19,6 @@ import pydesc.dbhandler
 import pydesc.geometry
 import pydesc.mers
 import pydesc.numberconverter
-import pydesc.selection
 from pydesc.config import ConfigManager
 from pydesc.warnexcept import DiscontinuityError
 from pydesc.warnexcept import Info
@@ -62,19 +61,22 @@ class StructureLoader(object):
         """Returns list of structures assembled from a few files.
 
         Arguments:
-        code -- string, database designation of the structure. If paths are given, code becomes loaded structure name.
+        code -- string, database designation of the structure. If paths are
+        given, code becomes loaded structure name.
         path -- list of strings, paths to files to be loaded.
         mapping -- dict as described in PDBBundleHander.get_mapping.
 
-        Path and mapping are optional. If they are not given handler is used to access files from cache.
+        Path and mapping are optional. If they are not given handler is used to
+        access files from cache.
 
-        Method designed to deal with PDB bundles, but can be used to load any structure given in a few PDB files.
+        Method designed to deal with PDB bundles, but can be used to load
+        any structure given in a few PDB files.
         """
-        paths = self.handler.get_file(code) if paths is None else [open(path)
-                                                                   for path in
-                                                                   paths]
-        mapping = self.handler.get_mapping(
-            code) if mapping is None else mapping
+        if paths is None:
+            paths = [open(path) for path in paths]
+        else:
+            paths = self.handler.get_file(code)
+        mapping = self.handler.get_mapping(code) if mapping else mapping
 
         def map_chain_char(mdl, dct, pth):
             """Returns model with re-named chains."""
@@ -130,8 +132,10 @@ class StructureLoader(object):
             code -- code passed by user (str or None if local file was passed).
             path -- path to local file.
         """
-        open_files = self.handler.get_file(code) if path is None else [
-            open(path)]
+        if path is None:
+            open_files = self.handler.get_file(code)
+        else:
+            open_files = [open(path)]
         path = open_files[0].name
         return path, open_files
 
@@ -172,7 +176,8 @@ class StructureLoader(object):
         """
 
         def pick_mer(dct, most_frequent, others):
-            """Try to pick *most_frequent* key from given dict *dct*, otherwise pick first from list of *others*."""
+            """Try to pick *most_frequent* key from given dict *dct*,
+            otherwise pick first from list of *others*."""
             try:
                 return dct[most_frequent]
             except KeyError:
@@ -227,13 +232,15 @@ class StructureLoader(object):
         return structure
 
     def load_structures(self, code=None, path=None):
-        """Returns a list of Structure instances and the NumberConverter instance.
+        """Returns a list of Structure instances and the NumberConverter
+        instance.
 
         Arguments:
         code -- string, database designation of the structure.
         path -- string; path to file to be opened.
 
-        To choose specific database in case of MetaHandler code should be given in following format:
+        To choose specific database in case of MetaHandler code should be
+        given in following format:
         "<database_name>://<structure_code>", e.g.
         "PDB://1no5".
         To choose specific BioUnit type "<biounit_code>/<number>", e.g.
@@ -268,10 +275,12 @@ class BackbonedMixIn:
 
 
 class AbstractStructure(metaclass=ABCMeta):
-    """Abstract class, representation of all the structures and their derivatives.
+    """Abstract class, representation of all the structures and their
+    derivatives.
 
     NOTE:
-    PICKING SLICES OF STRUCTURES RETURNS LIST OF MERS INCLUDING LAST INDICATED MER
+    PICKING SLICES OF STRUCTURES RETURNS LIST OF MERS INCLUDING LAST
+    INDICATED MER
 
     Subclasses:
     Structure -- molecular strucutre of a protein or a nucleic acid.
@@ -285,7 +294,8 @@ class AbstractStructure(metaclass=ABCMeta):
         """(Sub)structure constructor.
 
         Argument:
-        derived_form -- structure, which self is derived from. Structures loaded from files and user structures are derived from themselvs.
+        derived_form -- structure, which self is derived from. Structures
+        loaded from files and user structures are derived from themselvs.
         """
         self.derived_from = derived_from
         self._mers = ()
@@ -296,12 +306,14 @@ class AbstractStructure(metaclass=ABCMeta):
         self._hash_monomers = None
 
     def __add__(self, structure_obj):
-        """Returns UserStructure or Segment containing all mers present in current and given structure.
+        """Returns UserStructure or Segment containing all mers present in
+        current and given structure.
 
         Argument:
         structure_obj -- instance of AbstractStructure subclass.
 
-        If given mers contained in two added structures are subsequent mers - Segment is returned.
+        If given mers contained in two added structures are subsequent mers
+        - Segment is returned.
         """
         mers = sorted(set(list(self) + list(structure_obj)),
                       key=operator.attrgetter('ind'))
@@ -330,20 +342,23 @@ class AbstractStructure(metaclass=ABCMeta):
         def get_hash_if_possible(param):
             """Returns _mers index for given slice parameter.
 
-            Slice parameter can be monomer ind (PyDesc integer), negative index,
+            Slice parameter can be monomer ind (PyDesc integer), negative
+            index,
             string convertable to PDB_id or PDB_id itself.
             For monomer inds - monomer's index on _mers list is returned.
             Negative values and 0 are not changed.
             Other values raise IndexError.
             Strings are converted to PDB_id.
-            For PDB_id - coresponding ind is taken from numberconverter and again
+            For PDB_id - corresponding ind is taken from number converter and
+            again
             """
             if isinstance(param, str):
                 # strings are converted to PDB_id
                 param = pydesc.numberconverter.PDBid.create_from_string(param)
             if isinstance(param, pydesc.numberconverter.PDBid) or isinstance(
                     param, tuple):
-                # if given parameter already is a PDB_id or a coresponding tuple instance
+                # if given parameter already is a PDB_id or a corresponding
+                # tuple instance
                 param = self.derived_from.converter.get_ind(param)
             if isinstance(param, pydesc.mers.Mer):
                 return self._mers.index(param)
@@ -388,7 +403,8 @@ class AbstractStructure(metaclass=ABCMeta):
         return len(self._mers)
 
     def _hash(self, ind):
-        """Returns index on _mers list corespoding to given PyDesc integer (ind).
+        """Returns index on _mers list corresponding to given PyDesc integer
+        (ind).
 
         Argument:
         ind -- PyDesc integer.
@@ -400,8 +416,9 @@ class AbstractStructure(metaclass=ABCMeta):
     def _set_hash(self):
         """Sets _has_monomers attribute.
 
-        _has_monomers is dictionary containing all mers inds as keys and their indexes on _mers list as values.
-        It is used by __getitem__ as hashlist.
+        _has_monomers is dictionary containing all mers inds as keys and
+        their indexes on _mers list as values.
+        It is used by __getitem__ as hash list.
         """
         self._hash_monomers = dict(
             (monomer_obj.ind, index) for index, monomer_obj in
@@ -411,16 +428,20 @@ class AbstractStructure(metaclass=ABCMeta):
         """Returns an StringIO pdb-like object.
 
         Argument:
-        transformed -- initially set to True, if so - creates PyMOL object with respect for all previous movements; otherwise uses coordinates from pdb file.
+        transformed -- initially set to True, if so - creates PyMOL object
+        with respect for all previous movements; otherwise uses coordinates
+        from pdb file.
         """
         line_n = 0
         components = []
         for monomer_obj in self:
             for atom in monomer_obj.iter_atoms():
                 pdb_id = monomer_obj.get_pdb_id()
-                coord = atom.get_coord(
-                    self.trt_matrix) if transformed else atom.get_coord()
-                insertion_code = pdb_id.icode if pdb_id.icode is not None else ' '
+                if transformed:
+                    coord = atom.get_coord(self.trt_matrix)
+                else:
+                    coord = atom.get_coord()
+                insertion_code = pdb_id.icode or ' '
                 values = (line_n,
                           atom.name,
                           monomer_obj.name,
@@ -436,14 +457,16 @@ class AbstractStructure(metaclass=ABCMeta):
                           atom.element)
                 components.append(values)
                 line_n += 1
-        pdb_line = "ATOM  %5i %4s %3s%2s%4i%1s%11.3f%8.3f% 8.3f%6.2f %5.2f      %3s%2s"
-        components = [pdb_line % v for v in
-                      sorted(components, key=lambda vals: vals[0])]
+        pdb_line = ("ATOM  %5i %4s %3s%2s%4i%1s%11.3f"
+                    "%8.3f% 8.3f%6.2f %5.2f      %3s%2s")
+        sorted_components = sorted(components, key=lambda vals: vals[0])
+        components = [pdb_line % v for v in sorted_components]
         components.append("END")
         return StringIO("\n".join(components))
 
     def next_mer(self, monomer_obj):
-        """Returns next monomer avalible in current structure for given monomer.
+        """Returns next monomer available in current structure for given
+        monomer.
 
         Argument:
         monomer_obj -- instance of pydesc.monomer.Monomer.
@@ -458,7 +481,9 @@ class AbstractStructure(metaclass=ABCMeta):
     def rotate(self, rotation_matrix):
         """Rotates all points related to structure.
 
-        Affects structure trt_matrix. Transformed coordinates of points are calculated when get_transformed_coord method is called on coord instance.
+        Affects structure trt_matrix. Transformed coordinates of points are
+        calculated when get_transformed_coord method is called on coord
+        instance.
         Argument:
         rotation_matrix -- list of three lists of three floats.
         """
@@ -467,27 +492,24 @@ class AbstractStructure(metaclass=ABCMeta):
     def translate(self, vector):
         """Translates all points related to structure.
 
-        Affects structure trt_matrix. Transformed coordinates of points are calculated when get_transformed_coord method is called on coord instance.
+        Affects structure trt_matrix. Transformed coordinates of points are
+        calculated when get_transformed_coord method is called on coord
+        instance.
         Argument:
         vector -- list of three floats.
         """
         self.trt_matrix.add_translation(vector)
 
-    def select(self):
-        """Returns set selection of all related mers.
-
-        Overridden in frequently used types of structures for creation of most intuituv selection type.
-        """
-        return pydesc.selection.Set(map(self.derived_from.converter.get_pdb_id,
-                                        map(operator.attrgetter('ind'), self)))
-
     def adjusted_number(self):
         """
         Returns a putative number of 'straight' segments.
 
-        In case of protein structures segments can contains hairpins and other motifs with sharp bends.
-        In some cases it is useful to know the number of 'straight' segments in such a structure, assuming
-        that it fits a tight space (e.g. a sphere). This trick is used in CompDesc to compare protein descriptors.
+        In case of protein structures segments can contains hairpins and
+        other motifs with sharp bends.
+        In some cases it is useful to know the number of 'straight' segments in
+        such a structure, assuming
+        that it fits a tight space (e.g. a sphere). This trick is used in
+        CompDesc to compare protein descriptors.
 
         This implementation first creates a UserStructure instance.
         """
@@ -499,7 +521,8 @@ class AbstractStructure(metaclass=ABCMeta):
 
         Arguments:
         attr -- string; name of the attribute that stores string in mers.
-        skip_other -- True or False; by default set on True. If so - only chainable mers are considered.
+        skip_other -- True or False; by default set on True. If so - only
+        chainable mers are considered.
         """
         if skip_other:
             objs = [i for i in self if isinstance(i, pydesc.mers.MerChainable)]
@@ -532,7 +555,9 @@ class AbstractStructure(metaclass=ABCMeta):
 
 
 class Structure(AbstractStructure):
-    """Representation of molecular structure of the protein or the nucleotide acids."""
+    """Representation of molecular structure of the protein or the
+    nucleotide acids.
+    """
 
     def __init__(self, name, path, converter_obj):
         """Structure constructor.
@@ -561,28 +586,24 @@ class Structure(AbstractStructure):
     def __str__(self):
         return self.name
 
-    def select(self):
-        """Overridden select method.
-
-        Returns union of selections: ranges for chains and set of nonechainable mers.
-        """
-        return pydesc.selection.Everything()
-
     def link_dcd_file(self, path):
-        """Reads dcd file and replaces atoms coords with coords from dcd trajectory file.
+        """Reads dcd file and replaces atoms coords with coords from dcd
+        trajectory file.
 
         Argument:
         path -- string; path to dcd file.
 
-        Since trajectory is linked, all atom coords are taken from current frame.
-        Pseudoatoms are recalculated every time their coords are returned.
-        If Contact map is attached to structure, it is recalculated befor returning contact values,
+        Since trajectory is linked, all atom coords are taken from current
+        frame. Pseudoatoms are recalculated every time their coords are
+        returned. If Contact map is attached to structure, it is
+        recalculated befor returning contact values,
         but only if frame has been changed since previous reading.
 
-        Sets trajectory attribute as prody.trajectory.dcdfile.DCDFile object. To get number of frames
-        call len function on that object.
+        Sets trajectory attribute as prody.trajectory.dcdfile.DCDFile
+        object. To get number of frames call len function on that object.
 
-        To switch between frames use next_frame method (faster) or simply define structure frame attribute:
+        To switch between frames use next_frame method (faster) or simply
+        define structure frame attribute:
         >>> structure.frame = 5
         >>> structure.frame
         5
@@ -598,14 +619,16 @@ class Structure(AbstractStructure):
                 atom.prody_atom = pdstr[mer.get_pdb_id()][atom.name.strip()]
 
         def set_dyn(mer):
-            """Sets attribute 'dynamic' of given mer's pseudoatoms dict to True."""
+            """Sets attribute 'dynamic' of given mer's pseudoatoms dict to
+            True."""
             mer.pseudoatoms.dynamic = True
             mer.dynamic_properties.dynamic = True
 
         map(set_dyn, self)
 
     def disconnect_trajectory(self):
-        """Removes trajectory attached to structure and turns off dynamic calculation of psedoatoms coordinates."""
+        """Removes trajectory attached to structure and turns off dynamic
+        calculation of psedoatoms coordinates."""
         del self.trajectory
         del self.prody_structure
 
@@ -660,7 +683,9 @@ class Structure(AbstractStructure):
         return len(self.trajectory)
 
     def refresh(self):
-        """Forces recalculation of all dynamic properties of mers (usually after frame change in trajectory)."""
+        """Forces recalculation of all dynamic properties of mers (usually
+        after frame change in trajectory).
+        """
 
         def reset_dynamic_prop(mer):
             """Resets all dynamic properties."""
@@ -673,7 +698,8 @@ class Structure(AbstractStructure):
         """Calculates secondary structure using DSSP.
 
         Arguments:
-        file_path -- handler or path to pdb file. By default value of structures 'path' attribute.
+        file_path -- handler or path to pdb file. By default value of
+        structures 'path' attribute.
         dssp -- optional; command to call DSSP ('dssp' by default).
 
         Method uses Bio.PDB.DSSP. See docstring for more information.
@@ -685,23 +711,26 @@ class Structure(AbstractStructure):
         elif not isinstance(file_path, str):
             file_path = file_path.name
         sec_stc = DSSP(self.pdb_model, file_path, dssp)
-        for mer in pydesc.selection.MonomerType(
-                pydesc.mers.MerChainable).create_structure(self):
+        chainable = [mer for mer in self if mer.is_chainable()]
+        for mer in chainable:
             pdbid = mer.get_pdb_id()
             try:
-                restup = sec_stc[mer.my_chain, (
-                    ' ', pdbid[1], ' ' if pdbid[2] is None else pdbid[2])]
+                restup = sec_stc[mer.chain, (' ', pdbid[1], pdbid[2] or ' ')]
             except KeyError:
                 continue
             mer._ss = restup[2]
             mer._asa = restup[3]
 
     def get_secondary_structure(self):
-        """Returns (sub)structure sequence of secondary structure (dssp code)."""
+        """Returns (sub)structure sequence of secondary structure (dssp
+        code).
+        """
         return self._map_mers_with_attr('secondary_structure')
 
     def get_simple_secondary_structure(self):
-        """Returns (sub)structure sequence of secondary structure (3-letter code)."""
+        """Returns (sub)structure sequence of secondary structure (3-letter
+        code).
+        """
         return self._map_mers_with_attr('simple_secondary_structure')
 
 
@@ -730,7 +759,8 @@ class PartialStructure(BackbonedMixIn, AbstractStructure):
             AbstractStructure.__init__(self, self)
         else:
             NotImplementedError(
-                "PartialStructure cannot be prepared from mers coming from different mers (yet)")
+                "PartialStructure cannot be prepared from mers coming from "
+                "different mers (yet)")
 
     def __repr__(self):
         return "<PartialStructure: %s>" % self.name
@@ -758,7 +788,8 @@ class PartialStructure(BackbonedMixIn, AbstractStructure):
             pass
 
     def set_mers(self, sequence_of_mers):
-        """Set _mers attribute to tuple of mers in given sequence and finalize structure."""
+        """Set _mers attribute to tuple of mers in given sequence and
+        finalize structure."""
         self._mers = tuple(sequence_of_mers)
         self.finalize()
 
@@ -771,13 +802,14 @@ class PartialStructure(BackbonedMixIn, AbstractStructure):
         """
         Returns a putative number of 'straight' segments.
 
-        In case of protein structures segments can contains hairpins and other motifs with sharp bends.
-        In some cases it is useful to know the number of 'straight' segments in such a structure, assuming
-        that it fits a tight space (e.g. a sphere). This trick is used in CompDesc to compare protein descriptors.
+        In case of protein structures segments can contains hairpins and
+        other motifs with sharp bends.
+        In some cases it is useful to know the number of 'straight' segments in
+        such a structure, assuming that it fits a tight space (e.g. a
+        sphere). This trick is used in CompDesc to compare protein descriptors.
 
         This implementation sums over segments comprising the structure.
         """
-
         return sum(seg.adjusted_number() for seg in self.segments)
 
 
@@ -838,28 +870,22 @@ class Segment(AbstractStructure):
         """Returns last segment monomer."""
         return self._mers[-1]
 
-    def select(self):
-        """Overridden select method.
-
-        Returns range selection of all related mers.
-        """
-        return pydesc.selection.Range(
-            *map(self.derived_from.converter.get_pdb_id,
-                 [self.start.ind, self.end.ind]))
-
     def adjusted_number(self):
         """
         Returns a putative number of 'straight' segments.
 
-        In case of protein structures segments can contains hairpins and other motifs with sharp bends.
-        In some cases it is useful to know the number of 'straight' segments in such a structure, assuming
-        that it fits a tight space (e.g. a sphere). This trick is used in CompDesc to compare protein descriptors.
+        In case of protein structures segments can contains hairpins and
+        other motifs with sharp bends.
+        In some cases it is useful to know the number of 'straight' segments in
+        such a structure, assuming that it fits a tight space (e.g. a
+        sphere). This trick is used in CompDesc to compare protein descriptors.
         """
 
         try:
             length = sum(m.adjusted_length() for m in self._mers[2:-2])
         except (AttributeError, TypeError):
-            # TO AttributeError seems unrised while adjusted_length returns None is something is wrong
+            # TO AttributeError seems to be never raised while adjusted_length
+            # returns None is something is wrong
             # instead sum() raises TypeError since cannot add number to None
             return 1
 
@@ -904,10 +930,6 @@ class Chain(BackbonedMixIn, AbstractStructure):
     def name(self):
         return self.derived_from.name + self.chain_name
 
-    def select(self):
-        """Returns current chain selection."""
-        return pydesc.selection.ChainSelection(self.chain_name)
-
 
 class AbstractElement(AbstractStructure):
     """Abstract class, representation of substructures from the Descriptor.
@@ -940,7 +962,8 @@ class AbstractElement(AbstractStructure):
 class ElementChainable(AbstractElement, Segment):
     """Representation of a five-mer Segment.
 
-    It consists of five Residues or five Nucleotides: a central mer, two preceding and two following mers.
+    It consists of five Residues or five Nucleotides: a central mer,
+    two preceding and two following mers.
     """
 
     def __init__(self, mer):
@@ -954,9 +977,8 @@ class ElementChainable(AbstractElement, Segment):
         AbstractElement.__init__(self, mer)
         length = ConfigManager.element.element_chainable_length
         if not length % 2 == 1:
-            raise ValueError(
-                "Wrong element chainable length. Length should be odd.")
-        value_error_msg = "Cannot create chainable element for mer %i." % mer.ind
+            raise ValueError("Length of chainable element should be odd.")
+        msg = "Cannot create chainable element for mer %i." % mer.ind
         for dummy_step in range(length // 2):
             start = self._mers[0]
             end = self._mers[-1]
@@ -964,13 +986,15 @@ class ElementChainable(AbstractElement, Segment):
                 self._mers = (start.previous_mer,) + self._mers + (
                     end.next_mer,)
             except AttributeError:
-                raise ValueError(value_error_msg)
+                raise ValueError(msg)
         if self._mers.count(None) != 0:
-            raise ValueError(value_error_msg)
+            raise ValueError(msg)
 
 
 class ElementOther(AbstractElement):
-    """Class corresponding to the ElementChainable, but consisting of a single Ion or Ligand instance."""
+    """Class corresponding to the ElementChainable, but consisting of a
+    single Ion or Ligand instance.
+    """
 
     def __init__(self, mer):
         """Element constructor.
@@ -996,7 +1020,8 @@ class Contact(AbstractStructure):
         self.elements = {element1, element2}
         if element1.derived_from is not element2.derived_from:
             raise ValueError(
-                "Impossible to create contact instance with elements derived from different structures")
+                "Impossible to create contact instance with elements derived "
+                "from different structures")
         if element1.central_monomer.ind == element2.central_monomer.ind:
             raise ValueError("Impossible to create contact using one element")
         AbstractStructure.__init__(self, element1.derived_from)
@@ -1005,7 +1030,8 @@ class Contact(AbstractStructure):
     def __sub__(self, val):
         """Deprecated."""
         warn(
-            """Subtracting contacts is no longer supported. Please, use get_other_element instead.""",
+            """Subtracting contacts is no longer supported. Please, 
+            use get_other_element instead.""",
             DeprecationWarning)
         return self.get_other_element(val)
 
@@ -1022,20 +1048,17 @@ class Contact(AbstractStructure):
         if element_obj.central_monomer not in [i.central_monomer for i in
                                                self.elements]:
             raise ValueError(
-                "Given element is not included in contact instance, cannot get other element")
+                "Given element is not included in contact instance, cannot "
+                "get other element")
         if element_obj.central_monomer == self.elements[0].central_monomer:
             return self.elements[1]
         else:
             return self.elements[0]
 
-    def select(self):
-        """Returns SelectionsUnion containing both contact elements selections."""
-        return pydesc.selection.SelectionsUnion(
-            map(Segment.select, self.elements))
-
     def value(self, cmap):
         """
-        Contact value in contact_map associated with a structure contact is derived from.
+        Contact value in contact_map associated with a structure contact is
+        derived from.
 
         This property is required by contacts.DescriptorCriterion.
         """
