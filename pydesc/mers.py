@@ -21,7 +21,6 @@ Classes that represents mers present in representations of (sub)structures.
 created: 11.07.2013 - 31.07.2013, Tymoteusz 'hert' Oleniecki
 """
 
-from abc import ABCMeta, abstractmethod
 from copy import deepcopy
 
 import numpy
@@ -135,99 +134,101 @@ ConfigManager.mers.nucleotide.set_default(
     "indicators", ("C3'", 'P', 'ring_center'))
 ConfigManager.mers.set_default("moving_average", 3)
 ConfigManager.mers.ion.set_default("indicators", ("rc",))
-ConfigManager.mers.ion.set_default("radii", {'BE': 0.59,
-                                             'BA': 1.49,
-                                             'BI': 1.17,
-                                             'BK': 1.1,
-                                             'BR': 1.82,
-                                             'RU': 0.82,
-                                             'RE': 0.77,
-                                             'TM': 1.17,
-                                             'RA': 1.62,
-                                             'RB': 1.66,
-                                             'RH': 0.805,
-                                             'P': 0.58,
-                                             'GE': 0.87,
-                                             'GD': 1.078,
-                                             'GA': 0.76,
-                                             'OS': 0.77,
-                                             'C': 0.3,
-                                             'HO': 1.041,
-                                             'HF': 0.85,
-                                             'HG': 1.33,
-                                             'PR': 1.13,
-                                             'PT': 0.94,
-                                             'PU': 1.14,
-                                             'PB': 1.33,
-                                             'PA': 1.16,
-                                             'PD': 1.0,
-                                             'PO': 1.08,
-                                             'PM': 1.11,
-                                             'ZN': 0.88,
-                                             'K': 1.52,
-                                             'O': 1.26,
-                                             'S': 1.7,
-                                             'W': 0.8,
-                                             'EU': 1.31,
-                                             'ZR': 0.86,
-                                             'ER': 1.03,
-                                             'MG': 0.86,
-                                             'MO': 0.83,
-                                             'MN': 0.97,
-                                             'AU': 1.51,
-                                             'FR': 1.94,
-                                             'FE': 0.92,
-                                             'NI': 0.83,
-                                             'NA': 1.16,
-                                             'NB': 0.86,
-                                             'ND': 1.43,
-                                             'ES': 0.928,
-                                             'NP': 1.24,
-                                             'B': 0.41,
-                                             'CO': 0.885,
-                                             'CM': 1.11,
-                                             'CL': 1.67,
-                                             'CA': 1.14,
-                                             'CF': 1.09,
-                                             'CE': 1.15,
-                                             'N': 1.32,
-                                             'V': 0.93,
-                                             'CS': 1.81,
-                                             'CR': 0.94,
-                                             'CU': 0.91,
-                                             'SR': 1.32,
-                                             'SI': 0.54,
-                                             'SN': 0.83,
-                                             'SM': 1.36,
-                                             'SC': 0.885,
-                                             'SB': 0.9,
-                                             'SE': 1.84,
-                                             'YB': 1.16,
-                                             'DY': 1.21,
-                                             'LA': 1.172,
-                                             'F': 1.19,
-                                             'LI': 0.9,
-                                             'TL': 1.64,
-                                             'LU': 1.001,
-                                             'TH': 1.08,
-                                             'TI': 1.0,
-                                             'TE': 2.07,
-                                             'TB': 1.063,
-                                             'TC': 0.785,
-                                             'TA': 0.86,
-                                             'AC': 1.26,
-                                             'AG': 1.29,
-                                             'I': 2.06,
-                                             'IR': 0.82,
-                                             'AM': 1.4,
-                                             'AL': 0.675,
-                                             'AS': 0.72,
-                                             'U': 1.165,
-                                             'AT': 0.76,
-                                             'IN': 0.94,
-                                             'Y': 1.04,
-                                             'CD': 1.09,
-                                             'XE': 0.62})
+ConfigManager.mers.ion.set_default(
+    "radii", {
+        'BE': 0.59,
+        'BA': 1.49,
+        'BI': 1.17,
+        'BK': 1.1,
+        'BR': 1.82,
+        'RU': 0.82,
+        'RE': 0.77,
+        'TM': 1.17,
+        'RA': 1.62,
+        'RB': 1.66,
+        'RH': 0.805,
+        'P': 0.58,
+        'GE': 0.87,
+        'GD': 1.078,
+        'GA': 0.76,
+        'OS': 0.77,
+        'C': 0.3,
+        'HO': 1.041,
+        'HF': 0.85,
+        'HG': 1.33,
+        'PR': 1.13,
+        'PT': 0.94,
+        'PU': 1.14,
+        'PB': 1.33,
+        'PA': 1.16,
+        'PD': 1.0,
+        'PO': 1.08,
+        'PM': 1.11,
+        'ZN': 0.88,
+        'K': 1.52,
+        'O': 1.26,
+        'S': 1.7,
+        'W': 0.8,
+        'EU': 1.31,
+        'ZR': 0.86,
+        'ER': 1.03,
+        'MG': 0.86,
+        'MO': 0.83,
+        'MN': 0.97,
+        'AU': 1.51,
+        'FR': 1.94,
+        'FE': 0.92,
+        'NI': 0.83,
+        'NA': 1.16,
+        'NB': 0.86,
+        'ND': 1.43,
+        'ES': 0.928,
+        'NP': 1.24,
+        'B': 0.41,
+        'CO': 0.885,
+        'CM': 1.11,
+        'CL': 1.67,
+        'CA': 1.14,
+        'CF': 1.09,
+        'CE': 1.15,
+        'N': 1.32,
+        'V': 0.93,
+        'CS': 1.81,
+        'CR': 0.94,
+        'CU': 0.91,
+        'SR': 1.32,
+        'SI': 0.54,
+        'SN': 0.83,
+        'SM': 1.36,
+        'SC': 0.885,
+        'SB': 0.9,
+        'SE': 1.84,
+        'YB': 1.16,
+        'DY': 1.21,
+        'LA': 1.172,
+        'F': 1.19,
+        'LI': 0.9,
+        'TL': 1.64,
+        'LU': 1.001,
+        'TH': 1.08,
+        'TI': 1.0,
+        'TE': 2.07,
+        'TB': 1.063,
+        'TC': 0.785,
+        'TA': 0.86,
+        'AC': 1.26,
+        'AG': 1.29,
+        'I': 2.06,
+        'IR': 0.82,
+        'AM': 1.4,
+        'AL': 0.675,
+        'AS': 0.72,
+        'U': 1.165,
+        'AT': 0.76,
+        'IN': 0.94,
+        'Y': 1.04,
+        'CD': 1.09,
+        'XE': 0.62})
 
 ConfigManager.mers.ligand.set_default("indicators", ("rc",))
 ConfigManager.new_branch("structure_mon")
@@ -270,7 +271,7 @@ class MerFactory:
         """
         base_data = self.unpack_base(mer)
         mer = self._create_mer_of_type(type(mer), base_data[:-1] + (
-        deepcopy(base_data[-1]),))
+            deepcopy(base_data[-1]),))
         mer.finalize()
         return mer
 
@@ -282,22 +283,31 @@ class MerFactory:
                            base=None):
         """Class method, returns Monomer instances.
 
-        Returns dictionary of different monomer types as values, calls _create_possible_monomers to create actual objects.
-        This method facilitates checks and routines common to all monomer creations.
+        Returns dictionary of different monomer types as values,
+        calls _create_possible_monomers to create actual objects.
+        This method facilitates checks and routines common to all monomer
+        creations.
 
         The returned dictionary contains two special entries:
             'warnings' - an instance of WarnManager storing eventual warnings.
-            Monomer - an instance of Monomer class containing atoms from pdb_residue.
+            Monomer - an instance of Monomer class containing atoms from
+            pdb_residue.
 
         Arguments:
-        pdb_residue -- instance of BioPython Bio.PDB.Residue based on which monomer is created.
-        structure_obj -- Structure instance to which the monomer belongs. Could be None for unbounded mers.
+        pdb_residue -- instance of BioPython Bio.PDB.Residue based on which
+        monomer is created.
+        structure_obj -- Structure instance to which the monomer belongs.
+        Could be None for unbounded mers.
         Initially set to None.
-        warn_in_place -- True or False. Determines if warnings are to be raised immediately or returned as a result.
+        warn_in_place -- True or False. Determines if warnings are to be
+        raised immediately or returned as a result.
         The former forces constructors to raise warning immediately.
-        The latter stores raised warnings in context manager delivered as value of 'warnings' key in returned dictionary.
-        warnings_ -- context manager for catching warnings. Should be supplied when restarting monomer creation.
-        base -- an instance of Monomer class containing atoms from pdb_residue. Should be supplied when restarting
+        The latter stores raised warnings in context manager delivered as
+        value of 'warnings' key in returned dictionary.
+        warnings_ -- context manager for catching warnings. Should be
+        supplied when restarting monomer creation.
+        base -- an instance of Monomer class containing atoms from
+        pdb_residue. Should be supplied when restarting
         monomer creation.
         """
 
@@ -331,12 +341,14 @@ class MerFactory:
         return mers, warnings_
 
     def _create_possible_monomers(self, base_monomer, warnings_, classes):
-        """Return dictionary of different monomer types as values and subclasses of MonomerChainable and MonomerOther
+        """Return dictionary of different monomer types as values and
+        subclasses of MonomerChainable and MonomerOther
         as keys.
 
         Arguments:
         mers.
-        base_monomer -- an instance of Monomer class containing atoms from pdb_residue.
+        base_monomer -- an instance of Monomer class containing atoms from
+        pdb_residue.
         warnings_ -- context manager for catching warnings.
         classes -- list of classes to try to initialize.
         """
@@ -347,8 +359,7 @@ class MerFactory:
                 with warnings_(monomer_type):
                     mers[monomer_type] = self._create_mer_of_type(monomer_type,
                                                                   base_data)
-            except (IncompleteParticle, WrongAtomDistances, WrongMerType) as e:
-                # import pdb; pdb.set_trace()
+            except (IncompleteParticle, WrongAtomDistances, WrongMerType):
                 pass
 
         return mers, warnings_
@@ -368,7 +379,8 @@ class MerFactory:
 
         Argument:
         pdb_residue -- instance of Bio.PDB.PdbResidue.
-        name -- str; residue name; None by default. If so name is taken from pdb_residue with get_pdb_residue_name method.
+        name -- str; residue name; None by default. If so name is taken from
+        pdb_residue with get_pdb_residue_name method.
 
         Returns tuple of name, chain name and dict of atoms.
         """
@@ -387,12 +399,14 @@ class MerFactory:
 
     @staticmethod
     def unpack_base(base):
-        """Return structure, PyDesc index, name, chain and atoms from given base (monomer.Monomer instance)."""
+        """Return structure, PyDesc index, name, chain and atoms from given
+        base (monomer.Monomer instance)."""
         return base.structure, base.ind, base.name, base.chain, base.atoms
 
     @staticmethod
     def get_pdb_residue_name(pdb_residue):
-        """Get residue name from given *pdb_residue* (Bio.PDBResidue instance)."""
+        """Get residue name from given *pdb_residue* (Bio.PDBResidue
+        instance)."""
         return pdb_residue.get_resname().strip()
 
 
@@ -438,7 +452,7 @@ class Pseudoatom(pydesc.geometry.Coord):
 
     def __repr__(self):
         return "<Pseudoatom %s: %f %f %f>" % (
-                    (self.name,) + tuple(self.vector))
+                (self.name,) + tuple(self.vector))
 
     def __init__(self, x=.0, y=.0, z=.0, numpy_vec=None,
                  name=''):  # pylint:disable=super-init-not-called
@@ -447,19 +461,24 @@ class Pseudoatom(pydesc.geometry.Coord):
 
         Arguments:
         x, y, z -- pseudoatom coordinates.
-        numpy_vec -- NumPy array containing coordinates (if provided XYZ are ignored). None by default.
+        numpy_vec -- NumPy array containing coordinates (if provided XYZ are
+        ignored). None by default.
         name -- string, pseudoatom name. None by default.
-        owner -- instance od pydesc.monomer.Monomer subclass that contains pseudoatom. None by default.
-        calc_method -- owner method to calculate pseudoatom coordinates in dynamic mode. None by default.
+        owner -- instance od pydesc.monomer.Monomer subclass that contains
+        pseudoatom. None by default.
+        calc_method -- owner method to calculate pseudoatom coordinates in
+        dynamic mode. None by default.
 
-        Sets attribute 'dynamic' to False. If set to True - coordinates are calculated each time when readed.
+        Sets attribute 'dynamic' to False. If set to True - coordinates are
+        calculated each time when readed.
         """
         self.name = name
         pydesc.geometry.Coord.__init__(self, x, y, z, numpy_vec)
 
 
 class DynamicPropertiesDict(dict):
-    """Class of dicts to store values that need to be recalculated for every frame of molecular dynamics trajectory."""
+    """Class of dicts to store values that need to be recalculated for every
+    frame of molecular dynamics trajectory."""
 
     def __init__(self, owner):
         """DynamicProprtyDict costructor.
@@ -479,7 +498,10 @@ class DynamicPropertiesDict(dict):
         Argument:
         key -- name of value to be returned or recalculated.
 
-        Returns value of given key if 'dynamic' attrbute is set to False. Otherwise tries to return value of the key if it is not None. If value is None - forces owner to recalculate the value byt calling "calculate_<key>" method.
+        Returns value of given key if 'dynamic' attrbute is set to False.
+        Otherwise tries to return value of the key if it is not None. If
+        value is None - forces owner to recalculate the value byt calling
+        "calculate_<key>" method.
         """
         value = dict.__getitem__(self, key)
         if self.dynamic:
@@ -504,7 +526,8 @@ class DynamicPropertiesDict(dict):
 
 
 class Mer():
-    """Abstract class, representation of mers and particles present in molecular structures.
+    """Abstract class, representation of mers and particles present in
+    molecular structures.
 
     Subclasses:
     MonomerChainable -- residues and nucleotides.
@@ -518,15 +541,16 @@ class Mer():
 
     @classmethod
     def reset_config_cache(cls):
-        """Resets cache of configuration settings in this class and all subclasses. Should be called after relevant changes in ConfigManager.
-        """
+        """Resets cache of configuration settings in this class and all
+        subclasses. Should be called after relevant changes in
+        ConfigManager."""
         cls._config_cache = {}
         for sub in cls.__subclasses__():
             sub.reset_config_cache()
 
     @classmethod
     def get_config(cls, prop_name):
-        """Returns class configuration from confiuration manager.
+        """Returns class configuration from configuration manager.
 
         All data is cached in _config_cache class attribute.
 
@@ -543,7 +567,7 @@ class Mer():
 
     @classmethod
     def _get_config(cls, prop_name):
-        """Returns class configuration from confiuration manager.
+        """Returns class configuration from configuration manager.
 
         Argument:
         prop_name -- name of configuration to be returned.
@@ -575,16 +599,20 @@ class Mer():
         structure_obj -- Structure in which current monomer is included.
         name -- str; mers name.
         chain -- str; chain name.
-        atoms -- dict; dict of str names of atoms as keys and Atom instances as values.
+        atoms -- dict; dict of str names of atoms as keys and Atom instances
+        as values.
 
         Sets attributes:
         name -- mer or ligand name, up to three letters, according to PDB file.
         structure -- the Structure instance to which the monomer belongs.
-        chain -- character of the chain that the mers belong to, according to PDB file.
-        atoms - dict of atoms building current monomer represented by Atom instances.
+        chain -- character of the chain that the mers belong to, according
+        to PDB file.
+        atoms - dict of atoms building current monomer represented by Atom
+        instances.
         ind -- PyDesc integer.
         pseudoatoms -- dict of Pseudoatoms.
-        dynamic_properties -- dict of other geometrical properties like planes for cyclic chemical compounds.
+        dynamic_properties -- dict of other geometrical properties like
+        planes for cyclic chemical compounds.
         _ss -- secondary structure sign.
         """
 
@@ -605,8 +633,8 @@ class Mer():
     def __repr__(self):
         try:
             return '<%s: %s no. %i, PDB: %s>' % (
-            self.__class__.__name__, self.name, self.ind,
-            str(self.get_pdb_id()))
+                self.__class__.__name__, self.name, self.ind,
+                str(self.get_pdb_id()))
         except (TypeError, KeyError):
             return '<%s: %s>' % (self.__class__.__name__, self.name)
 
@@ -644,7 +672,8 @@ class Mer():
         getitem -- True by default, False if called by __getattr method.
         """
         warn(DeprecationWarning(
-            """Atom eventually won't inherit from dict type, so avoid getting to attributes via getitem.
+            """Atom eventually won't inherit from dict type, so avoid 
+            getting to attributes via getitem.
        Use getattr instead, e.g.
        instead of
        >>> print my_atom['rc']
@@ -679,7 +708,8 @@ class Mer():
     def calculate_rc(self):
         """Sets Monomer's attribute rc (geometrical center).
 
-        Adds pydesc.geometry.Coord instance representing the geometrical center of a mer to mers pseudoatoms dict.
+        Adds pydesc.geometry.Coord instance representing the geometrical
+        center of a mer to mers pseudoatoms dict.
         If possible, only sidechain atoms are taken into account.
         """
         non_backbone_coordinates = [a.vector for a in self.iter_nbb_atoms()]
@@ -702,7 +732,8 @@ class Mer():
         return iter([])
 
     def iter_nbb_atoms(self):
-        """Returns iterator that iterates over monomer's all atoms except backbone."""
+        """Returns iterator that iterates over monomer's all atoms except
+        backbone."""
         return self.iter_atoms()
 
     @classmethod
@@ -720,7 +751,7 @@ class Mer():
             except AttributeError:
                 additional_dictionary = {}
             return code_dictionary[seq] if seq in code_dictionary else \
-            additional_dictionary[seq]
+                additional_dictionary[seq]
         except AttributeError:
             if issubclass(cls.__base__, Mer):  # pylint:disable=no-member
                 # ??? Monomer has no __base__
@@ -731,7 +762,8 @@ class Mer():
 
     @classmethod
     def seq_1to3(cls, let):
-        """Returns a three letter code for a given 1-letter code. In ambiguous cases the first
+        """Returns a three letter code for a given 1-letter code. In
+        ambiguous cases the first
         matching code is returned.
         """
         try:
@@ -753,7 +785,8 @@ class Mer():
 
     @property
     def seq(self):
-        """Returns one letter code for mer if possible ("?" if name is unknown)."""
+        """Returns one letter code for mer if possible ("?" if name is
+        unknown)."""
         try:
             return self.seq_3to1(self.name)
         except KeyError:
@@ -761,10 +794,11 @@ class Mer():
             return "?"
         except AttributeError:
             warn(NoConfiguration(
-                "class %s has no dictionary in configuration manager, thus '=' inserted"
-                " into sequence. to turn this exception into harmless warning - set "
-                "NoConfiguration in ConfigManager.warnings_and_exceptions.class_filters "
-                "to 'ignore' or ;always'" %
+                "class %s has no dictionary in configuration manager, "
+                "thus '=' inserted into sequence. to turn this exception "
+                "into harmless warning - set NoConfiguration in "
+                "ConfigManager.warnings_and_exceptions.class_filters to "
+                "'ignore' or ;always'" %
                 self.__class__.__name__))
             return "="
 
@@ -775,7 +809,8 @@ class Mer():
 
     @property
     def representation(self):
-        """Returns indicators of current monomer set in configuration manager."""
+        """Returns indicators of current monomer set in configuration
+        manager."""
         return [getattr(self, indicator) for indicator in
                 self.get_config('indicators')]
 
@@ -795,9 +830,11 @@ class Mer():
     def secondary_structure(self):
         """Secondary structure obtained with DSSP for maternal structure.
 
-        If DSSP was not found or secondary structure was not calculated - returns '=' sign.
+        If DSSP was not found or secondary structure was not calculated -
+        returns '=' sign.
 
-        To calculate secondary structure - use maternal structure method set_secondary_structure.
+        To calculate secondary structure - use maternal structure method
+        set_secondary_structure.
 
         See Bio.PDB.DSSP documentary for information about code explanation.
         """
@@ -805,15 +842,13 @@ class Mer():
 
     @property
     def simple_secondary_structure(self):
-        """Secondary structure in simple 3-letter code for secondary structures.
+        """Secondary structure in simple 3-letter code.
 
         H -- helix
         E -- extended strand
         C -- coil
         """
-        temp = ConfigManager.structure_mon.simple_secondary_structure_code  # pylint:disable=no-member
-        # configuration manager is dynamic with member that cannot be
-        # recognized by pylint
+        temp = ConfigManager.structure_mon.simple_secondary_structure_code
         return temp[self._ss]
 
 
@@ -846,7 +881,8 @@ class MerChainable(Mer):
             self._check_bbatoms()
         except (AttributeError, KeyError):
             data = type(self).__name__, self.get_pdb_id()
-            msg = "Backbone atoms lacking, unable to create %s from residue %s" % data
+            msg = "Backbone atoms lacking, unable to create %s from residue " \
+                  "%s" % data
             raise IncompleteParticle(msg)
 
         self._asa = None
@@ -855,7 +891,8 @@ class MerChainable(Mer):
         self._check_name()
 
     def _check_name(self):
-        """Method that raises warning if unknown particle name was found in pdb file."""
+        """Method that raises warning if unknown particle name was found in
+        pdb file."""
         try:
             self.seq_3to1(self.name)
         except KeyError:
@@ -871,16 +908,21 @@ class MerChainable(Mer):
         tuple(self.iter_bb_atoms())
 
     def _check_distance(self, atoms, name_1, name_2, min_dist, max_dist):
-        """Raises WrongAtomDistances if atoms distance doesn't meet class criteria.
+        """Raises WrongAtomDistances if atoms distance doesn't meet class
+        criteria.
 
         Arguments:
-        atoms -- dictionary containig atom names as keys and Atom instance as values.
+        atoms -- dictionary containig atom names as keys and Atom instance
+        as values.
         name_1, name_2 -- 1st and 2nd atom names.
 
-        NOTE: method requires attributes in congifuration manager. They must be integers and their names should match pattern:
-        min_<first lower and stripped name>_<second lower and stripped name>_dist
+        NOTE: method requires attributes in configuration manager.
+        They must be integers and their names should match pattern:
+        min_<first lower and stripped name>_<second lower and stripped
+        name>_dist
         and
-        max_<first lower and stripped name>_<second lower and stripped name>_dist
+        max_<first lower and stripped name>_<second lower and stripped
+        name>_dist
         names should be given in default order for strings.
         """
         distance = norm(atoms[name_1].vector - atoms[name_2].vector)
@@ -889,7 +931,8 @@ class MerChainable(Mer):
 
     @property
     def next_mer(self):
-        """Property that returns monomer following current mer in its structure."""
+        """Property that returns monomer following current mer in its
+        structure."""
         try:
             return self._next_monomer
         except AttributeError:
@@ -897,12 +940,14 @@ class MerChainable(Mer):
 
     @next_mer.setter
     def next_mer(self, value):
-        """Property that returns monomer following current mer in its structure."""
-        self._next_monomer = value  # pylint:disable=attribute-defined-outside-init
+        """Property that returns monomer following current mer in its
+        structure."""
+        self._next_monomer = value
 
     @property
     def previous_mer(self):
-        """Property that returns monomer preceding current mer in its structure."""
+        """Property that returns monomer preceding current mer in its
+        structure."""
         try:
             return self._previous_monomer
         except AttributeError:
@@ -910,9 +955,9 @@ class MerChainable(Mer):
 
     @previous_mer.setter
     def previous_mer(self, value):
-        """Property that returns monomer preceding current mer in its structure."""
-        self._previous_monomer = value  # pylint:disable=attribute-defined-outside-init
-        # same as in next_mer.setter
+        """Property that returns monomer preceding current mer in its
+        structure."""
+        self._previous_monomer = value
 
     def has_bond(self, monomer):
         """Returns True if the Monomer is followed by a given Monomer.
@@ -920,8 +965,8 @@ class MerChainable(Mer):
         Argument:
         monomer -- MonomerChainable instance.
 
-        Calculates distance between backbone atoms of Monomers. Returns True or False according to the configurable
-        monomer_acceptable_distance.
+        Calculates distance between backbone atoms of Monomers. Returns True or
+        False according to the configurable monomer_acceptable_distance.
         """
         if type(monomer) != type(self):
             return False
@@ -930,7 +975,7 @@ class MerChainable(Mer):
         next_atom = monomer.atoms[bb_atoms[0]]
         try:
             distance = (last_atom - next_atom).calculate_length()
-            return distance <= ConfigManager.mers.monomer_acceptable_distance  # pylint:disable=no-member
+            return distance <= ConfigManager.mers.monomer_acceptable_distance
         except UnboundLocalError:
             return False
 
@@ -940,15 +985,15 @@ class MerChainable(Mer):
         return iter([self.atoms[attr_name] for attr_name in bb_atoms])
 
     def iter_nbb_atoms(self):
-        """Returns iterator that iterates over monomer's all atoms except backbone."""
+        """Returns iterator that iterates over monomer's all atoms except
+        backbone."""
         bb_atoms = self.get_config('backbone_atoms')
         return iter([atom for atom_name, atom in self.atoms.items() if
                      atom_name not in bb_atoms])
 
     def adjusted_length(self):
-        """Returns distance between backbone_average pseudoatoms of this and the next monomer
-        or None if distance cannot be computed.
-        """
+        """Returns distance between backbone_average pseudoatoms of this and
+        the next monomer or None if distance cannot be computed."""
         try:
             return abs(self.backbone_average - self.next_mer.backbone_average)
         except AttributeError:
@@ -965,7 +1010,9 @@ class Residue(MerChainable):
         Argument:
         structure_obj -- instance of AbstractStructure subclass.
 
-        Fills 'angles' property in all residues in given (sub)structure. Calculates them using numpy, much faster than non-static Residue method.
+        Fills 'angles' property in all residues in given (sub)structure.
+        Calculates them using numpy, much faster than non-static Residue
+        method.
         """
         residues = [mer for mer in structure_obj if isinstance(mer, Residue)]
         nres = len(residues)
@@ -1000,8 +1047,9 @@ class Residue(MerChainable):
 
         with numpy.errstate(divide='ignore', invalid='ignore'):
             pl1, pl2, pl3 = (
-            pl / numpy.sqrt(numpy.einsum('ij,ij->i', pl, pl)).reshape(-1, 1)
-            for pl in (pl1, pl2, pl3))
+                pl / numpy.sqrt(numpy.einsum('ij,ij->i', pl, pl)).reshape(-1,
+                                                                          1)
+                for pl in (pl1, pl2, pl3))
 
         angs = []
         for planes, direction in (((pl1, pl2), -cca), ((pl2, pl3), nca)):
@@ -1022,10 +1070,12 @@ class Residue(MerChainable):
         """Residue constructor.
 
         Arguments:
-        pdb_residue -- BioPython Bio.PDB.Residue instance based on which the Residue is being created.
+        pdb_residue -- BioPython Bio.PDB.Residue instance based on which the
+        Residue is being created.
         structure_obj -- the Structure instance which the Residue belongs to.
 
-        Raises Warning if a given pdb_residue does not contain proper atoms or if its atoms occur in wrong distances.
+        Raises Warning if a given pdb_residue does not contain proper atoms
+        or if its atoms occur in wrong distances.
         Extended MonomerChainable method.
         See also config file docstring.
 
@@ -1042,16 +1092,19 @@ class Residue(MerChainable):
         self.calculate_cbx()
 
     def finalize(self):
-        """Method called by structures to calculate and set attributes that need structural
+        """Method called by structures to calculate and set attributes that
+        need structural
         information to be calculated.
         """
         super(Residue, self).finalize()
         self.calculate_backbone_average()
 
     def calculate_backbone_average(self):
-        """Calculates coordinates of average ca pseudoatom and adds it to current residue pseudoatoms.
+        """Calculates coordinates of average ca pseudoatom and adds it to
+        current residue pseudoatoms.
 
-        Average ca is calculated as moving average for configurable number of residues around current residue.
+        Average ca is calculated as moving average for configurable number
+        of residues around current residue.
         """
         steps = self.get_config('moving_average')
         if not steps % 2 == 1:
@@ -1066,8 +1119,8 @@ class Residue(MerChainable):
                 average_ca += next_mer.ca.vector + last_mer.ca.vector
                 cnt += 2
         except AttributeError:
-            # AttributeError is raised by mers at the beginning and at the end of chain
-            # they have no next/previous mers
+            # AttributeError is raised by mers at the beginning and at the
+            # end of chain they have no next/previous mers
             pass
 
         self.pseudoatoms['backbone_average'] = Pseudoatom(
@@ -1075,7 +1128,8 @@ class Residue(MerChainable):
 
     @property
     def angles(self):
-        """Property that returns torsion angles (in order: psi and phi) of residue."""
+        """Property that returns torsion angles (in order: psi and phi) of
+        residue."""
         try:
             return self.dynamic_properties['angles']
         except KeyError:
@@ -1124,8 +1178,9 @@ class Residue(MerChainable):
         return self.atoms['CA']
 
     def calculate_cbx(self):
-        """Adds Pseudoatom containing coordinates of the point that lies 1A farther from carbon
-        alpha, than does carbon beta; or carbon alpha coordinates for GLY.
+        """Adds Pseudoatom containing coordinates of the point that lies 1A
+        farther from carbon alpha, than does carbon beta; or carbon alpha
+        coordinates for GLY.
         """
         if self.get_config('legacy_cbx_calculation'):
             self.calculate_cbx_legacy()
@@ -1135,7 +1190,7 @@ class Residue(MerChainable):
             c_2_ca = self.atoms['C'] - self.atoms['CA']
             average_ca_cb_distance = 1.53
             cbx = (n_2_ca + c_2_ca).get_unit_vector() * (
-                        average_ca_cb_distance + 1)
+                    average_ca_cb_distance + 1)
         else:
             try:
                 ca = self.atoms['CA'].vector
@@ -1151,9 +1206,11 @@ class Residue(MerChainable):
         self.pseudoatoms['cbx'] = Pseudoatom(numpy_vec=cbx, name='cbx')
 
     def calculate_cbx_legacy(self):
-        """Creates pydesc.geometry.Coord instance containing coordinates of cbx calculated in legacy mode and assigns it to residue cbx property.
+        """Creates pydesc.geometry.Coord instance containing coordinates of
+        cbx calculated in legacy mode and assigns it to residue cbx property.
 
-        Needs numpy to proceed. Uses Kabsch algorithm to superpose patternal set of C, CA, N and CBX, eeven for GLY.
+        Needs numpy to proceed. Uses Kabsch algorithm to superpose patternal
+        set of C, CA, N and CBX, eeven for GLY.
         """
         pattern = [
             [1.26462, -0.673997, -3.024425],
@@ -1193,12 +1250,13 @@ class Residue(MerChainable):
         pattern = pattern - COM2
 
         # This beautiful step provides the answer. V and Wt are the orthonormal
-        # bases that when multiplied by each other give us the rotation matrix, U.
-        # S, (Sigma, from SVD) provides us with the error!  Isn't SVD great!
+        # bases that when multiplied by each other give us the rotation
+        # matrix, U. S, (Sigma, from SVD) provides us with the error!  Isn't
+        # SVD great!
         V, S, Wt = numpy.linalg.svd(
             numpy.dot(numpy.transpose(pattern), bb_coords))
 
-        # we alredy have our solution, in the aaults from SVD.
+        # we already have our solution, in the aaults from SVD.
         # we just need to check for reflections and then produce
         # the rotation.  V and Wt are orthonormal, so their det's
         # are +/-1.
@@ -1229,10 +1287,12 @@ class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
         """Nucleotide constructor.
 
         Arguments:
-        pdb_residue -- BioPython Bio.PDB.Residue instance based on which Nucleotide is being created.
+        pdb_residue -- BioPython Bio.PDB.Residue instance based on which
+        Nucleotide is being created.
         structure -- the Structure instance to which Nucleotide belongs.
 
-        Raises Warning if given pdb_residue does not contain proper atoms or if its atoms occur in wrong distances.
+        Raises Warning if given pdb_residue does not contain proper atoms or if
+        its atoms occur in wrong distances.
         Extended MonomerChainable method.
         See also config file docstring.
 
@@ -1281,7 +1341,8 @@ class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
             numpy_vec=vec, name='ring_center')
 
     def calculate_ring_plane(self):
-        """Adds pydesc.geometry.Plane object representing base to current nucleotide pseudoatom dictionary."""
+        """Adds pydesc.geometry.Plane object representing base to current
+        nucleotide pseudoatom dictionary."""
         at1, at2, at3 = self.ring_atoms['C2'], self.ring_atoms['C4'], \
                         self.ring_atoms['C6']
         self.ring_plane = pydesc.geometry.Plane.build(
@@ -1289,7 +1350,8 @@ class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
         # current method is called by init
 
     def calculate_proximate_ring_center(self):
-        """Adds pseudoatom representing center of the base ring being closer to glycosidic bond."""
+        """Adds pseudoatom representing center of the base ring being closer to
+        glycosidic bond."""
         try:
             vec = numpy.array([0., 0., 0.])
             for at in ('C4', 'C5', 'N7', 'C8', 'N9'):
@@ -1308,7 +1370,8 @@ class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
             return self.pseudoatoms['ring_center']
 
     def calculate_nx(self):
-        """Adds pseudoatom representing extended by 1.4A vector along glycosidic bond."""
+        """Adds pseudoatom representing extended by 1.4A vector along
+        glycosidic bond."""
         at1 = self.atoms["C1'"]
         try:
             at2 = self.N9
@@ -1330,12 +1393,12 @@ class MerOther(Mer):
     Ligand
     """
 
-    @abstractmethod
     def __init__(self, structure_obj, ind, name, chain, atoms):
         """Monomer Other constructor.
 
         pdb_residue -- instance of BioPython residue.
-        structure_obj -- instance of pydesc structure object mer should be attached to.
+        structure_obj -- instance of pydesc structure object mer should be
+        attached to.
 
         Extends superclass method.
         """
@@ -1351,7 +1414,8 @@ class MerOther(Mer):
     def previous_monomer(self):
         """Returns None.
 
-        For mers other then chainable this property cannot be set to any value other then None.
+        For mers other then chainable this property cannot be set to any
+        value other then None.
         """
         return None
 
@@ -1359,7 +1423,8 @@ class MerOther(Mer):
     def next_monomer(self):
         """Returns None.
 
-        For mers other then chainable this property cannot be set to any value other then None.
+        For mers other then chainable this property cannot be set to any
+        value other then None.
         """
         return None
 
@@ -1382,7 +1447,8 @@ class Ion(MerOther):
         super(Ion, self).__init__(structure_obj, ind, name, chain, atoms)
         if len(self.atoms) != 1:
             raise WrongMerType(
-                "Failed to create Ion, given BioPython residue consists of to many atoms.")
+                "Failed to create Ion, given BioPython residue consists of "
+                "to many atoms.")
 
     def get_radius(self):
         """Return ion radius."""
@@ -1403,7 +1469,8 @@ class Ligand(MerOther):
         Sets basic attributes.
 
         Arguments:
-        pdb_residue -- Bio.PDB.Residue instance representing ligands other than ions.
+        pdb_residue -- Bio.PDB.Residue instance representing ligands other
+        than ions.
         structure_obj -- instance of parental PyDesc structure.
         """
         super(Ligand, self).__init__(structure_obj, ind, name, chain, atoms)
