@@ -30,18 +30,12 @@ import pydesc.geometry
 from pydesc.config import ConfigManager
 from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import IncompleteParticle
-from pydesc.warnexcept import Info
 from pydesc.warnexcept import NoConfiguration
 from pydesc.warnexcept import UnknownParticleName
 from pydesc.warnexcept import warn
 from pydesc.warnexcept import WarnManager
 from pydesc.warnexcept import WrongAtomDistances
 from pydesc.warnexcept import WrongMerType
-
-try:
-    import prody
-except ImportError:
-    warn(Info("No module: prody"))
 
 norm = scipy.linalg.get_blas_funcs("nrm2")
 
@@ -1316,34 +1310,20 @@ class Residue(MerChainable):
         """Calculates torsion angles of residue and fills 'angles' property."""
         ang_psi, ang_phi = 0.0, 0.0
 
-        try:
-            pd_resid = self.structure.prody_structure[
-                "", self.my_chain, self.get_pdb_id()[1]
-            ]
-            try:
-                ang_psi = prody.calcPsi(pd_resid, radian=True)
-            except ValueError:
-                pass
+        prm = self.previous_mer
+        nxm = self.next_mer
 
-            try:
-                ang_phi = prody.calcPhi(pd_resid, radian=True)
-            except ValueError:
-                pass
-        except AttributeError:
-            prm = self.previous_mer
-            nxm = self.next_mer
+        atoms = [self.atoms["N"], self.atoms["CA"], self.atoms["C"]]
 
-            atoms = [self.atoms["N"], self.atoms["CA"], self.atoms["C"]]
+        pl2 = pydesc.geometry.Plane.build(*atoms)
 
-            pl2 = pydesc.geometry.Plane.build(*atoms)
+        if prm is not None:
+            pl3 = pydesc.geometry.Plane.build(*([prm.atoms["C"]] + atoms[:2]))
+            ang_phi = pl2.dihedral_angle(pl3)
 
-            if prm is not None:
-                pl3 = pydesc.geometry.Plane.build(*([prm.atoms["C"]] + atoms[:2]))
-                ang_phi = pl2.dihedral_angle(pl3)
-
-            if nxm is not None:
-                pl1 = pydesc.geometry.Plane.build(*(atoms[1:] + [nxm.atoms["N"]]))
-                ang_psi = pl1.dihedral_angle(pl2)
+        if nxm is not None:
+            pl1 = pydesc.geometry.Plane.build(*(atoms[1:] + [nxm.atoms["N"]]))
+            ang_psi = pl1.dihedral_angle(pl2)
 
         self.dynamic_properties["angles"] = (ang_psi, ang_phi)
 

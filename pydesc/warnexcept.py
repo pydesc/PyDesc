@@ -189,6 +189,11 @@ class WarnManager(warnings.catch_warnings):
             warn(warning, 4)
 
 
+class WrongElement(Exception):
+    """Error shown when given element is incorrect."""
+    pass
+
+
 class DiscontinuityError(Exception):
     """Class of exceptions raised due to disnotinuity between chainable mers.
 

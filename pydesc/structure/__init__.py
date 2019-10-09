@@ -10,7 +10,6 @@ import operator
 import os.path
 from abc import ABCMeta
 from abc import abstractmethod
-from functools import reduce
 from io import StringIO
 
 from Bio.PDB import DSSP
@@ -21,14 +20,9 @@ import pydesc.mers
 import pydesc.numberconverter
 from pydesc.config import ConfigManager
 from pydesc.warnexcept import DiscontinuityError
-from pydesc.warnexcept import Info
 from pydesc.warnexcept import set_filters
 from pydesc.warnexcept import warn
-
-try:
-    import prody
-except ImportError:
-    warn(Info("No module: prody"))
+from pydesc.warnexcept import WrongElement
 
 # pylint: disable=no-member
 ConfigManager.new_branch("element")
@@ -108,13 +102,13 @@ class StructureLoader(object):
             structure -- Structure object, for which Chain is to be created.
         """
 
-        def pick_mer(dct, most_frequent, others):
+        def pick_mer(dct, most_frequent, others_):
             """Try to pick *most_frequent* key from given dict *dct*,
-            otherwise pick first from list of *others*."""
+            otherwise pick first from list of *others_*."""
             try:
                 return dct[most_frequent]
             except KeyError:
-                for key in others:
+                for key in others_:
                     try:
                         return dct[key]
                     except KeyError:
@@ -213,7 +207,7 @@ class AbstractStructure(metaclass=ABCMeta):
     INDICATED MER
 
     Subclasses:
-    Structure -- molecular strucutre of a protein or a nucleic acid.
+    Structure -- molecular structure of a protein or a nucleic acid.
     Segment -- any continuous structure of a structure.
     Element -- central mer with two following and two preceding mers.
     Contact -- two Elements in contact.
@@ -225,7 +219,7 @@ class AbstractStructure(metaclass=ABCMeta):
 
         Argument:
         derived_form -- structure, which self is derived from. Structures
-        loaded from files and user structures are derived from themselvs.
+        loaded from files and user structures are derived from themselves.
         """
         self.derived_from = derived_from
         self._mers = ()
@@ -356,7 +350,7 @@ class AbstractStructure(metaclass=ABCMeta):
             (monomer_obj.ind, index) for index, monomer_obj in enumerate(self._mers)
         )
 
-    def create_pdb_string(self, transformed=True):
+    def create_pdb_string(self, transformed=True):  # TODO: move to separate class
         """Returns an StringIO pdb-like object.
 
         Argument:
@@ -470,7 +464,7 @@ class AbstractStructure(metaclass=ABCMeta):
         """Returns (sub)structure sequence (one letter code)."""
         return self._map_mers_with_attr("seq")
 
-    def get_chain(self, name):
+    def get_chain(self, name):  # TODO: move to structure!
         """Returns chain of given name if it is available, otherwise raises
         AttributeError.
         """
@@ -479,7 +473,7 @@ class AbstractStructure(metaclass=ABCMeta):
                 return chn
         raise AttributeError("No chain %s in %s." % (name, str(self)))
 
-    def save_pdb(self, path):
+    def save_pdb(self, path):   # TODO: move to separate class
         """Writes (sub)structure into pdb file.
 
         Arguments:
@@ -520,114 +514,6 @@ class Structure(AbstractStructure):
 
     def __str__(self):
         return self.name
-
-    def link_dcd_file(self, path):
-        """Reads dcd file and replaces atoms coords with coords from dcd
-        trajectory file.
-
-        Argument:
-        path -- string; path to dcd file.
-
-        Since trajectory is linked, all atom coords are taken from current
-        frame. Pseudoatoms are recalculated every time their coords are
-        returned. If Contact map is attached to structure, it is
-        recalculated befor returning contact values,
-        but only if frame has been changed since previous reading.
-
-        Sets trajectory attribute as prody.trajectory.dcdfile.DCDFile
-        object. To get number of frames call len function on that object.
-
-        To switch between frames use next_frame method (faster) or simply
-        define structure frame attribute:
-        >>> structure.frame = 5
-        >>> structure.frame
-        5
-        """
-        self.trajectory = prody.DCDFile(path)
-        with open(self.path, "r") as temp_f:
-            pdstr = prody.parsePDBStream(temp_f)
-        self.prody_structure = pdstr
-        self.trajectory.setCoords(pdstr)
-        self.trajectory.link(pdstr)
-        for mer in self:
-            for atom in mer:
-                atom.prody_atom = pdstr[mer.get_pdb_id()][atom.name.strip()]
-
-        def set_dyn(mer):
-            """Sets attribute 'dynamic' of given mer's pseudoatoms dict to
-            True."""
-            mer.pseudoatoms.dynamic = True
-            mer.dynamic_properties.dynamic = True
-
-        list(map(set_dyn, self))
-
-    def disconnect_trajectory(self):
-        """Removes trajectory attached to structure and turns off dynamic
-        calculation of psedoatoms coordinates."""
-        del self.trajectory
-        del self.prody_structure
-
-        def reset_mer(mer):
-            """Recalculates dynamic properties of mer."""
-            mer.pseudoatoms.dynamic = False
-            mer.dynamic_properties.dynamic = False
-            for atom in mer.iter_atoms():
-                atom.prody_atom = None
-            mer.pseudoatoms.recalculate_all_values()
-            mer.dynamic_properties.recalculate_all_values()
-
-        list(map(reset_mer, self))
-
-    @property
-    def frame(self):
-        """Property that stores current frame of loaded trajectory."""
-        try:
-            return self.trajectory.nextIndex()
-        except AttributeError:
-            return None
-
-    @frame.setter
-    def frame(self, value):
-        """Property that stores current frame of loaded trajectory."""
-        ind = self.trajectory.nextIndex()
-        if value == ind:
-            return
-        elif value == 0:
-            trj = self.trajectory._filename
-            self.disconnect_trajectory()
-            self.link_dcd_file(trj)
-        elif value > len(self.trajectory):  # or value == 0:
-            raise IndexError("No such frame in dcd file.")
-        elif value < ind:
-            self.trajectory.reset()
-        else:
-            value = value - ind
-        for dummy in range(value):
-            next(self.trajectory)
-        self.refresh()
-
-    def next_frame(self):
-        """Switches to next frame if structure is linked to dcd file."""
-        n_fr = next(self.trajectory)
-        if n_fr is None:
-            raise IndexError("No such frame in dcd file.")
-        self.refresh()
-
-    def get_number_of_frames(self):
-        """Returns number of frames in linked dcd trajectory file."""
-        return len(self.trajectory)
-
-    def refresh(self):
-        """Forces recalculation of all dynamic properties of mers (usually
-        after frame change in trajectory).
-        """
-
-        def reset_dynamic_prop(mer):
-            """Resets all dynamic properties."""
-            mer.dynamic_properties.reset_all_values()
-            mer.pseudoatoms.reset_all_values()
-
-        list(map(reset_dynamic_prop, self))
 
     def set_secondary_structure(self, file_path=None, dssp=None):
         """Calculates secondary structure using DSSP.
@@ -784,7 +670,7 @@ class Segment(AbstractStructure):
             raise ValueError("Failed to create segment, wrong mers given.")
 
     def _check_continuity(self):
-        """Raises DiscontinuityError if segment is not continous."""
+        """Raises DiscontinuityError if segment is not continuous."""
         for (monomer1, monomer2) in zip(self._mers, self._mers[1:]):
             if monomer1.next_mer == monomer2:
                 continue
@@ -972,8 +858,8 @@ class Contact(AbstractStructure):
         return self.get_other_element(val)
 
     def __repr__(self):
-        inpt = tuple([i.central_monomer.ind for i in self.elements])
-        return "<Contact of %s and %s elements>" % inpt
+        items = (i.central_monomer.ind for i in self.elements)
+        return "<Contact of %s and %s elements>" % items
 
     def get_other_element(self, element_obj):
         """Returns other than given element.
@@ -981,17 +867,12 @@ class Contact(AbstractStructure):
         Argument:
         element_obj -- instance of Element class.
         """
-        if element_obj.central_monomer not in [
-            i.central_monomer for i in self.elements
-        ]:
-            raise ValueError(
-                "Given element is not included in contact instance, cannot "
-                "get other element"
-            )
-        if element_obj.central_monomer == self.elements[0].central_monomer:
-            return self.elements[1]
-        else:
-            return self.elements[0]
+        elements = set(self.elements)
+        try:
+            elements.remove(element_obj)
+        except KeyError:
+            raise WrongElement('Given element is not part of this Contact.')
+        return elements.pop()
 
     def value(self, cmap):
         """
