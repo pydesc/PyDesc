@@ -27,15 +27,9 @@ To install PyDesc type
 
 """
 
-# from ez_setup import use_setuptools
-# use_setuptools()
-
-# Pylint will treat all variables as constants.
-# pylint: disable=C0103
-
 import os
 import os.path
-from setuptools import setup
+from distutils.core import setup
 
 try:
     import bitten.util.testrunner
@@ -155,5 +149,8 @@ setup(name='PyDesc',
       packages=['pydesc', 'pydesc.cydesc'],
       cmdclass=cmdclass,
       test_suite='tests_legacy',
-      shlibs=shlibs
+      shlibs=shlibs,
+      install_requires=[
+          'BioPython>=1.73',
+      ],
       )

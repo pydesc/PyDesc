@@ -66,19 +66,23 @@ except ImportError:
 
 class SharedLibrary:
     # analogous to (and copied from) the distutils.extension.Extension class
-    def __init__(self, name, sources,
-                 include_dirs=None,
-                 macros=None,
-                 extra_compile_args=None,
-                 libraries=None,
-                 library_dirs=None,
-                 extra_link_args=None,
-                 language=None,
-                 **kwargs):
+    def __init__(
+        self,
+        name,
+        sources,
+        include_dirs=None,
+        macros=None,
+        extra_compile_args=None,
+        libraries=None,
+        library_dirs=None,
+        extra_link_args=None,
+        language=None,
+        **kwargs
+    ):
         assert type(name) is str, "'name' must be a string"
-        assert (type(sources) is list and
-                [type(i) for i in sources] == [str] * len(sources)), \
-            "'sources' must be a list of strings"
+        assert type(sources) is list and [type(i) for i in sources] == [str] * len(
+            sources
+        ), "'sources' must be a list of strings"
 
         self.name = name
         self.sources = sources
@@ -91,18 +95,19 @@ class SharedLibrary:
         self.language = language
 
         if len(kwargs):
-            L = kwargs.keys()
+            L = list(kwargs.keys())
             L.sort()
-            L = map(repr, L)
-            msg = "Unknown SharedLibrary options: " + string.join(L, ', ')
+            L = list(map(repr, L))
+            msg = "Unknown SharedLibrary options: " + string.join(L, ", ")
             if warnings is not None:
                 warnings.warn(msg)
             else:
-                sys.stderr.write(msg + '\n')
+                sys.stderr.write(msg + "\n")
 
 
 def show_compilers():
     from distutils.ccompiler import show_compilers
+
     show_compilers()
 
 
@@ -110,26 +115,21 @@ class build_shlib(Command):
     description = "build C/C++ shared libraries used by Python extensions"
     sep_by = " (separated by '%s')" % os.pathsep
     user_options = [
-        ('build-temp', 't', "directory to put temporary build by-products"),
-        ('debug', 'g', "compile with debugging information"),
-        ('force', 'f', "forcibly build everything (ignore file timestamps)"),
-        ('compiler=', 'c', "specify the compiler type"),
-        ('build-shlib=', None, 'library installation directory'),
-        ('define=', 'D', "C preprocessor macros to define"),
-        ('undef=', 'U', "C preprocessor macros to undefine"),
-        ('include-dirs=', 'I',
-         'directories to search for header files' + sep_by),
-        ('libraries=', 'l',
-         'external libraries to link with (eg "blas lapack")'),
-        ('library-dirs=', 'L',
-         "directories to search for external libraries" + sep_by),
-        ('link-objects=', 'O', "extra explicit link objects to link with")
+        ("build-temp", "t", "directory to put temporary build by-products"),
+        ("debug", "g", "compile with debugging information"),
+        ("force", "f", "forcibly build everything (ignore file timestamps)"),
+        ("compiler=", "c", "specify the compiler type"),
+        ("build-shlib=", None, "library installation directory"),
+        ("define=", "D", "C preprocessor macros to define"),
+        ("undef=", "U", "C preprocessor macros to undefine"),
+        ("include-dirs=", "I", "directories to search for header files" + sep_by),
+        ("libraries=", "l", 'external libraries to link with (eg "blas lapack")'),
+        ("library-dirs=", "L", "directories to search for external libraries" + sep_by),
+        ("link-objects=", "O", "extra explicit link objects to link with"),
     ]
-    boolean_options = ['debug', 'force']
+    boolean_options = ["debug", "force"]
 
-    help_options = [
-        ('help-compiler', None, "list available compilers", show_compilers),
-    ]
+    help_options = [("help-compiler", None, "list available compilers", show_compilers)]
 
     def initialize_options(self):
         self.build_temp = None
@@ -148,11 +148,13 @@ class build_shlib(Command):
         self.symlink_path = None
 
     def finalize_options(self):
-        self.set_undefined_options('build',
-                                   ('build_temp', 'build_temp'),
-                                   ('compiler', 'compiler'),
-                                   ('debug', 'debug'),
-                                   ('force', 'force'))
+        self.set_undefined_options(
+            "build",
+            ("build_temp", "build_temp"),
+            ("compiler", "compiler"),
+            ("debug", "debug"),
+            ("force", "force"),
+        )
         # if self.inplace:
         #     self.set_undefined_options('develop',
         #                                ('symlink_path', 'egg_path'))
@@ -166,7 +168,7 @@ class build_shlib(Command):
         if self.libraries is None:
             self.libraries = []
         elif type(self.libraries) is str:
-            self.libraries = self.libraries.split(' ')
+            self.libraries = self.libraries.split(" ")
 
         if self.library_dirs is None:
             self.library_dirs = []
@@ -179,17 +181,17 @@ class build_shlib(Command):
         # symbols can be separated with commas.
 
         if self.define:
-            defines = string.split(self.define, ',')
-            self.define = map(lambda symbol: (symbol, '1'), defines)
+            defines = string.split(self.define, ",")
+            self.define = [(symbol, "1") for symbol in defines]
 
         # The option for macros to undefine is also a string from the
         # option parsing, but has to be a list.  Multiple symbols can also
         # be separated with commas here.
         if self.undef:
-            self.undef = string.split(self.undef, ',')
+            self.undef = string.split(self.undef, ",")
 
         if self.build_shlib is None:
-            self.build_shlib = os.path.join(self.build_temp, 'shlib')
+            self.build_shlib = os.path.join(self.build_temp, "shlib")
         self.shlibs = self.distribution.shlibs
 
         if self.shlibs:
@@ -202,9 +204,10 @@ class build_shlib(Command):
             return
 
         from distutils.ccompiler import new_compiler
-        self.compiler = new_compiler(compiler=self.compiler,
-                                     dry_run=self.dry_run,
-                                     force=self.force)
+
+        self.compiler = new_compiler(
+            compiler=self.compiler, dry_run=self.dry_run, force=self.force
+        )
 
         if sys.platform == "darwin":
             customize_compiler_darwin(self.compiler)
@@ -215,7 +218,7 @@ class build_shlib(Command):
             customize_compiler(self.compiler)
 
         if self.debug:
-            self.compiler.undefine_macro('NDEBUG')
+            self.compiler.undefine_macro("NDEBUG")
 
         if self.include_dirs is not None:
             self.compiler.set_include_dirs(self.include_dirs)
@@ -243,16 +246,19 @@ class build_shlib(Command):
         # if self.inplace:
         # os.symlink(self.build_shlib, self.symlink_path+'/lib')
         try:
-            os.remove('lib')
+            os.remove("lib")
         except OSError:
             pass
-        os.symlink(self.build_shlib, 'lib')
+        os.symlink(self.build_shlib, "lib")
 
     def build_libraries(self, shlibs):
         for shlib in shlibs:
             sources = shlib.sources
             if sources is None or type(sources) not in (list, tuple):
-                raise DistutilsSetupError("In SharedLibrary %s, 'sources' must be a list of file names" % shlib.name)
+                raise DistutilsSetupError(
+                    "In SharedLibrary %s, 'sources' must be a list of file names"
+                    % shlib.name
+                )
             sources = list(sources)
 
             log.info("building '%s' library", shlib.name)
@@ -264,27 +270,29 @@ class build_shlib(Command):
 
             #            print "build_shlib.py: sources=", sources
 
-            objects = self.compiler.compile(sources,
-                                            output_dir=self.build_temp,
-                                            macros=shlib.macros,
-                                            include_dirs=shlib.include_dirs,
-                                            extra_postargs=shlib.extra_compile_args,
-                                            debug=self.debug)
+            objects = self.compiler.compile(
+                sources,
+                output_dir=self.build_temp,
+                macros=shlib.macros,
+                include_dirs=shlib.include_dirs,
+                extra_postargs=shlib.extra_compile_args,
+                debug=self.debug,
+            )
 
             #            print "build_shlib.py: objects=", objects
 
             self.compiler.link(
                 target_desc=self.compiler.SHARED_LIBRARY,
                 objects=objects,
-                output_filename="lib" +
-                                self.compiler.shared_object_filename(shlib.name),
+                output_filename="lib"
+                + self.compiler.shared_object_filename(shlib.name),
                 output_dir=self.build_shlib,
                 libraries=shlib.libraries,
                 library_dirs=shlib.library_dirs,
                 extra_preargs=shlib.extra_compile_args,
                 extra_postargs=shlib.extra_link_args,
                 debug=self.debug,
-                target_lang=language
+                target_lang=language,
             )
 
     def get_source_files(self):
@@ -294,15 +302,21 @@ class build_shlib(Command):
         ## header files, so there's no way that it can create a
         ## complete list for sdist.  Users will just have to provide a
         ## manifest file some other way.
-        raise DistutilsSetupError("build_shlib requires a MANIFEST or MANIFEST.in file.")
+        raise DistutilsSetupError(
+            "build_shlib requires a MANIFEST or MANIFEST.in file."
+        )
 
     def check_library_list(self, shlibs):
         if type(shlibs) is not list:
-            raise DistutilsSetupError("'shlibs' option must be a list of SharedLibrary objects")
+            raise DistutilsSetupError(
+                "'shlibs' option must be a list of SharedLibrary objects"
+            )
 
         for shlib in shlibs:
             if not isinstance(shlib, SharedLibrary):
-                raise DistutilsSetupError("'shlibs' option must be a list of SharedLibrary objects")
+                raise DistutilsSetupError(
+                    "'shlibs' option must be a list of SharedLibrary objects"
+                )
 
 
 ##################
@@ -311,39 +325,41 @@ class build_shlib(Command):
 # darwin, but we want a .dylib.  This function is a hacked version of
 # that function.
 
+
 def customize_compiler_darwin(compiler):
     import sys
-    (cc, cxx, cflags, opt, ccshared, ldshared, ldcxxshared) = \
-        get_config_vars('CC', 'CXX', 'CFLAGS', 'OPT',
-                        'CCSHARED', 'LDSHARED', 'LDCXXSHARED')
-    if os.environ.has_key('CC'):
-        cc = os.environ['CC']
-    if os.environ.has_key('CXX'):
-        cxx = os.environ['CXX']
-    if os.environ.has_key('LDSHARED'):
-        ldshared = os.environ['LDSHARED']
-    if os.environ.has_key('LDCXXSHARED'):
-        ldcxxshared = os.environ['LDCXXSHARED']
-    if os.environ.has_key('CPP'):
-        cpp = os.environ['CPP']
+
+    (cc, cxx, cflags, opt, ccshared, ldshared, ldcxxshared) = get_config_vars(
+        "CC", "CXX", "CFLAGS", "OPT", "CCSHARED", "LDSHARED", "LDCXXSHARED"
+    )
+    if "CC" in os.environ:
+        cc = os.environ["CC"]
+    if "CXX" in os.environ:
+        cxx = os.environ["CXX"]
+    if "LDSHARED" in os.environ:
+        ldshared = os.environ["LDSHARED"]
+    if "LDCXXSHARED" in os.environ:
+        ldcxxshared = os.environ["LDCXXSHARED"]
+    if "CPP" in os.environ:
+        cpp = os.environ["CPP"]
     else:
         cpp = cc + " -E"
 
     if ldcxxshared is None:
         ldcxxshared = ""
 
-    if os.environ.has_key('LDFLAGS'):
-        ldshared = ldshared + ' ' + os.environ['LDFLAGS']
-        ldcxxshared = ldcxxshared + ' ' + os.environ['LDFLAGS']
-    if os.environ.has_key('CFLAGS'):
-        cflags = opt + ' ' + os.environ['CFLAGS']
-        ldshared = ldshared + ' ' + os.environ['CFLAGS']
-        ldcxxshared = ldcxxshared + ' ' + os.environ['CFLAGS']
-    if os.environ.has_key('CPPFLAGS'):
-        cpp = cpp + ' ' + os.environ['CPPFLAGS']
-        cflags = cflags + ' ' + os.environ['CPPFLAGS']
-        ldshared = ldshared + ' ' + os.environ['CPPFLAGS']
-        ldcxxshared = ldcxxshared + ' ' + os.environ['CPPFLAGS']
+    if "LDFLAGS" in os.environ:
+        ldshared = ldshared + " " + os.environ["LDFLAGS"]
+        ldcxxshared = ldcxxshared + " " + os.environ["LDFLAGS"]
+    if "CFLAGS" in os.environ:
+        cflags = opt + " " + os.environ["CFLAGS"]
+        ldshared = ldshared + " " + os.environ["CFLAGS"]
+        ldcxxshared = ldcxxshared + " " + os.environ["CFLAGS"]
+    if "CPPFLAGS" in os.environ:
+        cpp = cpp + " " + os.environ["CPPFLAGS"]
+        cflags = cflags + " " + os.environ["CPPFLAGS"]
+        ldshared = ldshared + " " + os.environ["CPPFLAGS"]
+        ldcxxshared = ldcxxshared + " " + os.environ["CPPFLAGS"]
 
     ldshared = ldshared.replace("-bundle", "-dynamiclib")
     ldcxxshared = ldcxxshared.replace("-bundle", "-dynamiclib")
@@ -384,9 +400,9 @@ def customize_compiler_darwin(compiler):
 
     #     cc_cmd = cc + ' ' + opt
 
-    cc_cmd = cc + ' ' + cflags
-    if not 'clang' in cc_cmd:
-        cc_cmd = cc_cmd + ' -dynamiclib '
+    cc_cmd = cc + " " + cflags
+    if not "clang" in cc_cmd:
+        cc_cmd = cc_cmd + " -dynamiclib "
 
     compiler.set_executables(
         preprocessor=cpp,
