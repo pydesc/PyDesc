@@ -725,7 +725,7 @@ class Mer():
 
     def iter_atoms(self):
         """Returns iterator that iterates over monomer's atoms."""
-        return iter(self.atoms.values())
+        return iter(list(self.atoms.values()))
 
     def iter_bb_atoms(self):
         """Returns iterator that iterates over monomer's backbone atoms."""
@@ -771,7 +771,7 @@ class Mer():
             code_dictionary = getattr(
                 getattr(ConfigManager.mers, cls_name),
                 cls_name + "_code")  # pylint:disable=no-member
-            for seq3, seq1 in code_dictionary.items():
+            for seq3, seq1 in list(code_dictionary.items()):
                 if seq1 == let:
                     return seq3
             raise KeyError('Cannot translate %s to 3 letter code' %
@@ -988,7 +988,7 @@ class MerChainable(Mer):
         """Returns iterator that iterates over monomer's all atoms except
         backbone."""
         bb_atoms = self.get_config('backbone_atoms')
-        return iter([atom for atom_name, atom in self.atoms.items() if
+        return iter([atom for atom_name, atom in list(self.atoms.items()) if
                      atom_name not in bb_atoms])
 
     def adjusted_length(self):
@@ -1063,7 +1063,7 @@ class Residue(MerChainable):
 
             angs.append(t1)
 
-        for res, (psi, phi) in zip(residues, zip(*angs)):
+        for res, (psi, phi) in zip(residues, list(zip(*angs))):
             res.dynamic_properties['angles'] = (psi, phi)
 
     def __init__(self, structure_obj, ind, name, chain, atoms):
@@ -1319,7 +1319,7 @@ class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
             atom.ring_flag = False
 
         self.ring_atoms = {
-            name: atom for name, atom in self.atoms.items() if
+            name: atom for name, atom in list(self.atoms.items()) if
             flag(name, atom)}
 
         self.calculate_ring_center()

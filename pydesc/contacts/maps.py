@@ -195,7 +195,7 @@ class ContactMap(object):
 
     def __iter__(self):
         """Returns iterator that runs over all contacts in contact map."""
-        return iter(self._contacts.items())
+        return iter(list(self._contacts.items()))
 
     def __len__(self):
         """Return length of self._contacts dok_matrix keys list."""
@@ -219,7 +219,7 @@ class ContactMap(object):
         proper values; see number converter docstring for more information),
         PyDesc ind or monomer index on a list of structure mers.
         """
-        return self._contacts[mer_id].items()
+        return list(self._contacts[mer_id].items())
 
     def get_contact_value(self, mer_id1, mer_id2):
         """Returns value of contact between two given mers according to
@@ -283,7 +283,7 @@ class FrequencyContactMap(object):
     def __iter__(self):
         return iter(
             [(list(self.stcA)[i].ind, list(self.stcB)[j].ind, v) for i, j, v in
-             self.contacts.items()])
+             list(self.contacts.items())])
 
     @property
     def frames(self):

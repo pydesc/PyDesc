@@ -100,7 +100,7 @@ def build_smith_waterman_matrix(ids, aligned_ids):
             id_to_choose = (id2, id1, id1)
             # ids connected choose of, respectively, vertical,
             # horizontal and diagonal move
-            zipper = zip(sw_values, traceback, id_to_choose)
+            zipper = list(zip(sw_values, traceback, id_to_choose))
             scoring_tuples = [pack_tuple(insertion_tuple) for insertion_tuple
                               in zipper]
             sw_matrix[row, col] = max(scoring_tuples, key=key)
@@ -217,7 +217,7 @@ class NumberConverter(object):
         factory_mth = PDBid.create_from_pdb_residue
         models_ids = []
         for pdb_model in pdb_models:
-            no_solvent_ids = filter(is_not_water, pdb_model.get_residues())
+            no_solvent_ids = list(filter(is_not_water, pdb_model.get_residues()))
             models_ids.append([factory_mth(id_) for id_ in no_solvent_ids])
 
         if len(models_ids) > 1:

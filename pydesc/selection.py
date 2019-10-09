@@ -108,7 +108,7 @@ class Selection(metaclass=ABCMeta):
         converter -- an instance of number converter to be used to convert
         PyDesc integers to pdb-id tuples.
         """
-        list_of_pdb_ids = map(converter.get_pdb_id, list_of_inds)
+        list_of_pdb_ids = list(map(converter.get_pdb_id, list_of_inds))
         return Set(list_of_pdb_ids)
 
 
@@ -187,7 +187,7 @@ class Set(Selection):
         """
         list_of_inds = self._get_list_of_inds(structure_obj)
         get_pdb_id_method = structure_obj.derived_from.converter.get_pdb_id
-        list_of_pdb_ids = map(get_pdb_id_method, list_of_inds)
+        list_of_pdb_ids = list(map(get_pdb_id_method, list_of_inds))
         return Set(list_of_pdb_ids)
 
 
@@ -397,11 +397,9 @@ class Nothing(Selection):
         return Set([])
 
 
-class CombinedSelection(Selection):
+class CombinedSelection(Selection, metaclass=ABCMeta):
     """Abstract class, a selection obtained via operation on other
     selections."""
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, list_of_selections):
         """Complex selections constructor.
@@ -436,7 +434,7 @@ class CombinedSelection(Selection):
             except AttributeError:
                 return [sel]
 
-        return iter(reduce(operator.add, map(iter_combined, self.selections)))
+        return iter(reduce(operator.add, list(map(iter_combined, self.selections))))
 
     def _create_list_of_id_sets(self, structure_obj):
         list_of_id_sets = []

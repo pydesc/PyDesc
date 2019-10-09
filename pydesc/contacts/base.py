@@ -54,8 +54,11 @@ def for_monomer_type_only(type_1, type_2=None):
         criterion_class.set_types_cls(type_1, type_2)
         criterion_class.is_in_contact_no_pre_check = check_type(
             criterion_class.is_in_contact_no_pre_check)
-        criterion_class.calculate_distance = check_type(
-            criterion_class.calculate_distance)
+        try:
+            criterion_class.calculate_distance = check_type(
+                criterion_class.calculate_distance)
+        except AttributeError:
+            pass
 
         return criterion_class
 
@@ -188,15 +191,6 @@ class ContactCriterion(metaclass=ABCMeta):
 
     set_types_cls = classmethod(set_types)
 
-    def calculate_distance(self, monomer_1, monomer_2, *args, **kwargs):
-        """Calculates distance evaluated by current criterion.
-
-        Arguments:
-        monomer_1, monomer_2 -- pydesc.monomer.Monomer subclass instances,
-        for which distance is to be calculated.
-        """
-        return self._calculate_distance(monomer_1, monomer_2, *args, **kwargs)
-
     def is_in_contact(self, monomer_1, monomer_2, *args, **kwargs):
         """Returns three-valued logic contact value.
 
@@ -300,10 +294,6 @@ class ContactCriterion(metaclass=ABCMeta):
         lazy -- ignored. See CombinedCriteria.is_in_contact to get more
         information.
         """
-        pass
-
-    @abstractmethod
-    def _calculate_distance(self, mer1, mer2, *args, **kwargs):
         pass
 
     def __eq__(self, criterion_obj):

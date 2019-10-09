@@ -175,7 +175,7 @@ class DescriptorBuilder(metaclass=ABCMeta):
                 elements[el1.central_monomer] = el1
                 neighbours.setdefault(el1.central_monomer, []).append(
                     el2.central_monomer)
-        self.elements = sorted(elements.values(),
+        self.elements = sorted(list(elements.values()),
                                key=lambda elm: elm.central_monomer.ind)
 
 

@@ -247,8 +247,8 @@ class t_compdesc_result(ctypes.Structure):  # pylint: disable=C0103
         desc1 and desc2 are AbstractDescriptor instances which the assignment refers to.
         """
         n_mers = self.n_monomers
-        get_monomers = lambda struct, array: map(struct.__getitem__, array[0:n_mers])
-        pair_al = alignment.PairAlignment([desc1, desc2], zip(get_monomers(desc1, self.desc1_monomers), get_monomers(desc2, self.desc2_monomers)))
+        get_monomers = lambda struct, array: list(map(struct.__getitem__, array[0:n_mers]))
+        pair_al = alignment.PairAlignment([desc1, desc2], list(zip(get_monomers(desc1, self.desc1_monomers), get_monomers(desc2, self.desc2_monomers))))
         return self.RMSD, pair_al, self.TR.to_trtmatrix()
 
 if libcompdesc.has_debug():

@@ -23,8 +23,8 @@ created: 19.09.2013 - , Tymoteusz 'hert' Oleniecki
 
 from pymol import cmd
 # from pymol.cgo import load_cgo
-import tkSimpleDialog
-import tkMessageBox
+import tkinter.simpledialog
+import tkinter.messagebox
 import os
 from pydesc import structure
 from pydesc import mers
@@ -258,7 +258,7 @@ def get_pymol_matrix(self):
 
 def iter_pseudoatoms(self):
     """Returns iterator that iterates over all pseudoatoms in current object."""
-    return iter(self.pseudoatoms.values())
+    return iter(list(self.pseudoatoms.values()))
 
 
 def poke_pymol(self, matrix):
@@ -400,7 +400,7 @@ def show_contacts(self, point='rc', split_contacts=False, add_name='_cmap'):
                 p1 = getattr(self.substructure[ind1], point)
                 p2 = getattr(self.substructure[ind2], point)
             except AttributeError:
-                print('Skipping contact between %s and %s due to lack of pseudoatom.' % (self.substructure[ind1].pid, self.substructure[ind1].pid))
+                print(('Skipping contact between %s and %s due to lack of pseudoatom.' % (self.substructure[ind1].pid, self.substructure[ind1].pid)))
             p1n = fmt(str(self.substructure) + "_" + str(ind1) + '_' + point)
             p2n = fmt(str(self.substructure) + "_" + str(ind2) + '_' + point)
             cmd.pseudoatom(p1n, pos=p1.get_coord(trt))
@@ -487,11 +487,11 @@ def transform_object(self, trtm):
 def w_load(app):
     """Creates structure loader and calls load_structures method with parameters given by user in dialog window."""
     loader = structure.StructureLoader()
-    pdb_code = tkSimpleDialog.askstring("PyDesc", "Please enter a 4-char pdb code:", parent=app.root)
+    pdb_code = tkinter.simpledialog.askstring("PyDesc", "Please enter a 4-char pdb code:", parent=app.root)
     try:
         loader.load_structures(pdb_code)
     except:
-        tkMessageBox.showerror("Invalid code", "The code you entered is incorrect:" + pdb_code)
+        tkinter.messagebox.showerror("Invalid code", "The code you entered is incorrect:" + pdb_code)
         raise
 
 

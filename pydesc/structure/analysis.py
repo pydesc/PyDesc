@@ -311,7 +311,7 @@ def calculate_omega(stc):
         except IndexError:
             break
 
-    for k, v in mangs.items():
+    for k, v in list(mangs.items()):
         mangs[k] = numpy.array(v)
 
     return mangs
@@ -335,7 +335,7 @@ def calculate_theta(stc, mer_ind):
         except IndexError:
             break
 
-    for k, v in res.items():
+    for k, v in list(res.items()):
         res[k] = numpy.array(v)
 
     return res

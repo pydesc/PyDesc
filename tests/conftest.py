@@ -53,4 +53,4 @@ PURE_TYPES_2_MERS_DICT = {
     'PorCA_only': Ion,
 }
 
-DIR_DICT = {v: k for k, v in PURE_TYPES_2_MERS_DICT.items()}
+DIR_DICT = {v: k for k, v in list(PURE_TYPES_2_MERS_DICT.items())}

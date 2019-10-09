@@ -56,7 +56,7 @@ class TestProteinDescriptor:
                 pdb_file,
             ))
 
-        if max(map(len, s.chains)) < 10:
+        if max(list(map(len, s.chains))) < 10:
             pytest.skip('Structure %s has chains below 10 mers long, '
                         'thus skipping.')
 

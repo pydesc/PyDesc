@@ -95,8 +95,8 @@ class StructureLoader(object):
 
             def __iter__(self):
                 """TempMdl iterator."""
-                return iter(reduce(operator.add, map(list, map(
-                    operator.methodcaller('get_chains'), self.args))))
+                return iter(reduce(operator.add, list(map(list, list(map(
+                    operator.methodcaller('get_chains'), self.args))))))
 
             def get_full_id(self):
                 """Returns PDB mer full id."""
@@ -379,7 +379,7 @@ class AbstractStructure(metaclass=ABCMeta):
                 key = slice(self._mers[0].ind, key.stop, None)
             if key.stop is None:
                 key = slice(key.start, self._mers[-1].ind, None)
-            start, end = map(get_hash_if_possible, [key.start, key.stop])
+            start, end = list(map(get_hash_if_possible, [key.start, key.stop]))
             try:
                 segment = Segment(self._mers[start], self._mers[end])
                 if not all(mer in self for mer in segment):
@@ -528,7 +528,7 @@ class AbstractStructure(metaclass=ABCMeta):
             objs = [i for i in self if isinstance(i, pydesc.mers.MerChainable)]
         else:
             objs = list(self)
-        sequence = map(operator.attrgetter(attr), objs)
+        sequence = list(map(operator.attrgetter(attr), objs))
         return "".join(sequence)
 
     def get_sequence(self):
@@ -624,7 +624,7 @@ class Structure(AbstractStructure):
             mer.pseudoatoms.dynamic = True
             mer.dynamic_properties.dynamic = True
 
-        map(set_dyn, self)
+        list(map(set_dyn, self))
 
     def disconnect_trajectory(self):
         """Removes trajectory attached to structure and turns off dynamic
@@ -641,7 +641,7 @@ class Structure(AbstractStructure):
             mer.pseudoatoms.recalculate_all_values()
             mer.dynamic_properties.recalculate_all_values()
 
-        map(reset_mer, self)
+        list(map(reset_mer, self))
 
     @property
     def frame(self):
@@ -668,12 +668,12 @@ class Structure(AbstractStructure):
         else:
             value = value - ind
         for dummy in range(value):
-            self.trajectory.next()
+            next(self.trajectory)
         self.refresh()
 
     def next_frame(self):
         """Switches to next frame if structure is linked to dcd file."""
-        n_fr = self.trajectory.next()
+        n_fr = next(self.trajectory)
         if n_fr is None:
             raise IndexError("No such frame in dcd file.")
         self.refresh()
@@ -692,7 +692,7 @@ class Structure(AbstractStructure):
             mer.dynamic_properties.reset_all_values()
             mer.pseudoatoms.reset_all_values()
 
-        map(reset_dynamic_prop, self)
+        list(map(reset_dynamic_prop, self))
 
     def set_secondary_structure(self, file_path=None, dssp=None):
         """Calculates secondary structure using DSSP.
@@ -931,15 +931,13 @@ class Chain(BackbonedMixIn, AbstractStructure):
         return self.derived_from.name + self.chain_name
 
 
-class AbstractElement(AbstractStructure):
+class AbstractElement(AbstractStructure, metaclass=ABCMeta):
     """Abstract class, representation of substructures from the Descriptor.
 
     Subclasses:
     ElementChainable -- continuous five-mer structure.
     ElementOther -- Element settled by Ion or Ligand.
     """
-
-    __metaclass__ = ABCMeta
 
     @abstractmethod
     def __init__(self, mer):

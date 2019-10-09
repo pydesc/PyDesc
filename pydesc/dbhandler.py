@@ -88,7 +88,7 @@ class DBHandler(object):
     @validate_id
     def download_file(self, val):
         try:
-            u = urllib.urlopen(self.get_file_url(val))
+            u = urllib.request.urlopen(self.get_file_url(val))
         except urllib.HTTPError as e:
             if e.getcode() == 404:
                 raise InvalidID(2)
@@ -270,7 +270,7 @@ class PDBBundleHandler(DBHandler):
             for blk in f.read().split('\n\n')[1:]:
                 ls = blk.split('\n')
                 pdbn = ls[0].strip()[:-1]
-                dct[pdbn] = dict(map(str.split, filter(bool, ls[1:])))
+                dct[pdbn] = dict(list(map(str.split, list(filter(bool, ls[1:])))))
         return dct
 
 
@@ -338,7 +338,7 @@ class BioUnitHandler(DBHandler):
     @validate_id
     def download_file(self, val, unit):
         try:
-            u = urllib.urlopen(self.get_file_url(val, unit))
+            u = urllib.request.urlopen(self.get_file_url(val, unit))
         except urllib.HTTPError as e:
             if e.getcode() == 404:
                 raise InvalidID(4)
@@ -367,15 +367,15 @@ class BioUnitHandler(DBHandler):
             try:
                 if mode == 1:
                     raise
-                print(self.get_file_location(val, unit))
+                print((self.get_file_location(val, unit)))
                 fh = gzip.open(self.get_file_location(val, unit), 'r')
-                print(val + "_" + str(unit) + ": accessing local copy...")
+                print((val + "_" + str(unit) + ": accessing local copy..."))
             except:
                 if mode == 2:
                     raise Exception(
                         'No local ' + str(val) + ' file. Check path or change access mode.')
                 self.download_file(val, unit)
-                print("Downloading " + val + "_" + str(unit) + "...")
+                print(("Downloading " + val + "_" + str(unit) + "..."))
                 fh = gzip.open(self.get_file_location(val, unit), 'r')
             return [fh]
 

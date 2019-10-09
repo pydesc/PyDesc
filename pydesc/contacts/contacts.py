@@ -131,6 +131,15 @@ class PointsDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
         setting_name = '%s_contact_undecidable_range' % self.monomer_hallmark
         return getattr(ConfigManager.contacts, setting_name)
 
+    def calculate_distance(self, monomer_1, monomer_2, *args, **kwargs):
+        """Calculates distance evaluated by current criterion.
+
+        Arguments:
+        monomer_1, monomer_2 -- pydesc.monomer.Monomer subclass instances,
+        for which distance is to be calculated.
+        """
+        return self._calculate_distance(monomer_1, monomer_2, *args, **kwargs)
+
     def __repr__(self):
         text = '<Contact criterion based on %s distance>'
         return text % self.monomer_hallmark
@@ -407,10 +416,8 @@ class CaCbxSubtractionCriterion(VectorDistanceCriterion):
             return 0
 
 
-class SetDistanceCriterion(ContactCriterion):
+class SetDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
     """Abstract class, criteria instances."""
-
-    __metaclass__ = ABCMeta
     monomer_hallmark = None
     monomer_hallmark2 = None
 
@@ -465,7 +472,7 @@ class SetDistanceCriterion(ContactCriterion):
             if mark is not None:
                 atoms = (getattr(mer_obj, mark))
                 if type(atoms) == dict:
-                    atoms = atoms.values()
+                    atoms = list(atoms.values())
                 else:
                     atoms = [atoms]
             else:
@@ -529,10 +536,10 @@ class SetDistanceCriterion(ContactCriterion):
             def make_from_adjacency_matrix(mtx):
                 """Returns BiparireGraph object based on given adjacency
                 matrix."""
-                vs, us = map(range, mtx.shape)
+                vs, us = list(map(range, mtx.shape))
                 v_s = [Vertex() for i in vs]
                 u_s = [Vertex() for i in us]
-                c_dict = dict(zip(us, u_s))
+                c_dict = dict(list(zip(us, u_s)))
                 for r, v in zip(vs, v_s):
                     for i in numpy.where(mtx[r] == -1)[0]:
                         u = c_dict[i]
@@ -604,7 +611,8 @@ class SetDistanceCriterion(ContactCriterion):
         for res, val in ((2, min_value), (1, max_value)):
             bool_mtx = numpy.sign(
                 dist_mat - val)  # -1 indicates contact below threshold
-            free_1, free_2 = map(list, map(set, numpy.where(bool_mtx == -1.)))
+            free_1, free_2 = list(
+                map(list, list(map(set, numpy.where(bool_mtx == -1.)))))
             bool_mtx = bool_mtx[free_1,].T[
                 free_2,].T  # removing rows and columns that has no -1
             # Hopcroft-Karp algorithm
@@ -633,7 +641,7 @@ class SetDistanceCriterion(ContactCriterion):
                             return res
                     except ValueError:  # no paths for current vertex
                         continue
-                usedv, usedu = zip(*mtchs)
+                usedv, usedu = list(zip(*mtchs))
                 free_1 = [i for i in graph.vertices1 if i not in usedv]
                 free_2 = [i for i in graph.vertices1 if i not in usedu]
             # algorithm stops here
@@ -712,10 +720,8 @@ class NIContact(SetDistanceCriterion):
                args[1].get_radius()
 
 
-class DihedralAngleCriterion(ContactCriterion):
+class DihedralAngleCriterion(ContactCriterion, metaclass=ABCMeta):
     """Abstract class, criteria instances."""
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, criterion_distance, undecidable_range=0):
         """Contact criterion constructor.
@@ -786,15 +792,13 @@ class RpaContact(DihedralAngleCriterion):
                                                      monomer_2_obj, **kwargs)
 
 
-class HorizontalBisectorDistanceCriterion(ContactCriterion):
+class HorizontalBisectorDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
     """Abstract class, criteria instances.
 
     Methods:
     _is_in_contact - returns contact value of a given contact distance.
     calculate_distance - calculates distance between two given mers.
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, criterion_distance, undecidable_range=0):
         """Contact criterion constructor.
@@ -909,15 +913,13 @@ class RcbsDistance(HorizontalBisectorDistanceCriterion):
                                                                   **kwargs)
 
 
-class VerticalBisectorDistanceCriterion(ContactCriterion):
+class VerticalBisectorDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
     """Abstract class, criteria instances.
 
     Methods:
     _is_in_contact - returns contact value of a given contact distance.
     calculate_distance - calculates distance between two given mers.
     """
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, criterion_distance, undecidable_range=0):
         """Contact criterion constructor.

@@ -58,8 +58,8 @@ class t_fitdesc_result(ctypes.Structure):  # pylint: disable=C0103
         motif and structure are AbstractStructure instances which the assignment refers to.
         """
         n_mers = self.n_monomers
-        get_monomers = lambda struct, array: map(struct.__getitem__, array[0:n_mers])
-        pair_al = alignment.PairAlignment([motif, structure], zip(get_monomers(motif, self.motif_monomers), get_monomers(structure, self.structure_monomers)))
+        get_monomers = lambda struct, array: list(map(struct.__getitem__, array[0:n_mers]))
+        pair_al = alignment.PairAlignment([motif, structure], list(zip(get_monomers(motif, self.motif_monomers), get_monomers(structure, self.structure_monomers))))
         return self.RMSD, pair_al, self.TR.to_trtmatrix()
 
 libfitdesc.fitdesc.argtypes = [ctypes.POINTER(cydesc.CStructure), ctypes.POINTER(cydesc.CStructure), ctypes.c_float, ctypes.c_int, ctypes.POINTER(ctypes.POINTER(t_fitdesc_result))]

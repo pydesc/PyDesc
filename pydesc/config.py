@@ -85,7 +85,7 @@ class Branch(object):
         return str(self.name)
 
     def _list_dict(self, slownik):
-        for k, v in self.__dict__.items():
+        for k, v in list(self.__dict__.items()):
             if k is 'name':
                 slownik.update({str(v): 'branch_sig'})
             elif k.startswith("_"):
@@ -113,16 +113,16 @@ class ConfigManager(object):
             with open(config_filename) as cofig_file_handler:
                 exec(cofig_file_handler.read())
         except IOError as e:
-            print("Configuration file read error: ", e)
+            print(("Configuration file read error: ", e))
 
     @staticmethod
     def _get_dict():
         slownik = {}
-        for v in ConfigManager.__dict__.values():
+        for v in list(ConfigManager.__dict__.values()):
             if str(v).startswith('ConfigManager'):
                 v._list_dict(slownik)
         import operator
-        return sorted(slownik.iteritems(), key=operator.itemgetter(0))
+        return sorted(iter(slownik.items()), key=operator.itemgetter(0))
 
     @staticmethod
     def show_config(print_limit=0):
@@ -130,24 +130,24 @@ class ConfigManager(object):
         print('+ConfigManager')
         for k, v in sorted_slownik:
             if v is 'branch_sig':
-                print ('\t' * (k.count('.') - 1)), '+' + k.rsplit(".", 1)[1]
+                print(('\t' * (k.count('.') - 1)), '+' + k.rsplit(".", 1)[1])
             else:
                 try:
                     if len(v) > print_limit > 0:
                         try:
                             tmp = str(v[:print_limit])
-                            print ('\t' * (k.count('.') - 1)), '-' + k.rsplit(".", 1)[
-                                1] + ' = ' + tmp + ' ... <<' + str(len(v) - print_limit) + ' more>>'
+                            print(('\t' * (k.count('.') - 1)), '-' + k.rsplit(".", 1)[
+                                1] + ' = ' + tmp + ' ... <<' + str(len(v) - print_limit) + ' more>>')
                             continue
                         except TypeError:
                             from itertools import islice
-                            print ('\t' * (k.count('.') - 1)), '-' + k.rsplit(".", 1)[1] + ' =', dict(
-                                islice(v.iteritems(), print_limit)), '... <<' + str(len(v) - print_limit) + ' more>>'
+                            print(('\t' * (k.count('.') - 1)), '-' + k.rsplit(".", 1)[1] + ' =', dict(
+                                islice(iter(v.items()), print_limit)), '... <<' + str(len(v) - print_limit) + ' more>>')
                             continue
                 except:
                     pass
-                print ('\t' * (k.count('.') - 1)), '-' + \
-                    k.rsplit(".", 1)[1] + ' = ' + str(v)
+                print(('\t' * (k.count('.') - 1)), '-' + \
+                    k.rsplit(".", 1)[1] + ' = ' + str(v))
 
     @staticmethod
     def save_config(config_filename=None):
@@ -165,4 +165,4 @@ class ConfigManager(object):
                         tmp_a, tmp_b = str(k).rsplit(".", 1)
                         fh.write('%s.set("%s", %s)\n' % (tmp_a, tmp_b, str(v)))
         except IOError as e:
-            print("Configuration file write error: ", e)
+            print(("Configuration file write error: ", e))

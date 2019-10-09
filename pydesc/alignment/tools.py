@@ -55,7 +55,7 @@ class Graph(object):
         for v1, v2 in edg:
             edg_dict[v1].append(v2)
             edg_dict[v2].append(v1)
-        self.edges_dict = dict((v, tuple(set(l))) for v, l in edg_dict.items())
+        self.edges_dict = dict((v, tuple(set(l))) for v, l in list(edg_dict.items()))
 
     def __getitem__(self, vertex):
         return self.edges_dict[vertex]
@@ -114,7 +114,7 @@ class AlignedDescriptorsGraph(Graph):
         """
         descs1 = AbstractDescriptor.create_descriptors(structure1)
         descs2 = AbstractDescriptor.create_descriptors(structure2)
-        return cls.build_consistency_graph(filter(bool, descs1), filter(bool, descs2))
+        return cls.build_consistency_graph(list(filter(bool, descs1)), list(filter(bool, descs2)))
 
     @staticmethod
     def build_consistency_graph(descs1, descs2):
@@ -132,7 +132,7 @@ class AlignedDescriptorsGraph(Graph):
             ret = []
             for n, i in enumerate(res):
                 ss1, ss2 = [sel.create_structure(stc) for sel, stc in zip(i[1].get_selections(), i[1].structures)]
-                if not min(map(operator.methodcaller("adjusted_number"), (de1, de2, ss1, ss2))) < 2:
+                if not min(list(map(operator.methodcaller("adjusted_number"), (de1, de2, ss1, ss2)))) < 2:
                     i[1].mnf = n
                     ret.append(i)
             return ret
@@ -160,12 +160,12 @@ class AlignedDescriptorsGraph(Graph):
             ret = []
             for n, i in enumerate(res):
                 ss1, ss2 = [sel.create_structure(stc) for sel, stc in zip(i[1].get_selections(), i[1].structures)]
-                if not min(map(operator.methodcaller("adjusted_number"), (de1, de2, ss1, ss2))) < 2:
+                if not min(list(map(operator.methodcaller("adjusted_number"), (de1, de2, ss1, ss2)))) < 2:
                     i[1].mnf = n
                     ret.append(i)
             return ret
 
-        vrts = filter(bool, [add_rmsd(cpd_if_good(d1, d2)) for d1 in descs1 for d2 in descs2])
+        vrts = list(filter(bool, [add_rmsd(cpd_if_good(d1, d2)) for d1 in descs1 for d2 in descs2]))
         edgs = [(v1, v2) for i, v1 in enumerate(vrts) for v2 in vrts[i + 1:] if v1.is_consistent(v2)]
         return AlignedDescriptorsGraph(vrts, edgs)
 
@@ -299,6 +299,6 @@ class ClicqueSolver(object):
         g = Graph(v, e)
         clicques = [g]
         #?
-        points = map(eval_fx, clicques)
+        points = list(map(eval_fx, clicques))
         return sorted(zip(points, clicques), key=lambda x: x[0])
 

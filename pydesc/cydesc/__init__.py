@@ -187,11 +187,10 @@ class CInDelMeta(ctypes.Structure.__class__):
         return res
 
 
-class CPoint(ctypes.Structure):
+class CPoint(ctypes.Structure, metaclass=CInDelMeta):
     """
     Class for holding 3D coordinates. Corresponds to CPoint in cydesc.h
     """
-    __metaclass__ = CInDelMeta
     _fields_ = [('x', ctypes.c_float),
                 ('y', ctypes.c_float),
                 ('z', ctypes.c_float)]
@@ -214,11 +213,10 @@ class CPoint(ctypes.Structure):
         return "<CPoint (%.3f, %.3f, %.3f)" % (self.x, self.y, self.z)
 
 
-class CMer(ctypes.Structure):
+class CMer(ctypes.Structure, metaclass=CInDelMeta):
     """
     Class for holding momomers. Corresponds to CMer in cydesc.h
     """
-    __metaclass__ = CInDelMeta
 
     _fields_ = [('ind', ctypes.c_int),
                 ('type', ctypes.c_int),
@@ -264,11 +262,10 @@ class CMer(ctypes.Structure):
         return '<CMer: ind: %d; type: %d(%s)>' % (self.ind, self.type, self.type_name)
 
 
-class CSeg(ctypes.Structure):
+class CSeg(ctypes.Structure, metaclass=CInDelMeta):
     """
     Class for holding segments. Corresponds to CSeg in cydesc.h
     """
-    __metaclass__ = CInDelMeta
 
     _fields_ = [('start', ctypes.c_int),
                 ('end', ctypes.c_int)]
@@ -281,11 +278,10 @@ class CSeg(ctypes.Structure):
         return '<CSeg: start: %d, end: %d>' % (self.start, self.end)
 
 
-class CStructure(ctypes.Structure):
+class CStructure(ctypes.Structure, metaclass=CInDelMeta):
     """
     Class for holding structures. Corresponds to CStructure in cydesc.h
     """
-    __metaclass__ = CInDelMeta
 
     _adjusted_number_ftype = ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_int, ctypes.c_int)
 
@@ -301,7 +297,7 @@ class CStructure(ctypes.Structure):
         # is an __init__ supplied in a subclass.
         """ Accepts instances of structure.AbstractStructure. """
         mers = list(struct)
-        cmers = map(CMer, mers)
+        cmers = list(map(CMer, mers))
 
         segs = []
 
@@ -341,12 +337,10 @@ class CStructure(ctypes.Structure):
         return '<CStructure: %s; number of mers: %d, number of segments: %d>' % (self.name, self.n_monomers, self.n_segs)
 
 
-class CContact(ctypes.Structure):
+class CContact(ctypes.Structure, metaclass=CInDelMeta):
     """
     A C equivalent of a contact (structure.Contact).
     """
-
-    __metaclass__ = CInDelMeta
 
     _fields_ = [('mer1', ctypes.c_int),
                 ('mer2', ctypes.c_int),
@@ -371,14 +365,12 @@ class CContact(ctypes.Structure):
         return '<CContact: mer1: %d, mer2: %d val: %d type: %d>' % (self.mer1, self.mer2, self.val, self.type)
 
 
-class CContactMap(ctypes.Structure):
+class CContactMap(ctypes.Structure, metaclass=CInDelMeta):
     """
     A C equivalent of a contactmap.ContactMap.
 
     Can be used along with a CStructure to to convey a descriptor (structure.AbstractDescriptor).
     """
-
-    __metaclass__ = CInDelMeta
 
     _fields_ = [('structure', ctypes.POINTER(CStructure)),
                 ('n_contacts', ctypes.c_int),
@@ -391,8 +383,8 @@ class CContactMap(ctypes.Structure):
 
         contacts_list = []
 
-        for mer1, mer_dict in contact_map.contacts.items():
-            for mer2, val in mer_dict.items():
+        for mer1, mer_dict in list(contact_map.contacts.items()):
+            for mer2, val in list(mer_dict.items()):
                 contacts_list.append(CContact(mer1, mer2, val))
 
         self.structure = ctypes.pointer(struct)
@@ -408,12 +400,10 @@ class CContactMap(ctypes.Structure):
         return '<CContactMap for %s:: n_contacts:%d>' % (repr(self.structure), self.n_contacts)
 
 
-class CElement(ctypes.Structure):
+class CElement(ctypes.Structure, metaclass=CInDelMeta):
     """
     A C equivalent of a structure.Element.
     """
-
-    __metaclass__ = CInDelMeta
 
     _fields_ = [('center', ctypes.c_int),
                 ('start', ctypes.c_int),
@@ -446,15 +436,13 @@ class CElement(ctypes.Structure):
         return '<CElement center: %d type: %d>' % (self.center, self.type)
 
 
-class CDescriptor(ctypes.Structure):
+class CDescriptor(ctypes.Structure, metaclass=CInDelMeta):
     """
     A C equivalent of a structure.Descriptor.
 
     This structure is in fact a tuple of CStructure, CContactMap, and an array
     of elements. This is due to the obvious fact, that C doesn't support inheritance.
     """
-
-    __metaclass__ = CInDelMeta
 
     _fields_ = [('structure', ctypes.POINTER(CStructure)),
                 ('contact_map', ctypes.POINTER(CContactMap)),
@@ -478,7 +466,7 @@ class CDescriptor(ctypes.Structure):
         ccmap = CContactMap(struct, contact_map)
 
         # elements = [CElement(structure.Element.build(descriptor[k])) for k, v in sorted(contact_map.contacts.items()) if len(v) > 0]
-        elements = map(CElement, descriptor.elements)
+        elements = list(map(CElement, descriptor.elements))
 
         for element, celement in zip(descriptor.elements, elements):
             celement.optional = 1 if descriptor.elements_values[element.central_monomer.ind].optional else 0

@@ -170,7 +170,7 @@ class TestChainSelection:
             pytest.skip('Not enough chains to perform test.')
         chain_samples = {chain.chain_name: tuple(chain)[-5:] for chain in
                          structure.chains}
-        mixed_mers = tuple(itertools.chain(*chain_samples.values()))
+        mixed_mers = tuple(itertools.chain(*list(chain_samples.values())))
         mixed_partial = PartialStructure(mixed_mers, structure.converter)
 
         test_chain_name = max(chain_samples)

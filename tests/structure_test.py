@@ -26,7 +26,7 @@ def test_default_structure_loader_load_local(type_, struc_file):
     expected_main_mer_type = PURE_TYPES_2_MERS_DICT[type_]
 
     for structure in structures:
-        types = map(type, structure)
+        types = list(map(type, structure))
         counts = {i: 0 for i in types}
 
         for res in structure:
@@ -44,7 +44,7 @@ def test_default_structure_loader_load_from_pdb(type_, struc_file):
     expected_main_mer_type = PURE_TYPES_2_MERS_DICT[type_]
 
     for structure in structures:
-        types = map(type, structure)
+        types = list(map(type, structure))
         counts = {i: 0 for i in types}
 
         for res in structure:

@@ -17,4 +17,4 @@ for fname in PDB_FILES_DICT['prots_only']:
                     info = '%s %s -| |- %s (inds: %i, %i)'
                     tuple_ = str(chain.name), str(mer.get_pdb_id()), \
                             str(merp1.get_pdb_id()), mer.ind, merp1.ind
-                    print(info % tuple_)
+                    print((info % tuple_))

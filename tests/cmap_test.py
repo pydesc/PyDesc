@@ -47,7 +47,7 @@ def test_golden_standard_pydesc_criterion_protein(structure_file):
 
     cm_calc = ContactMapCalculator(structure)
     cm = cm_calc.calculate_contact_map()
-    res = {frozenset(k): v for k, v in cm._contacts.items()}
+    res = {frozenset(k): v for k, v in list(cm._contacts.items())}
 
     assert golden_cmap_dict == res
 
@@ -68,7 +68,7 @@ def test_golden_standard_rc_protein(structure_file):
         contact_criterion_obj=RcContact())
     cm = cm_calc.calculate_contact_map()
 
-    res = {frozenset(k): v for k, v in cm._contacts.items()}
+    res = {frozenset(k): v for k, v in list(cm._contacts.items())}
 
     assert golden_cmap_dict == res
 

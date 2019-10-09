@@ -32,6 +32,7 @@ import pydesc.cydesc as cydesc
 import pydesc.geometry as geometry
 
 import numpy
+from functools import reduce
 
 # This is not a constant.
 liboverfit = cydesc.load_library('overfit')  # pylint: disable=C0103
@@ -206,7 +207,7 @@ class Overfit(object):
         """
         Adds a pair of points to overfit accumulator.
         """
-        lpoint1, lpoint2 = map(list, (point1, point2))
+        lpoint1, lpoint2 = list(map(list, (point1, point2)))
 
         if not 3 <= len(lpoint1) <= 4 or not 3 <= len(lpoint2) <= 4:
             raise TypeError('Point must have 3 (or 4) float coordinates.')
@@ -243,7 +244,7 @@ class Overfit(object):
 
     @_ensure_token
     def add_alignment(self, alignment_obj):
-        list1, list2 = zip(*alignment_obj.aligned_mers)
+        list1, list2 = list(zip(*alignment_obj.aligned_mers))
         self.add_structure(list1, list2)    #??? use self.add as soon as it works
 
     @_ensure_token
@@ -324,11 +325,11 @@ class Multifit(object):
         mtxs_prv = [geometry.TRTMatrix() for i in self.tokens[0]]
         while dev_prv - dev > .1:
             dev_prv = dev
-            rmsds, mtxs = zip(*self.iter_once(mtxs=mtxs_prv))
+            rmsds, mtxs = list(zip(*self.iter_once(mtxs=mtxs_prv)))
             dev = max([rmsd ** 2 * len(self.tokens) for rmsd in rmsds])
             mtxs_prv = [i.combine(j) for i, j in zip(mtxs_prv, mtxs)]
             #~ print "ITER %f" % (dev_prv - dev)
-        return zip(rmsds, mtxs_prv)
+        return list(zip(rmsds, mtxs_prv))
 
 def overfit(list1, list2):
     """
