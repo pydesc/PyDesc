@@ -3,14 +3,14 @@ import os.path
 import Bio.PDB
 import pytest
 
-from pydesc.mers import Ion
-from pydesc.mers import MerFactory
-from pydesc.mers import Nucleotide
-from pydesc.mers import Residue
+from pydesc.mers.factories import MerFactory
+from pydesc.mers.full_atom import Ion
+from pydesc.mers.full_atom import Nucleotide
+from pydesc.mers.full_atom import Residue
 from tests.conftest import DIR_DICT
 from tests.conftest import PDB_FILES_WITH_PURE_TYPE
-from tests.conftest import TEST_STRUCTURES_DIR
 from tests.conftest import PURE_TYPES_2_MERS_DICT
+from tests.conftest import TEST_STRUCTURES_DIR
 
 TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, Ion: 0.0}
 

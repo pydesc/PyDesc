@@ -16,8 +16,9 @@ from Bio.PDB import DSSP
 
 import pydesc.dbhandler
 import pydesc.geometry
-import pydesc.mers
-import pydesc.numberconverter
+from pydesc.mers.factories import MerFactory
+from pydesc.mers.base import Mer
+from pydesc.numberconverter import NumberConverter, PDBid
 from pydesc.config import ConfigManager
 from pydesc.warnexcept import DiscontinuityError
 from pydesc.warnexcept import set_filters
@@ -41,7 +42,7 @@ class StructureLoader(object):
         self,
         handler=pydesc.dbhandler.MetaHandler(),
         parser=pydesc.dbhandler.MetaParser(QUIET=True),
-        mer_factory=pydesc.mers.MerFactory(),
+        mer_factory=MerFactory(),
     ):
         """Structure loader constructor.
 
@@ -277,16 +278,15 @@ class AbstractStructure(metaclass=ABCMeta):
             For PDB_id - corresponding ind is taken from number converter and
             again
             """
+            # TODO: brush and prune this tree
             if isinstance(param, str):
                 # strings are converted to PDB_id
-                param = pydesc.numberconverter.PDBid.create_from_string(param)
-            if isinstance(param, pydesc.numberconverter.PDBid) or isinstance(
-                param, tuple
-            ):
+                param = PDBid.create_from_string(param)
+            if isinstance(param, PDBid) or isinstance(param, tuple):
                 # if given parameter already is a PDB_id or a corresponding
                 # tuple instance
                 param = self.derived_from.converter.get_ind(param)
-            if isinstance(param, pydesc.mers.Mer):
+            if isinstance(param, Mer):
                 return self._mers.index(param)
             try:
                 # if parameter is an integer - it is probably monomer ind
@@ -454,7 +454,7 @@ class AbstractStructure(metaclass=ABCMeta):
         chainable mers are considered.
         """
         if skip_other:
-            objs = [i for i in self if isinstance(i, pydesc.mers.MerChainable)]
+            objs = [i for i in self if i.is_chainable()]
         else:
             objs = list(self)
         sequence = list(map(operator.attrgetter(attr), objs))

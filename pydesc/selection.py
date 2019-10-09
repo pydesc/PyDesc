@@ -27,7 +27,9 @@ from abc import abstractmethod
 from functools import reduce
 
 import pydesc.structure
-from pydesc.mers import MerFactory, Mer, WrongMerType
+from pydesc.mers.base import Mer
+from pydesc.mers.factories import MerFactory
+from pydesc.mers.factories import WrongMerType
 
 
 class Selection(metaclass=ABCMeta):

@@ -2,7 +2,6 @@ from abc import ABCMeta
 from functools import reduce
 
 from pydesc.config import ConfigManager
-from pydesc.mers import MerChainable
 from . import AbstractStructure
 from . import Contact
 from . import ElementChainable
@@ -20,7 +19,7 @@ class ElementFactory:
         Argument:
         mer -- instance of pydesc.monomer.Monomer.
         """
-        if isinstance(mer, MerChainable):
+        if mer.is_chainable():
             return ElementChainable(mer)
         return ElementOther(mer)
 

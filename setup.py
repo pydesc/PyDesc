@@ -152,5 +152,6 @@ setup(name='PyDesc',
       shlibs=shlibs,
       install_requires=[
           'BioPython>=1.73',
+          'mdtraj>=1.9.3',
       ],
       )

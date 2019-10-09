@@ -4,7 +4,7 @@ import pytest
 
 from pydesc.contacts import ContactMapCalculator
 from pydesc.contacts import RcContact
-from pydesc.mers import MerChainable
+from pydesc.mers.base import MerChainable
 from pydesc.structure import ElementChainable
 from pydesc.structure import StructureLoader
 from pydesc.structure.descriptors import DescriptorBuilderDriver

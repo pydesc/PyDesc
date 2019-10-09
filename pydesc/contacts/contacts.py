@@ -27,7 +27,7 @@ from abc import abstractmethod
 import numpy
 import scipy.spatial
 
-import pydesc.mers
+import pydesc.mers.full_atom as mers
 from pydesc.config import ConfigManager
 from pydesc.warnexcept import CannotCalculateContact
 from .base import check_type
@@ -177,14 +177,14 @@ class PointsDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
             return 1
 
 
-@for_monomer_type_only(pydesc.mers.Residue)
+@for_monomer_type_only(mers.Residue)
 class CaContact(PointsDistanceCriterion):
     """Carbon alpha distance criterion."""
 
     monomer_hallmark = "ca"
 
 
-@for_monomer_type_only(pydesc.mers.Residue)
+@for_monomer_type_only(mers.Residue)
 class CbxContact(PointsDistanceCriterion):
     """C-beta extended points (carbon beta extended by 1 Angstrom) distance
     criterion."""
@@ -198,7 +198,7 @@ class RcContact(PointsDistanceCriterion):
     monomer_hallmark = "rc"
 
 
-@for_monomer_type_only(pydesc.mers.Nucleotide)
+@for_monomer_type_only(mers.Nucleotide)
 class RingCenterContact(PointsDistanceCriterion):
     """Nucleotide ring center distance criterion."""
 
@@ -211,7 +211,7 @@ class RingCenterContact(PointsDistanceCriterion):
         self.max_rc_dist = self.max_rc_dist - 2  # for sake of compatibility!
 
 
-@for_monomer_type_only(pydesc.mers.Nucleotide)
+@for_monomer_type_only(mers.Nucleotide)
 class PrcContact(PointsDistanceCriterion):
     """Nucleotide proximate ring center distance criterion."""
 
@@ -224,7 +224,7 @@ class PrcContact(PointsDistanceCriterion):
         self.max_rc_dist = self.max_rc_dist - 2
 
 
-@for_monomer_type_only(pydesc.mers.Nucleotide)
+@for_monomer_type_only(mers.Nucleotide)
 class NxContact(PointsDistanceCriterion):
     """Nucleotide ring center distance criterion."""
 
@@ -358,7 +358,7 @@ class VectorDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
         pass
 
 
-@for_monomer_type_only(pydesc.mers.Residue)
+@for_monomer_type_only(mers.Residue)
 class CaCbxSubtractionCriterion(VectorDistanceCriterion):
     """Criterion based on difference between carbon alpha and extended
     carbon beta distances.
@@ -658,7 +658,7 @@ class SetDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
         return 0
 
 
-@for_monomer_type_only(pydesc.mers.Nucleotide)
+@for_monomer_type_only(mers.Nucleotide)
 class RaContact(SetDistanceCriterion):
     """Nucleotide ring atoms distance criterion."""
 
@@ -689,7 +689,7 @@ class RaContact(SetDistanceCriterion):
         )
 
 
-@for_monomer_type_only(pydesc.mers.Nucleotide)
+@for_monomer_type_only(mers.Nucleotide)
 class AtContact(SetDistanceCriterion):
     """Nucleotide atoms distance criterion."""
 
@@ -714,7 +714,7 @@ class AtContact(SetDistanceCriterion):
         )
 
 
-@for_monomer_type_only(pydesc.mers.Nucleotide, pydesc.mers.Ion)
+@for_monomer_type_only(mers.Nucleotide, mers.Ion)
 class NIContact(SetDistanceCriterion):
     """Nucleotide-ion distance criterion."""
 
@@ -806,7 +806,7 @@ class DihedralAngleCriterion(ContactCriterion, metaclass=ABCMeta):
             return 1
 
 
-@for_monomer_type_only(pydesc.mers.Nucleotide)
+@for_monomer_type_only(mers.Nucleotide)
 class RpaContact(DihedralAngleCriterion):
     """Angle between nucleotide ring planes criterion."""
 
@@ -903,7 +903,7 @@ class HorizontalBisectorDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
             return 1
 
 
-@for_monomer_type_only(pydesc.mers.Nucleotide)
+@for_monomer_type_only(mers.Nucleotide)
 class RcbpDistance(HorizontalBisectorDistanceCriterion):
     """Horizontal distance between ring centers contact criterion (for
     pairing)."""
@@ -932,7 +932,7 @@ class RcbpDistance(HorizontalBisectorDistanceCriterion):
         )
 
 
-@for_monomer_type_only(pydesc.mers.Nucleotide)
+@for_monomer_type_only(mers.Nucleotide)
 class RcbsDistance(HorizontalBisectorDistanceCriterion):
     """Horizontal distance between ring centers contact criterion (for
     stacking)."""
@@ -1046,7 +1046,7 @@ class VerticalBisectorDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
             return 1
 
 
-@for_monomer_type_only(pydesc.mers.Nucleotide)
+@for_monomer_type_only(mers.Nucleotide)
 class RcpDistance(VerticalBisectorDistanceCriterion):
     """Vertical distance between ring centers contact criterion (for
     pairing)."""
@@ -1075,7 +1075,7 @@ class RcpDistance(VerticalBisectorDistanceCriterion):
         )
 
 
-@for_monomer_type_only(pydesc.mers.Nucleotide)
+@for_monomer_type_only(mers.Nucleotide)
 class RcsDistance(VerticalBisectorDistanceCriterion):
     """Vertical distance between ring centers contact criterion (for
     stacking)."""
