@@ -31,9 +31,13 @@ from pydesc.warnexcept import WrongMerType
 
 
 class ContactMapCalculator(object):
-
-    def __init__(self, structure_obj, contact_criterion_obj=None,
-                 select1=Everything(), select2=None):
+    def __init__(
+        self,
+        structure_obj,
+        contact_criterion_obj=None,
+        select1=Everything(),
+        select2=None,
+    ):
         """ContactMapCalculator constructor.
 
         Arguments:
@@ -53,9 +57,8 @@ class ContactMapCalculator(object):
             contact_criterion_obj = contacts.ContactsAlternative(
                 contacts.CaCbxContact(),
                 contacts.ContactsAlternative(
-                    contacts.NIContact(),
-                    contacts.RingCenterContact()
-                )
+                    contacts.NIContact(), contacts.RingCenterContact()
+                ),
             )
         self.contact_criterion = contact_criterion_obj
         self.structure = structure_obj
@@ -80,10 +83,10 @@ class ContactMapCalculator(object):
 
     def calculate_rc_dist(self):
         items = (
-            (self.sel12, self.sel12, '_rc_distC'),
-            (self.sel1uni, self.sel12, '_rc_dist1C'),
-            (self.sel2uni, self.sel12, '_rc_dist2C'),
-            (self.sel1uni, self.sel2uni, '_rc_dist12'),
+            (self.sel12, self.sel12, "_rc_distC"),
+            (self.sel1uni, self.sel12, "_rc_dist1C"),
+            (self.sel2uni, self.sel12, "_rc_dist2C"),
+            (self.sel1uni, self.sel2uni, "_rc_dist12"),
         )
         for sel1, sel2, attr_name in items:
             points1 = np.array([i.rc.vector for i in sel1])
@@ -128,13 +131,13 @@ class ContactMapCalculator(object):
                 pass
         else:
             for i, mer1 in enumerate(self.sel12):
-                for mer2 in self.sel12[i + 1:]:
+                for mer2 in self.sel12[i + 1 :]:
                     interaction_function(mer1, mer2, contacts_mtx)
 
         items = (
-            (self.sel1uni, self.sel12, '_rc_dist1C'),  # uniA vs C
-            (self.sel2uni, self.sel12, '_rc_dist2C'),  # uniB vs C
-            (self.sel1uni, self.sel2uni, '_rc_dist12'),  # uniA vs uniB
+            (self.sel1uni, self.sel12, "_rc_dist1C"),  # uniA vs C
+            (self.sel2uni, self.sel12, "_rc_dist2C"),  # uniB vs C
+            (self.sel1uni, self.sel2uni, "_rc_dist12"),  # uniA vs uniB
         )
         for mer_tuple_1, mer_tuple_2, rc_name in items:
             if max_rc_dist:
@@ -163,8 +166,7 @@ class ContactMapCalculator(object):
 
         def compare_mers(mer_1, mer_2, mtx):
             try:
-                value = self.contact_criterion.is_in_contact_no_pre_check(
-                    mer_1, mer_2)
+                value = self.contact_criterion.is_in_contact_no_pre_check(mer_1, mer_2)
             except WrongMerType:
                 return
             if value > 0:
@@ -251,9 +253,14 @@ class FrequencyContactMap(object):
     structures.
     """
 
-    def __init__(self, structures, contact_criterion_obj=None, ignore1=True,
-                 select1=Everything(),
-                 select2=Everything()):
+    def __init__(
+        self,
+        structures,
+        contact_criterion_obj=None,
+        ignore1=True,
+        select1=Everything(),
+        select2=Everything(),
+    ):
         """Initialize ContactMap.
 
         Arguments:
@@ -282,8 +289,11 @@ class FrequencyContactMap(object):
 
     def __iter__(self):
         return iter(
-            [(list(self.stcA)[i].ind, list(self.stcB)[j].ind, v) for i, j, v in
-             list(self.contacts.items())])
+            [
+                (list(self.stcA)[i].ind, list(self.stcB)[j].ind, v)
+                for i, j, v in list(self.contacts.items())
+            ]
+        )
 
     @property
     def frames(self):
@@ -300,10 +310,8 @@ class FrequencyContactMap(object):
 
         for stc in self.structures:
             cmap_calculator = ContactMapCalculator(
-                stc,
-                self.contact_criterion,
-                self.selA,
-                self.selB)
+                stc, self.contact_criterion, self.selA, self.selB
+            )
             cmap = cmap_calculator.calculate_contact_map()
             new_mtx = cmap_calculator.get_as_sparse_mtx(get_value)
             try:

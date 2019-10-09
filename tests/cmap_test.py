@@ -14,10 +14,10 @@ from tests.conftest import TEST_STRUCTURES_DIR
 
 ConfigManager.warnings.set("quiet", True)
 
-PROTS_DIR = 'prots_only'
+PROTS_DIR = "prots_only"
 
 
-@pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_TYPE)
+@pytest.mark.parametrize("type_, struc_file", PDB_FILES_WITH_TYPE)
 def test_rc_contact_map(type_, struc_file):
     sl = StructureLoader()
     path_str = os.path.join(TEST_STRUCTURES_DIR, type_, struc_file)
@@ -25,25 +25,26 @@ def test_rc_contact_map(type_, struc_file):
 
     for structure in structures:
         cm_calc = ContactMapCalculator(
-            structure_obj=structure,
-            contact_criterion_obj=RcContact())
+            structure_obj=structure, contact_criterion_obj=RcContact()
+        )
         cm = cm_calc.calculate_contact_map()
-        assert len(cm) > 0, 'No contacts in structure %s' % str(structure)
+        assert len(cm) > 0, "No contacts in structure %s" % str(structure)
         for (k1, k2), v in cm:
             length = (structure[k1].rc - structure[k2].rc).calculate_length()
             assert length < 10
 
 
-@pytest.mark.parametrize('structure_file', PDB_FILES_DICT[PROTS_DIR])
+@pytest.mark.parametrize("structure_file", PDB_FILES_DICT[PROTS_DIR])
 def test_golden_standard_pydesc_criterion_protein(structure_file):
     structure_name = os.path.splitext(structure_file)[0]
     path_str = os.path.join(TEST_CMAPS_DIR, "%s_default.cmp" % structure_name)
-    with open(path_str, 'rb') as fh:
+    with open(path_str, "rb") as fh:
         golden_cmap_dict = pickle.load(fh)
 
     sl = StructureLoader()
     structure = sl.load_structures(
-        path=os.path.join(TEST_STRUCTURES_DIR, PROTS_DIR, structure_file))[0]
+        path=os.path.join(TEST_STRUCTURES_DIR, PROTS_DIR, structure_file)
+    )[0]
 
     cm_calc = ContactMapCalculator(structure)
     cm = cm_calc.calculate_contact_map()
@@ -52,11 +53,11 @@ def test_golden_standard_pydesc_criterion_protein(structure_file):
     assert golden_cmap_dict == res
 
 
-@pytest.mark.parametrize('structure_file', PDB_FILES_DICT[PROTS_DIR])
+@pytest.mark.parametrize("structure_file", PDB_FILES_DICT[PROTS_DIR])
 def test_golden_standard_rc_protein(structure_file):
     structure_name = os.path.splitext(structure_file)[0]
     path_str = os.path.join(TEST_CMAPS_DIR, "%s_rc.cmp" % structure_name)
-    with open(path_str, 'rb') as fh:
+    with open(path_str, "rb") as fh:
         golden_cmap_dict = pickle.load(fh)
 
     sl = StructureLoader()
@@ -64,8 +65,8 @@ def test_golden_standard_rc_protein(structure_file):
     structure = sl.load_structures(path=path_str)[0]
 
     cm_calc = ContactMapCalculator(
-        structure_obj=structure,
-        contact_criterion_obj=RcContact())
+        structure_obj=structure, contact_criterion_obj=RcContact()
+    )
     cm = cm_calc.calculate_contact_map()
 
     res = {frozenset(k): v for k, v in list(cm._contacts.items())}
@@ -76,7 +77,7 @@ def test_golden_standard_rc_protein(structure_file):
 @pytest.mark.system
 def test_1no5_default_criteria_cmap():
     sl = StructureLoader()
-    structure, = sl.load_structures('1no5')
+    structure, = sl.load_structures("1no5")
 
     cmc = ContactMapCalculator(structure)
     cmap = cmc.calculate_contact_map()

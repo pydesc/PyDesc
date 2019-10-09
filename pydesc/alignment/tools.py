@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PyDesc is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -62,7 +62,7 @@ class Graph(object):
 
     @property
     def adjacency_matrix(self):
-        if not hasattr(self, '_adj_mtx'):
+        if not hasattr(self, "_adj_mtx"):
             self._mk_adj_mtx()
         return self._adj_mtx
 
@@ -74,7 +74,7 @@ class Graph(object):
                 i2 = self._vhash[v2]
                 tmp_mtx[i1, i2] = tmp_mtx[i2, i1] = 1
         self._adj_mtx = numpy.matrix(tmp_mtx)
-        #~ self._adj_mtx = numpy.matrix([[1 if v2 in self[v1] else 0 for v1 in self.vertices] for v2 in self.vertices])
+        # ~ self._adj_mtx = numpy.matrix([[1 if v2 in self[v1] else 0 for v1 in self.vertices] for v2 in self.vertices])
 
 
 class AlignedDescriptorsGraph(Graph):
@@ -101,9 +101,13 @@ class AlignedDescriptorsGraph(Graph):
     def get_alignments(self, desc1, desc2):
         """Returns all alignments of two given descriptors."""
         try:
-            return list(set(self.desc_dict[desc1]).intersection(set(self.desc_dict[desc2])))
+            return list(
+                set(self.desc_dict[desc1]).intersection(set(self.desc_dict[desc2]))
+            )
         except KeyError:
-            raise ValueError("Given descriptores are not aligned in any vertex of the graph.")
+            raise ValueError(
+                "Given descriptores are not aligned in any vertex of the graph."
+            )
 
     @classmethod
     def build_algdesc_graph(cls, structure1, structure2):
@@ -114,7 +118,9 @@ class AlignedDescriptorsGraph(Graph):
         """
         descs1 = AbstractDescriptor.create_descriptors(structure1)
         descs2 = AbstractDescriptor.create_descriptors(structure2)
-        return cls.build_consistency_graph(list(filter(bool, descs1)), list(filter(bool, descs2)))
+        return cls.build_consistency_graph(
+            list(filter(bool, descs1)), list(filter(bool, descs2))
+        )
 
     @staticmethod
     def build_consistency_graph(descs1, descs2):
@@ -123,6 +129,7 @@ class AlignedDescriptorsGraph(Graph):
         Arguments:
         descs1, descs2 -- lists of pydesc.Descriptors from 1st and 2nd structure to be aligned respectively.
         """
+
         def add_rmsd(res):
             res[1].rmsd = res[0]
             return res[1]
@@ -131,14 +138,37 @@ class AlignedDescriptorsGraph(Graph):
             res = compdesc(de1, de2)
             ret = []
             for n, i in enumerate(res):
-                ss1, ss2 = [sel.create_structure(stc) for sel, stc in zip(i[1].get_selections(), i[1].structures)]
-                if not min(list(map(operator.methodcaller("adjusted_number"), (de1, de2, ss1, ss2)))) < 2:
+                ss1, ss2 = [
+                    sel.create_structure(stc)
+                    for sel, stc in zip(i[1].get_selections(), i[1].structures)
+                ]
+                if (
+                    not min(
+                        list(
+                            map(
+                                operator.methodcaller("adjusted_number"),
+                                (de1, de2, ss1, ss2),
+                            )
+                        )
+                    )
+                    < 2
+                ):
                     i[1].mnf = n
                     ret.append(i)
             return ret
 
-        vrts = [add_rmsd(cpdres) for d1 in descs1 for d2 in descs2 for cpdres in cpd_if_good(d1, d2)]
-        edgs = [(v1, v2) for i, v1 in enumerate(vrts) for v2 in vrts[i + 1:] if v1.is_consistent(v2)]
+        vrts = [
+            add_rmsd(cpdres)
+            for d1 in descs1
+            for d2 in descs2
+            for cpdres in cpd_if_good(d1, d2)
+        ]
+        edgs = [
+            (v1, v2)
+            for i, v1 in enumerate(vrts)
+            for v2 in vrts[i + 1 :]
+            if v1.is_consistent(v2)
+        ]
         return AlignedDescriptorsGraph(vrts, edgs)
 
     @staticmethod
@@ -148,6 +178,7 @@ class AlignedDescriptorsGraph(Graph):
         Arguments:
         descs1, descs2 -- lists of pydesc.Descriptors from 1st and 2nd structure to be aligned respectively.
         """
+
         def add_rmsd(res):
             try:
                 res[0][1].rmsd = res[0][0]
@@ -159,19 +190,40 @@ class AlignedDescriptorsGraph(Graph):
             res = compdesc(de1, de2)
             ret = []
             for n, i in enumerate(res):
-                ss1, ss2 = [sel.create_structure(stc) for sel, stc in zip(i[1].get_selections(), i[1].structures)]
-                if not min(list(map(operator.methodcaller("adjusted_number"), (de1, de2, ss1, ss2)))) < 2:
+                ss1, ss2 = [
+                    sel.create_structure(stc)
+                    for sel, stc in zip(i[1].get_selections(), i[1].structures)
+                ]
+                if (
+                    not min(
+                        list(
+                            map(
+                                operator.methodcaller("adjusted_number"),
+                                (de1, de2, ss1, ss2),
+                            )
+                        )
+                    )
+                    < 2
+                ):
                     i[1].mnf = n
                     ret.append(i)
             return ret
 
-        vrts = list(filter(bool, [add_rmsd(cpd_if_good(d1, d2)) for d1 in descs1 for d2 in descs2]))
-        edgs = [(v1, v2) for i, v1 in enumerate(vrts) for v2 in vrts[i + 1:] if v1.is_consistent(v2)]
+        vrts = list(
+            filter(
+                bool, [add_rmsd(cpd_if_good(d1, d2)) for d1 in descs1 for d2 in descs2]
+            )
+        )
+        edgs = [
+            (v1, v2)
+            for i, v1 in enumerate(vrts)
+            for v2 in vrts[i + 1 :]
+            if v1.is_consistent(v2)
+        ]
         return AlignedDescriptorsGraph(vrts, edgs)
 
 
 class AlignedMersGraph(Graph):
-
     def __init__(self, vrt, edg, mrs_dict):
         """Extended Graph constructor.
 
@@ -243,13 +295,24 @@ class AlignedMersGraph(Graph):
         adg -- aligned descriptors graph.
         """
         lens = {}
+
         def get_blocks_len(m1, m2, i):
             try:
                 lens[(m1, m2)] += 1
             except KeyError:
                 lens[(m1, m2)] = 1
             return (m1, m2, i)
-        return ([get_blocks_len(m1, m2, i) for m1 in stc1 for m2 in stc2 for i, d in enumerate(adg.vertices) if (m1, m2) in d], lens)
+
+        return (
+            [
+                get_blocks_len(m1, m2, i)
+                for m1 in stc1
+                for m2 in stc2
+                for i, d in enumerate(adg.vertices)
+                if (m1, m2) in d
+            ],
+            lens,
+        )
 
     @staticmethod
     def make_adjacency_matrix_from_ADG(stc1, stc2, adg):
@@ -274,7 +337,7 @@ class AlignedMersGraph(Graph):
         ord = [i[:2] for i in mprs]
         for pair in sorted(set(ord), key=lambda x: ord.index(x)):
             end_i = start_i + lens[pair]
-            res[start_i:end_i,start_i:end_i] = 0
+            res[start_i:end_i, start_i:end_i] = 0
             start_i = end_i
 
         return res
@@ -293,12 +356,11 @@ class ClicqueSolver(object):
         graph -- Graph instance to be searched for maximum clicques.
         eval_fx -- function that evaluates clicque (Graph instance). It must take Graph instance as argument and return int or float.
         """
-        #? zamiast tego wstawic solver
+        # ? zamiast tego wstawic solver
         v = graph.vertices
         e = graph.edges
         g = Graph(v, e)
         clicques = [g]
-        #?
+        # ?
         points = list(map(eval_fx, clicques))
         return sorted(zip(points, clicques), key=lambda x: x[0])
-

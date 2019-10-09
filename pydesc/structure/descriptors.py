@@ -11,7 +11,6 @@ from . import Segment
 
 
 class ElementFactory:
-
     @staticmethod
     def build(mer):
         """Static builder.
@@ -27,7 +26,6 @@ class ElementFactory:
 
 
 class DescriptorBuilderDriver:
-
     def build(self, central_element, contact_map):
         """Create descriptor builder and return built descriptor.
 
@@ -79,11 +77,7 @@ class DescriptorBuilder(metaclass=ABCMeta):
     def build(self):
         """Build descriptor using set attributes."""
         return Descriptor(
-            self.central_element,
-            self.mers,
-            self.elements,
-            self.segments,
-            self.contacts
+            self.central_element, self.mers, self.elements, self.segments, self.contacts
         )
 
     def set_mers(self):
@@ -121,8 +115,8 @@ class DescriptorBuilder(metaclass=ABCMeta):
             ((ind_1, ind_2), value) = input_
             try:
                 return Contact(
-                    ElementFactory.build(central_mer),
-                    ElementFactory.build(stc[ind_2]))
+                    ElementFactory.build(central_mer), ElementFactory.build(stc[ind_2])
+                )
             except (ValueError,):
                 # TypeError is raised during creation of Contacts based on
                 # pairs of mers that cannot be used to create Elements
@@ -159,9 +153,7 @@ class DescriptorBuilder(metaclass=ABCMeta):
 
         segments = []
         switched_mers = [switch(mer) for mer in self.mers]
-        last_segment = reduce(
-            reduce_tuple,
-            [i for i in switched_mers if bool(i)])
+        last_segment = reduce(reduce_tuple, [i for i in switched_mers if bool(i)])
         add_segment(*last_segment)
         self.segments = segments
 
@@ -174,9 +166,11 @@ class DescriptorBuilder(metaclass=ABCMeta):
             for el1, el2 in zip((element1, element2), (element2, element1)):
                 elements[el1.central_monomer] = el1
                 neighbours.setdefault(el1.central_monomer, []).append(
-                    el2.central_monomer)
-        self.elements = sorted(list(elements.values()),
-                               key=lambda elm: elm.central_monomer.ind)
+                    el2.central_monomer
+                )
+        self.elements = sorted(
+            list(elements.values()), key=lambda elm: elm.central_monomer.ind
+        )
 
 
 class Descriptor(AbstractStructure):
@@ -207,4 +201,4 @@ class Descriptor(AbstractStructure):
         return str(self.central_element.central_monomer.pid)
 
     def __repr__(self):
-        return '<Descriptor of %s:%s>' % (str(self.derived_from), self.cm_pid)
+        return "<Descriptor of %s:%s>" % (str(self.derived_from), self.cm_pid)

@@ -21,7 +21,7 @@ from tests.conftest import TEST_STRUCTURES_DIR
 ConfigManager.warnings.quiet = True
 
 
-@pytest.fixture(scope='module', params=PDB_FILES_WITH_TYPE_SHORT)
+@pytest.fixture(scope="module", params=PDB_FILES_WITH_TYPE_SHORT)
 def structure(request):
     sl = StructureLoader()
     type_, structure_file = request.param
@@ -30,15 +30,14 @@ def structure(request):
     return structure
 
 
-@pytest.fixture(scope='module')
+@pytest.fixture(scope="module")
 def stc_2dlc():
     sl = StructureLoader()
-    pth = os.path.join(TEST_STRUCTURES_DIR, 'mixed', '2DLC.cif')
+    pth = os.path.join(TEST_STRUCTURES_DIR, "mixed", "2DLC.cif")
     return sl.load_structures(path=pth)[0]
 
 
 class TestEverythingSelection:
-
     def test_create_structure(self, structure):
         stc = selection.Everything().create_structure(structure)
         assert isinstance(stc, AbstractStructure)
@@ -52,10 +51,10 @@ class TestEverythingSelection:
         assert isinstance(new_stc, AbstractStructure)
         assert len(new_stc) == len(structure)
         assert new_stc[0] is not structure[0]
-        assert sorted(new_stc[0].atoms.keys()) == sorted(
-            structure[0].atoms.keys())
+        assert sorted(new_stc[0].atoms.keys()) == sorted(structure[0].atoms.keys())
         assert sorted(new_stc[0].pseudoatoms.keys()) == sorted(
-            structure[0].pseudoatoms.keys())
+            structure[0].pseudoatoms.keys()
+        )
 
     def test_specify(self, structure):
         sel = selection.Everything().specify(structure)
@@ -69,7 +68,6 @@ class TestEverythingSelection:
 
 
 class TestSetSelection:
-
     def test_specify(self, structure):
         sel = selection.Set([i.get_pdb_id() for i in tuple(structure)[:6]])
         assert type(sel) is selection.Set
@@ -85,8 +83,7 @@ class TestSetSelection:
         assert isinstance(stc, AbstractStructure)
         assert len(stc) == 6
         assert stc[0] is structure[0]
-        assert sorted(stc[0].atoms.keys()) == sorted(
-            structure[0].atoms.keys())
+        assert sorted(stc[0].atoms.keys()) == sorted(structure[0].atoms.keys())
 
     def test_create_new_structure(self, structure):
         sel = selection.Set([i.get_pdb_id() for i in tuple(structure)[:6]])
@@ -95,12 +92,10 @@ class TestSetSelection:
         assert isinstance(stc, AbstractStructure)
         assert len(stc) == 6
         assert stc[0] is not structure[0]
-        assert sorted(stc[0].atoms.keys()) == sorted(
-            structure[0].atoms.keys())
+        assert sorted(stc[0].atoms.keys()) == sorted(structure[0].atoms.keys())
 
 
 class TestRangeSelection:
-
     @staticmethod
     def create_6_mer_range(structure):
         start = structure[0].get_pdb_id()
@@ -123,7 +118,7 @@ class TestRangeSelection:
         range_selection, start, end = self.create_6_mer_range(structure)
         if chainable:
             segment = range_selection.create_segment(structure)
-            assert type(segment).__name__ == 'Segment'
+            assert type(segment).__name__ == "Segment"
             assert len(segment) == 6
         else:
             with pytest.raises(DiscontinuityError):
@@ -133,16 +128,14 @@ class TestRangeSelection:
     @pytest.mark.system
     def test_range_on_discontinuity_chain(self):
         sl = StructureLoader()
-        pth = os.path.join(TEST_STRUCTURES_DIR, 'prots_only', '3NPU.pdb')
+        pth = os.path.join(TEST_STRUCTURES_DIR, "prots_only", "3NPU.pdb")
         stc = sl.load_structures(path=pth)[0]
         # discontinuity occurs between A19 and A24 (1! res missing)
-        msg = 'Something is wrong with structure that supposed have broken ' \
-              'backbone.'
-        assert str(stc[17].get_pdb_id()) == 'A19', msg
-        assert str(stc[18].get_pdb_id()) == 'A24', msg
+        msg = "Something is wrong with structure that supposed have broken " "backbone."
+        assert str(stc[17].get_pdb_id()) == "A19", msg
+        assert str(stc[18].get_pdb_id()) == "A24", msg
 
-        range_selection = selection.Range(stc[16].get_pdb_id(),
-                                          stc[19].get_pdb_id())
+        range_selection = selection.Range(stc[16].get_pdb_id(), stc[19].get_pdb_id())
         new_sel = range_selection.specify(stc)
 
         assert len(tuple(new_sel)) == 4
@@ -151,7 +144,6 @@ class TestRangeSelection:
 
 
 class TestChainSelection:
-
     def test_specify(self, structure):
         for chain in structure.chains:
             chain_selection = selection.ChainSelection(chain.chain_name)
@@ -161,15 +153,16 @@ class TestChainSelection:
                 assert mer.get_pdb_id() in new_selection.ids
 
     def test_not_existing_chain(self, structure):
-        chain_selection = selection.ChainSelection('fake_name')
+        chain_selection = selection.ChainSelection("fake_name")
         new_selection = chain_selection.specify(structure)
         assert len(tuple(new_selection)) == 0
 
     def test_chain_from_mixed_structure(self, structure):
         if len(structure.chains) > 2:
-            pytest.skip('Not enough chains to perform test.')
-        chain_samples = {chain.chain_name: tuple(chain)[-5:] for chain in
-                         structure.chains}
+            pytest.skip("Not enough chains to perform test.")
+        chain_samples = {
+            chain.chain_name: tuple(chain)[-5:] for chain in structure.chains
+        }
         mixed_mers = tuple(itertools.chain(*list(chain_samples.values())))
         mixed_partial = PartialStructure(mixed_mers, structure.converter)
 
@@ -185,7 +178,6 @@ class TestChainSelection:
 
 
 class TestMerNameSelection:
-
     def test_specify(self, structure):
         mers = tuple(structure)[:6]
         for mer in mers:
@@ -199,7 +191,6 @@ class TestMerNameSelection:
 
 
 class TestMerExactTypeSelection:
-
     def test_wrong_class(self):
         with pytest.raises(WrongMerType):
             selection.MerExactType(type(None))
@@ -208,7 +199,7 @@ class TestMerExactTypeSelection:
         residue_selection = selection.MerExactType(Residue)
         residues_set = residue_selection.specify(stc_2dlc)
         assert len(tuple(residues_set)) > 0
-        for mer in stc_2dlc.get_chain('X'):
+        for mer in stc_2dlc.get_chain("X"):
             if not mer.is_chainable():
                 continue
             assert mer.get_pdb_id() in residues_set.ids
@@ -217,7 +208,7 @@ class TestMerExactTypeSelection:
         nucleotide_selection = selection.MerExactType(Nucleotide)
         nucleotides_set = nucleotide_selection.specify(stc_2dlc)
         assert len(tuple(nucleotides_set)) > 0
-        for mer in stc_2dlc.get_chain('Y'):
+        for mer in stc_2dlc.get_chain("Y"):
             if not mer.is_chainable():
                 continue
             assert mer.get_pdb_id() in nucleotides_set.ids
@@ -244,7 +235,6 @@ class TestNothing:
 
 @pytest.mark.system
 class TestComplexSelections:
-
     def test_name_and_type_intersection(self, structure):
         the_mer = max(structure, key=lambda mer: mer.is_chainable())
         test_name = the_mer.name
@@ -259,7 +249,7 @@ class TestComplexSelections:
 
     def test_chains_union(self, structure):
         if len(structure.chains) < 2:
-            pytest.skip('Not enough chains to perform test.')
+            pytest.skip("Not enough chains to perform test.")
         chain_sels = []
         for chain in structure.chains:
             chain_sels.append(selection.ChainSelection(chain.chain_name))
@@ -275,14 +265,14 @@ class TestComplexSelections:
 
     def test_complement(self, stc_2dlc):
         res_sel = selection.MerExactType(Residue)
-        prot_chain = selection.ChainSelection('X')
+        prot_chain = selection.ChainSelection("X")
         diff = prot_chain - res_sel
         assert isinstance(diff, selection.SelectionsComplement)
         new_sel = diff.specify(stc_2dlc)
-        assert len(new_sel.ids) == 1    # single Mg ion
+        assert len(new_sel.ids) == 1  # single Mg ion
 
         nuc_sel = selection.MerExactType(Nucleotide)
-        nuc_chain = selection.ChainSelection('Y')
+        nuc_chain = selection.ChainSelection("Y")
         diff2 = nuc_chain - nuc_sel
         new_stc = diff2.create_structure(stc_2dlc)
         assert len(new_stc) > 0

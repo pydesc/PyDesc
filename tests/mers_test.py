@@ -12,25 +12,16 @@ from tests.conftest import PDB_FILES_WITH_PURE_TYPE
 from tests.conftest import TEST_STRUCTURES_DIR
 from tests.conftest import PURE_TYPES_2_MERS_DICT
 
-TYPE_THRESHOLDS = {
-    Nucleotide: .25,
-    Residue: .01,
-    Ion: .0,
-}
+TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, Ion: 0.0}
 
 
 class TestMonomerFactory(object):
-
-    @pytest.mark.parametrize('type_, struc_file', PDB_FILES_WITH_PURE_TYPE)
+    @pytest.mark.parametrize("type_, struc_file", PDB_FILES_WITH_PURE_TYPE)
     def test_default_mer_factory_create_from_pdb_res(self, type_, struc_file):
 
         factory = MerFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
-            struc_file,
-            os.path.join(
-                TEST_STRUCTURES_DIR,
-                type_,
-                struc_file)
+            struc_file, os.path.join(TEST_STRUCTURES_DIR, type_, struc_file)
         )
 
         expected_type = PURE_TYPES_2_MERS_DICT[type_]
@@ -43,32 +34,32 @@ class TestMonomerFactory(object):
             for chain in model:
                 for residue in chain:
                     result, warns = factory.create_from_biopdb(
-                        residue,
-                        warn_in_place=False)
+                        residue, warn_in_place=False
+                    )
 
                     if result is None:
                         assert warns is None
-                        assert residue.get_id()[0] == 'W'
+                        assert residue.get_id()[0] == "W"
                     else:
                         length += 1
                         points[expected_type in result] += 1
 
-        assert (length - points[True]) / float(length) <= type_threshold, \
-            '%i out of %i mers are of expected type' % (points[True], length)
+        assert (length - points[True]) / float(
+            length
+        ) <= type_threshold, "%i out of %i mers are of expected type" % (
+            points[True],
+            length,
+        )
 
     def test_create_residue_from_pdb_res(self):
         factory = MerFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
-            '5MPV.pdb',
-            os.path.join(
-                TEST_STRUCTURES_DIR,
-                'prots_only',
-                '5MPV.pdb')
+            "5MPV.pdb", os.path.join(TEST_STRUCTURES_DIR, "prots_only", "5MPV.pdb")
         )
 
-        r1 = pdb_structure[0]['D'][15]
-        r2 = pdb_structure[0]['D'][16]
-        r3 = pdb_structure[0]['D'][17]
+        r1 = pdb_structure[0]["D"][15]
+        r2 = pdb_structure[0]["D"][16]
+        r3 = pdb_structure[0]["D"][17]
         prev = factory.create_from_biopdb(r1, warn_in_place=False)[0][Residue]
         res = factory.create_from_biopdb(r2, warn_in_place=False)[0][Residue]
         next = factory.create_from_biopdb(r3, warn_in_place=False)[0][Residue]
@@ -79,10 +70,10 @@ class TestMonomerFactory(object):
 
         assert len(tuple(res.iter_bb_atoms())) == 3
         assert len(tuple(res.iter_nbb_atoms())) > 0
-        assert 'cbx' in res.pseudoatoms
-        assert 'rc' in res.pseudoatoms
-        assert 'backbone_average' in res.pseudoatoms
-        assert 'CA' in res.atoms
+        assert "cbx" in res.pseudoatoms
+        assert "rc" in res.pseudoatoms
+        assert "backbone_average" in res.pseudoatoms
+        assert "CA" in res.atoms
 
         res.calculate_angles()
         res.calculate_cbx()
@@ -94,24 +85,19 @@ class TestMonomerFactory(object):
 
 
 class MerTest(object):
-
     @staticmethod
     def iter_structure(dir_, file_, class_):
         factory = MerFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
-            file_,
-            os.path.join(
-                TEST_STRUCTURES_DIR,
-                dir_,
-                file_)
+            file_, os.path.join(TEST_STRUCTURES_DIR, dir_, file_)
         )
         to_return = []
         for model in pdb_structure:
             for chain in model:
                 for residue in chain:
                     result, warns = factory.create_from_biopdb(
-                        residue,
-                        warn_in_place=False)
+                        residue, warn_in_place=False
+                    )
                     if result is None or class_ not in result:
                         continue
                     result = result[class_]
@@ -120,40 +106,40 @@ class MerTest(object):
 
 
 class TestResidue(MerTest):
-
     @pytest.mark.parametrize(
-        'type_, structure_file',
-        [i for i in PDB_FILES_WITH_PURE_TYPE if i[0] == DIR_DICT[Residue]])
+        "type_, structure_file",
+        [i for i in PDB_FILES_WITH_PURE_TYPE if i[0] == DIR_DICT[Residue]],
+    )
     def test_calculate_cbx(self, type_, structure_file):
         checked = 0
         for result in self.iter_structure(type_, structure_file, Residue):
-            if result.name == 'GLY':
+            if result.name == "GLY":
                 continue
-            assert 'cbx' in result.pseudoatoms
-            del result.pseudoatoms['cbx']
+            assert "cbx" in result.pseudoatoms
+            del result.pseudoatoms["cbx"]
             Residue.calculate_cbx(result)
-            assert round((result.CB - result.cbx).calculate_length(), 2) == 1.
+            assert round((result.CB - result.cbx).calculate_length(), 2) == 1.0
             unit_a_bx = (result.cbx - result.CA).get_unit_vector()
             unit_a_b = (result.CB - result.CA).get_unit_vector()
             dot_prod = unit_a_b.dot(unit_a_bx)
-            assert pytest.approx(dot_prod) == 1.
+            assert pytest.approx(dot_prod) == 1.0
             checked += 1
         assert checked != 0
 
 
 class TestNucleotide(MerTest):
-
     @pytest.mark.parametrize(
-        'type_, structure_file',
-        [i for i in PDB_FILES_WITH_PURE_TYPE if i[0] == DIR_DICT[Nucleotide]])
+        "type_, structure_file",
+        [i for i in PDB_FILES_WITH_PURE_TYPE if i[0] == DIR_DICT[Nucleotide]],
+    )
     def test_calculate_features(self, type_, structure_file):
         checked = 0
         for result in self.iter_structure(type_, structure_file, Nucleotide):
             result.finalize()
             for feat, mth in (
-                    ('nx', Nucleotide.calculate_nx),
-                    ('prc', Nucleotide.calculate_proximate_ring_center),
-                    ('ring_center', Nucleotide.calculate_ring_center),
+                ("nx", Nucleotide.calculate_nx),
+                ("prc", Nucleotide.calculate_proximate_ring_center),
+                ("ring_center", Nucleotide.calculate_ring_center),
             ):
                 assert getattr(result, feat)
                 try:

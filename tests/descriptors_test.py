@@ -15,17 +15,13 @@ from tests.conftest import TEST_STRUCTURES_DIR
 
 
 class TestElementBuilder:
-
     @pytest.mark.parametrize(
-        'type_, pdb_file',
-        [i for i in PDB_FILES_WITH_PURE_TYPE if 'nmr' not in i[0]])
+        "type_, pdb_file", [i for i in PDB_FILES_WITH_PURE_TYPE if "nmr" not in i[0]]
+    )
     def test_build(self, type_, pdb_file):
         s, = StructureLoader().load_structures(
-            path=os.path.join(
-                TEST_STRUCTURES_DIR,
-                type_,
-                pdb_file,
-            ))
+            path=os.path.join(TEST_STRUCTURES_DIR, type_, pdb_file)
+        )
         for chain in s.chains:
             chainable = [i for i in chain if isinstance(i, MerChainable)]
             failed = 0
@@ -36,7 +32,7 @@ class TestElementBuilder:
                     failed += 1
                 else:
                     assert type(elem) is ElementChainable
-            assert failed <= .2 * len(chainable)
+            assert failed <= 0.2 * len(chainable)
 
             for mer in chainable[:2] + chainable[-2:]:
                 with pytest.raises(ValueError):
@@ -44,21 +40,16 @@ class TestElementBuilder:
 
 
 class TestProteinDescriptor:
-
-    @pytest.mark.parametrize('pdb_file', PDB_FILES_DICT['prots_only'])
+    @pytest.mark.parametrize("pdb_file", PDB_FILES_DICT["prots_only"])
     def test_build_rc_criterion(self, pdb_file):
         """Test building descriptors with default side chain geometrical
         center distance criterion."""
         s, = StructureLoader().load_structures(
-            path=os.path.join(
-                TEST_STRUCTURES_DIR,
-                'prots_only',
-                pdb_file,
-            ))
+            path=os.path.join(TEST_STRUCTURES_DIR, "prots_only", pdb_file)
+        )
 
         if max(list(map(len, s.chains))) < 10:
-            pytest.skip('Structure %s has chains below 10 mers long, '
-                        'thus skipping.')
+            pytest.skip("Structure %s has chains below 10 mers long, " "thus skipping.")
 
         cmc = ContactMapCalculator(s, contact_criterion_obj=RcContact())
         cm = cmc.calculate_contact_map()
@@ -67,8 +58,9 @@ class TestProteinDescriptor:
 
         descs = dbd.create_descriptors(s, cm)
 
-        assert len([i for i in descs if i is not None]) > 0, \
-            'No descriptors for structure %s' % pdb_file
+        assert len([i for i in descs if i is not None]) > 0, (
+            "No descriptors for structure %s" % pdb_file
+        )
 
         for mer, desc in zip(s, descs):
             if desc is None:

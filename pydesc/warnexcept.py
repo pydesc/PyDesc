@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PyDesc is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -56,14 +56,13 @@ from pydesc.config import ConfigManager
 ConfigManager.new_branch("warnings")
 ConfigManager.warnings.set_default("quiet", False)
 ConfigManager.warnings.new_branch("class_filters")
-ConfigManager.warnings.class_filters.set_default("IncompleteChainableParticle",
-                                                 "always")
+ConfigManager.warnings.class_filters.set_default(
+    "IncompleteChainableParticle", "always"
+)
 ConfigManager.warnings.class_filters.set_default("Info", "always")
-ConfigManager.warnings.class_filters.set_default("DeprecationWarning",
-                                                 "default")
+ConfigManager.warnings.class_filters.set_default("DeprecationWarning", "default")
 ConfigManager.warnings.class_filters.set_default("NoConfiguration", "error")
-ConfigManager.warnings.class_filters.set_default("UnknownParticleName",
-                                                 "always")
+ConfigManager.warnings.class_filters.set_default("UnknownParticleName", "always")
 ConfigManager.warnings.class_filters.set_default("UserWarning", "always")
 ConfigManager.warnings.class_filters.set_default("WrongMonomerType", "always")
 
@@ -90,10 +89,15 @@ def set_filters():
     # TODO: Scan for warnings and exceptions automatically. Add checks for
     # warnings without entries in ConfigManager.
     for wrn_cls in (
-            Info, DeprecationWarning, NoConfiguration, UnknownParticleName,
-            UserWarning):
-        filter_ = getattr(ConfigManager.warnings.class_filters,
-                          wrn_cls.__name__)  # pylint: disable=no-member
+        Info,
+        DeprecationWarning,
+        NoConfiguration,
+        UnknownParticleName,
+        UserWarning,
+    ):
+        filter_ = getattr(
+            ConfigManager.warnings.class_filters, wrn_cls.__name__
+        )  # pylint: disable=no-member
         warnings.filterwarnings(filter_, category=wrn_cls)
 
 
@@ -114,7 +118,7 @@ class WarnManager(warnings.catch_warnings):
         only for recognition purpose. None by default.
         """
         self.obj = obj
-        self.exceptions = {None: [], '__internal__': []}
+        self.exceptions = {None: [], "__internal__": []}
         self.last_context = None
         warnings.catch_warnings.__init__(self, record=True)
 
@@ -139,12 +143,10 @@ class WarnManager(warnings.catch_warnings):
         warnings.catch_warnings do.
         """
         self._entered = False
-        self.exceptions['__internal__'] = warnings.catch_warnings.__enter__(
-            self)
+        self.exceptions["__internal__"] = warnings.catch_warnings.__enter__(self)
         return self
 
-    def __exit__(self, warning_type, warning_instance, traceback, *args,
-                 **kwargs):
+    def __exit__(self, warning_type, warning_instance, traceback, *args, **kwargs):
         """Overridden super class method called in 'with' statement when
         warning or exception was raised in code block.
 
@@ -157,8 +159,11 @@ class WarnManager(warnings.catch_warnings):
         while warnings are stored for future usage.
         """
         self.exceptions[self.last_context].extend(
-            [self.exceptions['__internal__'].pop(0).message for wrn in
-             self.exceptions['__internal__']])
+            [
+                self.exceptions["__internal__"].pop(0).message
+                for wrn in self.exceptions["__internal__"]
+            ]
+        )
         warnings.catch_warnings.__exit__(self)
         if warning_type is None:
             return True
@@ -193,8 +198,12 @@ class DiscontinuityError(Exception):
     """
 
     def __str__(self):
-        ending = "." if len(self.args) == 0 else "between: %s and %s" % tuple(
-            map(operator.methodcaller("get_pdb_id", self.args)))
+        ending = (
+            "."
+            if len(self.args) == 0
+            else "between: %s and %s"
+            % tuple(map(operator.methodcaller("get_pdb_id", self.args)))
+        )
         return "Discontinuity occurred" + ending
 
 
@@ -230,14 +239,17 @@ class WrongAtomDistances(Exception):
 
     def __str__(self):
         tpl = self.args[:2] + (self.args[2].ind,)
-        return "Wrong %s-%s distance in %s. Check if distance criteria in " \
-               "config manager are not to strict." % tpl
+        return (
+            "Wrong %s-%s distance in %s. Check if distance criteria in "
+            "config manager are not to strict." % tpl
+        )
 
 
 class WrongMerType(Exception):
     """Class of warnings. Warning against wrong type of mers given for
     contact calculation under specific criteria. Printed by default.
     """
+
     pass
 
 

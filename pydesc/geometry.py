@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PyDesc is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -25,8 +25,8 @@ import numpy
 import scipy.linalg
 
 # pylint: disable=no-member, invalid-name
-norm = scipy.linalg.get_blas_funcs('nrm2')
-axpy = scipy.linalg.get_blas_funcs('axpy')
+norm = scipy.linalg.get_blas_funcs("nrm2")
+axpy = scipy.linalg.get_blas_funcs("axpy")
 
 
 # pylint: enable=no-member, invalid-name
@@ -57,10 +57,9 @@ class TRTMatrix(object):
         default.
         """
         self.pre_vector = numpy.array([0.0, 0.0, 0.0])
-        self.rotation_matrix = numpy.array([
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0]])
+        self.rotation_matrix = numpy.array(
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+        )
         self.post_vector = numpy.array([0.0, 0.0, 0.0])
 
     def add_rotation(self, rotation_matrix):
@@ -118,10 +117,9 @@ class TRTMatrix(object):
 
     def reset_rotation(self):
         """Resets rotation matrix to diagonal identity matrix."""
-        self.rotation_matrix = numpy.array([
-            [1.0, 0.0, 0.0],
-            [0.0, 1.0, 0.0],
-            [0.0, 0.0, 1.0]])
+        self.rotation_matrix = numpy.array(
+            [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]]
+        )
 
     def reset_prerotational_translation(self):
         """Resets prerotational translation vector to zero vector."""
@@ -153,7 +151,7 @@ class Coord(object):
     It is also possible to multiply each coordinate by number.
     """
 
-    def __init__(self, x=.0, y=.0, z=.0, numpy_vec=None):
+    def __init__(self, x=0.0, y=0.0, z=0.0, numpy_vec=None):
         """Coord constructor.
 
         Arguments:
@@ -165,7 +163,8 @@ class Coord(object):
             self.vector = numpy_vec
         else:
             self.vector = numpy.array(
-                (float(x), float(y), float(z)))  # pylint: disable=no-member
+                (float(x), float(y), float(z))
+            )  # pylint: disable=no-member
 
     # numpy.array exists
 
@@ -320,7 +319,7 @@ class Plane(object):
         self.norm_vec = vec / nrm
         self.d = float(d) / nrm
 
-    def set_perpendicular_vector(self, x=.0, y=.0, z=.0, vec=None):
+    def set_perpendicular_vector(self, x=0.0, y=0.0, z=0.0, vec=None):
         """
         """
         pass
@@ -408,6 +407,7 @@ class Plane(object):
         res = Plane(numpy_vec=v, d=d)
 
         return res
+
 
 # pylint: enable=invalid-name
 # arguments and local names are informative here
