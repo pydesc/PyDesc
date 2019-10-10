@@ -2,14 +2,16 @@ import numpy
 import scipy.linalg
 
 import pydesc.geometry
+from pydesc.mers.base import Mer
+from pydesc.mers.base import MerChainable
+from pydesc.mers.base import MerOther
+from pydesc.mers.base import Pseudoatom
+from pydesc.mers.base import register_dynamic_feature
+from pydesc.mers.base import register_pseudoatom
 from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import NoConfiguration
 from pydesc.warnexcept import warn
 from pydesc.warnexcept import WrongMerType
-from .base import Mer
-from .base import MerChainable
-from .base import MerOther
-from .base import Pseudoatom
 
 norm = scipy.linalg.get_blas_funcs("nrm2")
 
@@ -101,17 +103,9 @@ class Residue(MerChainable):
         old_cbx_calculation -- True or False
         """
         MerChainable.__init__(self, structure_obj, ind, name, chain, atoms)
-        self.calculate_cbx()
 
-    def finalize(self):
-        """Method called by structures to calculate and set attributes that
-        need structural
-        information to be calculated.
-        """
-        super(Residue, self).finalize()
-        self.calculate_backbone_average()
-
-    def calculate_backbone_average(self):
+    @register_pseudoatom
+    def backbone_average(self):
         """Calculates coordinates of average ca pseudoatom and adds it to
         current residue pseudoatoms.
 
@@ -135,19 +129,10 @@ class Residue(MerChainable):
             # end of chain they have no next/previous mers
             pass
 
-        self.pseudoatoms["backbone_average"] = Pseudoatom(numpy_vec=(average_ca / cnt))
+        return Pseudoatom(numpy_vec=(average_ca / cnt), name="bb_average")
 
-    @property
+    @register_dynamic_feature
     def angles(self):
-        """Property that returns torsion angles (in order: psi and phi) of
-        residue."""
-        try:
-            return self.dynamic_properties["angles"]
-        except KeyError:
-            self.calculate_angles()
-            return self.dynamic_properties["angles"]
-
-    def calculate_angles(self):
         """Calculates torsion angles of residue and fills 'angles' property."""
         ang_psi, ang_phi = 0.0, 0.0
 
@@ -166,21 +151,19 @@ class Residue(MerChainable):
             pl1 = pydesc.geometry.Plane.build(*(atoms[1:] + [nxm.atoms["N"]]))
             ang_psi = pl1.dihedral_angle(pl2)
 
-        self.dynamic_properties["angles"] = (ang_psi, ang_phi)
+        return ang_psi, ang_phi
 
     @property
     def ca(self):
         """Property that returns current residue alpha carbon Atom object."""
         return self.atoms["CA"]
 
-    def calculate_cbx(self):
+    @register_pseudoatom
+    def cbx(self):
         """Adds Pseudoatom containing coordinates of the point that lies 1A
         farther from carbon alpha, than does carbon beta; or carbon alpha
         coordinates for GLY.
         """
-        if self.get_config("legacy_cbx_calculation"):
-            self.calculate_cbx_legacy()
-            return
         if self.name == "GLY":
             n_2_ca = self.atoms["N"] - self.atoms["CA"]
             c_2_ca = self.atoms["C"] - self.atoms["CA"]
@@ -199,87 +182,15 @@ class Residue(MerChainable):
             vec = vec * ((nrm + 1) / nrm)
             cbx = ca + vec
 
-        self.pseudoatoms["cbx"] = Pseudoatom(numpy_vec=cbx, name="cbx")
+        return Pseudoatom(numpy_vec=cbx, name="cbx")
 
-    def calculate_cbx_legacy(self):
-        """Creates pydesc.geometry.Coord instance containing coordinates of
-        cbx calculated in legacy mode and assigns it to residue cbx property.
-
-        Needs numpy to proceed. Uses Kabsch algorithm to superpose patternal
-        set of C, CA, N and CBX, eeven for GLY.
-        """
-        pattern = [
-            [1.26462, -0.673997, -3.024425],
-            [0, 0, -2.5],
-            [0, 0, 0],
-            [-1.23670, -0.656232, -3.010602],
-        ]
-        # positions of atoms/points C, C alfa, C beta extended by 1 A and N,
-        # respectively
-        try:
-            coords = [self.atoms[i] for i in ("C", "CA", "CB", "N")]
-        except KeyError:
-            coords = (
-                self.atoms["C"],
-                self.atoms["CA"],
-                (self.atoms["CA"] - self.atoms["C"])
-                + (self.atoms["CA"] - self.atoms["N"]),
-                self.atoms["N"],
-            )
-        bb_coords = [coord_obj.get_coord() for coord_obj in coords]
-        #
-
-        # ===============
-        # foregin code starts here
-        # ===============
-        # all subsequent comments untile notice were made by author
-        # assertions replaced by ValueErrors
-        # pylint:disable=invalid-name, no-member
-
-        # check for consistency
-        if len(bb_coords) != len(pattern):
-            raise ValueError("Wrong lenght of backbone: mer %s" % str(self))
-        L = len(bb_coords)
-
-        # must alway center the two proteins to avoid
-        # affine transformations.  Center the two proteins
-        # to their selections.
-        COM1 = numpy.sum(bb_coords, axis=0) / float(L)
-        COM2 = numpy.sum(pattern, axis=0) / float(L)
-        bb_coords = bb_coords - COM1
-        pattern = pattern - COM2
-
-        # This beautiful step provides the answer. V and Wt are the orthonormal
-        # bases that when multiplied by each other give us the rotation
-        # matrix, U. S, (Sigma, from SVD) provides us with the error!  Isn't
-        # SVD great!
-        V, S, Wt = numpy.linalg.svd(numpy.dot(numpy.transpose(pattern), bb_coords))
-
-        # we already have our solution, in the aaults from SVD.
-        # we just need to check for reflections and then produce
-        # the rotation.  V and Wt are orthonormal, so their det's
-        # are +/-1.
-        reflect = float(str(float(numpy.linalg.det(V) * numpy.linalg.det(Wt))))
-        if reflect == -1.0:
-            S[-1] = -S[-1]
-            V[:, -1] = -V[:, -1]
-
-        # U is simply V*Wt
-        U = numpy.dot(V, Wt)
-
-        # rotate and translate the molecule
-        pattern = numpy.dot((pattern), U) + COM1
-        pattern = pattern.tolist()
-
-        # pylint: enable=invalid-name, no-member
-        # =============
-        # end of foreign code
-        # =============
-        self.pseudoatoms["cbx"] = Pseudoatom(*pattern[2], name="cbx")
+    @register_pseudoatom
+    def rc(self):
+        """Return pseudoatom storing side chain geometric center."""
+        return super().rc
 
 
-class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
-
+class Nucleotide(MerChainable):
     """Representation of a nucleotide."""
 
     def __init__(self, structure_obj, ind, name, chain, atoms):
@@ -321,22 +232,34 @@ class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
             name: atom for name, atom in list(self.atoms.items()) if flag(name, atom)
         }
 
-        self.calculate_ring_center()
-        self.calculate_proximate_ring_center()
-        self.ring_plane = None
-        self.calculate_ring_plane()
-        self.calculate_nx()
-        self.ion_neighbours = []
+    def calculate_proximate_ring_center(self):
+        """Adds pseudoatom representing center of the base ring being closer to
+        glycosidic bond."""
+        vec = numpy.array([0.0, 0.0, 0.0])
+        for at in ("C4", "C5", "N7", "C8", "N9"):
+            vec += self.atoms[at].vector
+        vec /= 5.0
+        return Pseudoatom(numpy_vec=vec, name="prc")
 
-    def calculate_ring_center(self):
+    @register_pseudoatom
+    def prc(self):
+        """Get ring center of base ring closest to sugar."""
+        try:
+            return self.calculate_proximate_ring_center()
+        except KeyError:
+            return self.ring_center
+
+    @register_dynamic_feature
+    def ring_center(self):
         """Adds pseudoatom representing base ring center."""
         try:
             vec = (self.ring_atoms["N1"].vector + self.ring_atoms["C4"].vector) * 0.5
         except KeyError:
             raise IncompleteParticle("Lacking N1 or C4, unable to create Nucleotide.")
-        self.pseudoatoms["ring_center"] = Pseudoatom(numpy_vec=vec, name="ring_center")
+        return Pseudoatom(numpy_vec=vec, name="ring_center")
 
-    def calculate_ring_plane(self):
+    @register_dynamic_feature
+    def ring_plane(self):
         """Adds pydesc.geometry.Plane object representing base to current
         nucleotide pseudoatom dictionary."""
         at1, at2, at3 = (
@@ -344,32 +267,10 @@ class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
             self.ring_atoms["C4"],
             self.ring_atoms["C6"],
         )
-        self.ring_plane = pydesc.geometry.Plane.build(
-            at1, at2, at3
-        )  # pylint:disable=attribute-defined-outside-init
-        # current method is called by init
+        return pydesc.geometry.Plane.build(at1, at2, at3)
 
-    def calculate_proximate_ring_center(self):
-        """Adds pseudoatom representing center of the base ring being closer to
-        glycosidic bond."""
-        try:
-            vec = numpy.array([0.0, 0.0, 0.0])
-            for at in ("C4", "C5", "N7", "C8", "N9"):
-                vec += self.atoms[at].vector
-            vec /= 5.0
-            self.pseudoatoms["prc"] = Pseudoatom(numpy_vec=vec, name="prc")
-        except KeyError:
-            pass
-
-    @property
-    def prc(self):
-        """Get ring center of base ring closest to sugar."""
-        try:
-            return self.pseudoatoms["prc"]
-        except KeyError:
-            return self.pseudoatoms["ring_center"]
-
-    def calculate_nx(self):
+    @register_pseudoatom
+    def nx(self):
         """Adds pseudoatom representing extended by 1.4A vector along
         glycosidic bond."""
         at1 = self.atoms["C1'"]
@@ -382,10 +283,7 @@ class Nucleotide(MerChainable):  # TODO: Improve ConfigManager access
         nvec = vec * ((nrm + 1.4) / nrm)
 
         nx = at1.vector + nvec
-        self.pseudoatoms["nx"] = Pseudoatom(numpy_vec=nx, name="nx")
-
-
-# pylint:enable=no-self-use
+        return Pseudoatom(numpy_vec=nx, name="nx")
 
 
 class Ion(MerOther):

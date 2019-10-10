@@ -35,7 +35,7 @@ ConfigManager.mers.new_branch("ligand")
 ConfigManager.mers.set_default("backbone_atoms", ())
 ConfigManager.mers.monomerchainable.set_default("check_distances", False)
 ConfigManager.mers.residue.set_default(
-    "residue_code",
+    "code",
     {
         "ILE": "I",
         "GLN": "Q",
@@ -62,7 +62,7 @@ ConfigManager.mers.residue.set_default(
     },
 )
 ConfigManager.mers.residue.set_default(
-    "residue_additional_code",
+    "additional_code",
     {
         "DNP": "A",
         "ABI": "A",
@@ -216,10 +216,9 @@ ConfigManager.mers.residue.set_default(
     "crucial_atom_distances", (("C", "CA", 1.35, 1.71), ("CA", "N", 1.35, 1.75))
 )
 ConfigManager.mers.residue.set_default("indicators", ("CA", "cbx"))
-ConfigManager.mers.residue.set_default("legacy_cbx_calculation", False)
 ConfigManager.mers.residue.set_default("adjusted_segment_length", 18.0)
 ConfigManager.mers.nucleotide.set_default(
-    "nucleotide_code",
+    "code",
     {
         "G": "G",
         "C": "C",

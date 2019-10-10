@@ -49,16 +49,15 @@ class MerFactory:
         mer = self._create_mer_of_type(
             type(mer), base_data[:-1] + (deepcopy(base_data[-1]),)
         )
-        mer.finalize()
         return mer
 
     def create_from_biopdb(
-            self,
-            pdb_residue,
-            structure_obj=None,
-            warn_in_place=True,
-            warnings_=None,
-            base=None,
+        self,
+        pdb_residue,
+        structure_obj=None,
+        warn_in_place=True,
+        warnings_=None,
+        base=None,
     ):
         """Class method, returns Monomer instances.
 

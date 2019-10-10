@@ -7,8 +7,6 @@ from pydesc.mers.factories import MerFactory
 from pydesc.mers.full_atom import Ion
 from pydesc.mers.full_atom import Nucleotide
 from pydesc.mers.full_atom import Residue
-from tests.conftest import DIR_DICT
-from tests.conftest import PDB_FILES_WITH_PURE_TYPE
 from tests.conftest import PURE_TYPES_2_MERS_DICT
 from tests.conftest import TEST_STRUCTURES_DIR
 
@@ -64,18 +62,15 @@ class TestMonomerFactory(object):
 
         res.previous_mer = prev
         res.next_mer = next
-        res.finalize()
 
         assert len(tuple(res.iter_bb_atoms())) == 3
         assert len(tuple(res.iter_nbb_atoms())) > 0
-        assert "cbx" in res.pseudoatoms
-        assert "rc" in res.pseudoatoms
-        assert "backbone_average" in res.pseudoatoms
-        assert "CA" in res.atoms
 
-        res.calculate_angles()
-        res.calculate_cbx()
-        res.calculate_rc()
+        assert res.angles
+        assert res.cbx
+        assert res.rc
+        assert res.backbone_average
+        assert res.ca
 
         assert [round(i, 2) for i in res.angles] == [0.62, 1.30]
         assert res.next_mer is next
@@ -109,10 +104,11 @@ class TestResidue(MerTest):
         for result in self.iter_structure(protein_file, Residue):
             if result.name == "GLY":
                 continue
-            assert "cbx" in result.pseudoatoms
+            assert result.cbx
             del result.pseudoatoms["cbx"]
-            Residue.calculate_cbx(result)
-            assert round((result.CB - result.cbx).calculate_length(), 2) == 1.0
+            assert result.cbx
+            length = (result.CB - result.cbx).calculate_length()
+            assert round(length, 2) == 1.0
             unit_a_bx = (result.cbx - result.CA).get_unit_vector()
             unit_a_b = (result.CB - result.CA).get_unit_vector()
             dot_prod = unit_a_b.dot(unit_a_bx)
@@ -125,19 +121,10 @@ class TestNucleotide(MerTest):
     def test_calculate_features(self, nuclei_file):
         checked = 0
         for result in self.iter_structure(nuclei_file, Nucleotide):
-            result.finalize()
-            for feat, mth in (
-                ("nx", Nucleotide.calculate_nx),
-                ("prc", Nucleotide.calculate_proximate_ring_center),
-                ("ring_center", Nucleotide.calculate_ring_center),
-            ):
-                assert getattr(result, feat)
-                try:
-                    del result.pseudoatoms[feat]
-                except KeyError:
-                    pass
-                mth(result)
-                pseudoatom = getattr(result, feat)
+            assert result.nx
+            assert result.ring_center
+            assert result.prc
+            for pseudoatom in result.nx, result.ring_center, result.prc:
                 dist_from_rc = (result.rc - pseudoatom).calculate_length()
                 assert dist_from_rc < 10
             checked += 1

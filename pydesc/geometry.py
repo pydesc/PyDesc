@@ -166,8 +166,6 @@ class Coord(object):
                 (float(x), float(y), float(z))
             )  # pylint: disable=no-member
 
-    # numpy.array exists
-
     def __add__(self, coord_obj):
         """Returns result of addition of two vectors represented by Coord
         instances as new Coord instance.

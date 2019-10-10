@@ -191,6 +191,7 @@ class WarnManager(warnings.catch_warnings):
 
 class WrongElement(Exception):
     """Error shown when given element is incorrect."""
+
     pass
 
 

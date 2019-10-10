@@ -16,10 +16,11 @@ from Bio.PDB import DSSP
 
 import pydesc.dbhandler
 import pydesc.geometry
-from pydesc.mers.factories import MerFactory
-from pydesc.mers.base import Mer
-from pydesc.numberconverter import NumberConverter, PDBid
 from pydesc.config import ConfigManager
+from pydesc.mers.base import Mer
+from pydesc.mers.factories import MerFactory
+from pydesc.numberconverter import NumberConverter
+from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import DiscontinuityError
 from pydesc.warnexcept import set_filters
 from pydesc.warnexcept import warn
@@ -473,7 +474,7 @@ class AbstractStructure(metaclass=ABCMeta):
                 return chn
         raise AttributeError("No chain %s in %s." % (name, str(self)))
 
-    def save_pdb(self, path):   # TODO: move to separate class
+    def save_pdb(self, path):  # TODO: move to separate class
         """Writes (sub)structure into pdb file.
 
         Arguments:
@@ -742,8 +743,6 @@ class Chain(BackbonedMixIn, AbstractStructure):
         AbstractStructure.__init__(self, structure_obj)
         self.chain_name = chain_name
         self._mers = tuple(mers)
-        for mer in self._mers:
-            mer.finalize()
         self._fill_mers_attrs()
 
     def __repr__(self, mode=0):
@@ -871,7 +870,7 @@ class Contact(AbstractStructure):
         try:
             elements.remove(element_obj)
         except KeyError:
-            raise WrongElement('Given element is not part of this Contact.')
+            raise WrongElement("Given element is not part of this Contact.")
         return elements.pop()
 
     def value(self, cmap):
