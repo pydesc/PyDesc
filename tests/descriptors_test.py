@@ -4,26 +4,20 @@ import pytest
 
 from pydesc.contacts import ContactMapCalculator
 from pydesc.contacts import RcContact
-from pydesc.mers.base import MerChainable
 from pydesc.structure import ElementChainable
 from pydesc.structure import StructureLoader
 from pydesc.structure.descriptors import DescriptorBuilderDriver
 from pydesc.structure.descriptors import ElementFactory
-from tests.conftest import PDB_FILES_DICT
-from tests.conftest import PDB_FILES_WITH_PURE_TYPE
 from tests.conftest import TEST_STRUCTURES_DIR
 
 
 class TestElementBuilder:
-    @pytest.mark.parametrize(
-        "type_, pdb_file", [i for i in PDB_FILES_WITH_PURE_TYPE if "nmr" not in i[0]]
-    )
-    def test_build(self, type_, pdb_file):
-        s, = StructureLoader().load_structures(
-            path=os.path.join(TEST_STRUCTURES_DIR, type_, pdb_file)
-        )
-        for chain in s.chains:
-            chainable = [i for i in chain if isinstance(i, MerChainable)]
+    def test_build(self, structure_file_w_pure_type):
+        loader = StructureLoader()
+        pth = os.path.join(TEST_STRUCTURES_DIR, structure_file_w_pure_type)
+        structure = loader.load_structures(path=pth)[0]
+        for chain in structure.chains:
+            chainable = [i for i in chain if i.is_chainable()]
             failed = 0
             for mer in chainable[2:-2]:
                 try:
@@ -40,13 +34,11 @@ class TestElementBuilder:
 
 
 class TestProteinDescriptor:
-    @pytest.mark.parametrize("pdb_file", PDB_FILES_DICT["prots_only"])
-    def test_build_rc_criterion(self, pdb_file):
+    def test_build_rc_criterion(self, protein_file):
         """Test building descriptors with default side chain geometrical
         center distance criterion."""
-        s, = StructureLoader().load_structures(
-            path=os.path.join(TEST_STRUCTURES_DIR, "prots_only", pdb_file)
-        )
+        pth = os.path.join(TEST_STRUCTURES_DIR, protein_file)
+        s, = StructureLoader().load_structures(path=pth)
 
         if max(list(map(len, s.chains))) < 10:
             pytest.skip("Structure %s has chains below 10 mers long, " "thus skipping.")
@@ -59,7 +51,7 @@ class TestProteinDescriptor:
         descs = dbd.create_descriptors(s, cm)
 
         assert len([i for i in descs if i is not None]) > 0, (
-            "No descriptors for structure %s" % pdb_file
+            "No descriptors for structure %s" % protein_file
         )
 
         for mer, desc in zip(s, descs):

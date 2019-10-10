@@ -24,8 +24,7 @@ ConfigManager.warnings.quiet = True
 @pytest.fixture(scope="module", params=PDB_FILES_WITH_TYPE_SHORT)
 def structure(request):
     sl = StructureLoader()
-    type_, structure_file = request.param
-    path_str = os.path.join(TEST_STRUCTURES_DIR, type_, structure_file)
+    path_str = os.path.join(TEST_STRUCTURES_DIR, request.param)
     structure = sl.load_structures(path=path_str)[0]
     return structure
 

@@ -16,13 +16,11 @@ TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, Ion: 0.0}
 
 
 class TestMonomerFactory(object):
-    @pytest.mark.parametrize("type_, struc_file", PDB_FILES_WITH_PURE_TYPE)
-    def test_default_mer_factory_create_from_pdb_res(self, type_, struc_file):
-
+    def test_default_mer_factory_create_from_pdb_res(self, structure_file_w_pure_type):
+        type_, fname = os.path.split(structure_file_w_pure_type)
         factory = MerFactory()
-        pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
-            struc_file, os.path.join(TEST_STRUCTURES_DIR, type_, struc_file)
-        )
+        pth = os.path.join(TEST_STRUCTURES_DIR, structure_file_w_pure_type)
+        pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(fname, pth)
 
         expected_type = PURE_TYPES_2_MERS_DICT[type_]
         type_threshold = TYPE_THRESHOLDS[expected_type]
@@ -86,10 +84,10 @@ class TestMonomerFactory(object):
 
 class MerTest(object):
     @staticmethod
-    def iter_structure(dir_, file_, class_):
+    def iter_structure(file_, class_):
         factory = MerFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
-            file_, os.path.join(TEST_STRUCTURES_DIR, dir_, file_)
+            "test", os.path.join(TEST_STRUCTURES_DIR, file_)
         )
         to_return = []
         for model in pdb_structure:
@@ -106,13 +104,9 @@ class MerTest(object):
 
 
 class TestResidue(MerTest):
-    @pytest.mark.parametrize(
-        "type_, structure_file",
-        [i for i in PDB_FILES_WITH_PURE_TYPE if i[0] == DIR_DICT[Residue]],
-    )
-    def test_calculate_cbx(self, type_, structure_file):
+    def test_calculate_cbx(self, protein_file):
         checked = 0
-        for result in self.iter_structure(type_, structure_file, Residue):
+        for result in self.iter_structure(protein_file, Residue):
             if result.name == "GLY":
                 continue
             assert "cbx" in result.pseudoatoms
@@ -128,13 +122,9 @@ class TestResidue(MerTest):
 
 
 class TestNucleotide(MerTest):
-    @pytest.mark.parametrize(
-        "type_, structure_file",
-        [i for i in PDB_FILES_WITH_PURE_TYPE if i[0] == DIR_DICT[Nucleotide]],
-    )
-    def test_calculate_features(self, type_, structure_file):
+    def test_calculate_features(self, nuclei_file):
         checked = 0
-        for result in self.iter_structure(type_, structure_file, Nucleotide):
+        for result in self.iter_structure(nuclei_file, Nucleotide):
             result.finalize()
             for feat, mth in (
                 ("nx", Nucleotide.calculate_nx),
