@@ -59,39 +59,10 @@ class MerFactory:
         warnings_=None,
         base=None,
     ):
-        """Class method, returns Monomer instances.
-
-        Returns dictionary of different monomer types as values,
-        calls _create_possible_monomers to create actual objects.
-        This method facilitates checks and routines common to all monomer
-        creations.
-
-        The returned dictionary contains two special entries:
-            'warnings' - an instance of WarnManager storing eventual warnings.
-            Monomer - an instance of Monomer class containing atoms from
-            pdb_residue.
-
-        Arguments:
-        pdb_residue -- instance of BioPython Bio.PDB.Residue based on which
-        monomer is created.
-        structure_obj -- Structure instance to which the monomer belongs.
-        Could be None for unbounded mers.
-        Initially set to None.
-        warn_in_place -- True or False. Determines if warnings are to be
-        raised immediately or returned as a result.
-        The former forces constructors to raise warning immediately.
-        The latter stores raised warnings in context manager delivered as
-        value of 'warnings' key in returned dictionary.
-        warnings_ -- context manager for catching warnings. Should be
-        supplied when restarting monomer creation.
-        base -- an instance of Monomer class containing atoms from
-        pdb_residue. Should be supplied when restarting
-        monomer creation.
-        """
 
         name = self.get_pdb_residue_name(pdb_residue)
         if name in ConfigManager.mers.solvent:
-            return None, None  # We ignore solvent
+            return None, None
 
         if warnings_ is None:
             warnings_ = WarnManager(pdb_residue)

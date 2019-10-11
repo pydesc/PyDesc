@@ -26,10 +26,11 @@ from abc import ABCMeta
 from abc import abstractmethod
 from functools import reduce
 
-import pydesc.structure
 from pydesc.mers.base import Mer
 from pydesc.mers.factories import MerFactory
 from pydesc.mers.factories import WrongMerType
+from pydesc.structure.topology import PartialStructure
+from pydesc.structure.topology import Segment
 
 
 class Selection(metaclass=ABCMeta):
@@ -155,7 +156,7 @@ class Set(Selection):
         INFLUENCE CREATED User Structure OBJECT.
         """
         inds = self._get_list_of_inds(structure_obj)
-        substructure = pydesc.structure.PartialStructure(
+        substructure = PartialStructure(
             [structure_obj[ind] for ind in inds], structure_obj.derived_from.converter
         )
         return substructure
@@ -170,7 +171,7 @@ class Set(Selection):
         NOTE: CHANGES IN structure_obj.converter (its number converter) WILL
         INFLUENCE CREATED User Structure OBJECT.
         """
-        structure = pydesc.structure.PartialStructure(
+        structure = PartialStructure(
             [],  # initialize with empty set of mers
             structure_obj.derived_from.converter,
         )
@@ -236,9 +237,7 @@ class Range(Selection):
 
     def create_segment(self, structure_obj):
         """Returns pydesc.structure.Segment."""
-        return pydesc.structure.Segment(
-            structure_obj[self.start], structure_obj[self.end]
-        )
+        return Segment(structure_obj[self.start], structure_obj[self.end])
 
 
 class MerAttr(Selection, metaclass=ABCMeta):
@@ -331,7 +330,7 @@ class MerSubclasses(Selection):
         self.monomer_subclass = monomer_subclass
 
     def __repr__(self):
-        pattern = re.compile("[A-Z]{1}[a-z]*")
+        pattern = re.compile("[A-Z][a-z]*")
         operation = re.findall(pattern, self.monomer_subclass.__name__)
         operation.reverse()
         operation = " ".join(operation).lower()
@@ -393,9 +392,7 @@ class Nothing(Selection):
         Arguments:
         structure_obj -- instance od pydesc.structure.AbstractStructure.
         """
-        substructure = pydesc.structure.PartialStructure(
-            [], structure_obj.derived_from.converter
-        )
+        substructure = PartialStructure([], structure_obj.derived_from.converter)
         return substructure
 
     def specify(self, structure_obj):
@@ -421,7 +418,7 @@ class CombinedSelection(Selection, metaclass=ABCMeta):
         Argument:
         distinguish_chains -- True, False or None; initially set to None.
         If so, all sub-selections use their own distinguish chains setup.
-        True/False forces all sub-selctions to act like they have property
+        True/False forces all sub-selections to act like they have property
         'distinguish_chains' set to True/False. See selection docstring to
         learn more.
         """

@@ -5,15 +5,15 @@ import pytest
 
 from pydesc import selection
 from pydesc.config import ConfigManager
+from pydesc.mers.base import MerChainable
+from pydesc.mers.factories import WrongMerType
 from pydesc.mers.full_atom import Ion
 from pydesc.mers.full_atom import Ligand
-from pydesc.mers.base import MerChainable
 from pydesc.mers.full_atom import Nucleotide
 from pydesc.mers.full_atom import Residue
-from pydesc.mers.factories import WrongMerType
-from pydesc.structure import AbstractStructure
-from pydesc.structure import PartialStructure
 from pydesc.structure import StructureLoader
+from pydesc.structure.topology import AbstractStructure
+from pydesc.structure.topology import PartialStructure
 from pydesc.warnexcept import DiscontinuityError
 from tests.conftest import PDB_FILES_WITH_TYPE_SHORT
 from tests.conftest import TEST_STRUCTURES_DIR

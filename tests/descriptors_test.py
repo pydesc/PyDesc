@@ -4,10 +4,10 @@ import pytest
 
 from pydesc.contacts import ContactMapCalculator
 from pydesc.contacts import RcContact
-from pydesc.structure import ElementChainable
 from pydesc.structure import StructureLoader
 from pydesc.structure.descriptors import DescriptorBuilderDriver
 from pydesc.structure.descriptors import ElementFactory
+from pydesc.structure.topology import ElementChainable
 from tests.conftest import TEST_STRUCTURES_DIR
 
 

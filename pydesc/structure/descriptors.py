@@ -2,11 +2,11 @@ from abc import ABCMeta
 from functools import reduce
 
 from pydesc.config import ConfigManager
-from . import AbstractStructure
-from . import Contact
-from . import ElementChainable
-from . import ElementOther
-from . import Segment
+from pydesc.structure.topology import AbstractStructure
+from pydesc.structure.topology import Contact
+from pydesc.structure.topology import ElementChainable
+from pydesc.structure.topology import ElementOther
+from pydesc.structure.topology import Segment
 
 
 class ElementFactory:

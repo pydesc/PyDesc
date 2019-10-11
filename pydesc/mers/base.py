@@ -54,7 +54,7 @@ class Atom(pydesc.geometry.Coord):
     """
 
     def __init__(self, coords, element, occupancy=0.0, b_factor=0.0):
-        """Atom constructor.
+        """Initialize Atom.
 
         Arguments:
         coords -- np.array of x, y, z coordinates.
