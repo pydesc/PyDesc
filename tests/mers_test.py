@@ -3,7 +3,7 @@ import os.path
 import Bio.PDB
 import pytest
 
-from pydesc.mers.factories import MerFactory
+from pydesc.mers.factories import BioPythonMerFactory
 from pydesc.mers.full_atom import Ion
 from pydesc.mers.full_atom import Nucleotide
 from pydesc.mers.full_atom import Residue
@@ -16,7 +16,7 @@ TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, Ion: 0.0}
 class TestMonomerFactory(object):
     def test_default_mer_factory_create_from_pdb_res(self, structure_file_w_pure_type):
         type_, fname = os.path.split(structure_file_w_pure_type)
-        factory = MerFactory()
+        factory = BioPythonMerFactory()
         pth = os.path.join(TEST_STRUCTURES_DIR, structure_file_w_pure_type)
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(fname, pth)
 
@@ -29,9 +29,7 @@ class TestMonomerFactory(object):
         for model in pdb_structure:
             for chain in model:
                 for residue in chain:
-                    result, warns = factory.create_from_biopdb(
-                        residue, warn_in_place=False
-                    )
+                    result, warns = factory.create(residue, warn_in_place=False)
 
                     if result is None:
                         assert warns is None
@@ -48,7 +46,7 @@ class TestMonomerFactory(object):
         )
 
     def test_create_residue_from_pdb_res(self):
-        factory = MerFactory()
+        factory = BioPythonMerFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
             "5MPV.pdb", os.path.join(TEST_STRUCTURES_DIR, "prots_only", "5MPV.pdb")
         )
@@ -56,9 +54,9 @@ class TestMonomerFactory(object):
         r1 = pdb_structure[0]["D"][15]
         r2 = pdb_structure[0]["D"][16]
         r3 = pdb_structure[0]["D"][17]
-        prev = factory.create_from_biopdb(r1, warn_in_place=False)[0][Residue]
-        res = factory.create_from_biopdb(r2, warn_in_place=False)[0][Residue]
-        next = factory.create_from_biopdb(r3, warn_in_place=False)[0][Residue]
+        prev = factory.create(r1, warn_in_place=False)[0][Residue]
+        res = factory.create(r2, warn_in_place=False)[0][Residue]
+        next = factory.create(r3, warn_in_place=False)[0][Residue]
 
         res.previous_mer = prev
         res.next_mer = next
@@ -80,7 +78,7 @@ class TestMonomerFactory(object):
 class MerTest(object):
     @staticmethod
     def iter_structure(file_, class_):
-        factory = MerFactory()
+        factory = BioPythonMerFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
             "test", os.path.join(TEST_STRUCTURES_DIR, file_)
         )
@@ -88,9 +86,7 @@ class MerTest(object):
         for model in pdb_structure:
             for chain in model:
                 for residue in chain:
-                    result, warns = factory.create_from_biopdb(
-                        residue, warn_in_place=False
-                    )
+                    result, warns = factory.create(residue, warn_in_place=False)
                     if result is None or class_ not in result:
                         continue
                     result = result[class_]

@@ -8,19 +8,20 @@ from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import WarnManager
 from pydesc.warnexcept import WrongAtomDistances
 from pydesc.warnexcept import WrongMerType
-from .base import Atom
-from .base import Mer
-from .full_atom import Ion
-from .full_atom import Ligand
-from .full_atom import Nucleotide
-from .full_atom import Residue
+from pydesc.mers.base import Atom, AtomProxy
+from pydesc.mers.base import Mer
+from pydesc.mers.full_atom import Ion
+from pydesc.mers.full_atom import Ligand
+from pydesc.mers.full_atom import Nucleotide
+from pydesc.mers.full_atom import Residue
+from abc import ABCMeta, abstractmethod
 
 
-class MerFactory:
-    """Factory class for Monomer subclass instances."""
+class MerFactory(metaclass=ABCMeta):
+    """Abstract factory class for Mer subclass instances."""
 
     def __init__(self, classes=None):
-        """Monomer factory initializer.
+        """Mer factory initializer.
 
         Argument:
         classes -- list of classes to be used.
@@ -31,6 +32,10 @@ class MerFactory:
             classes = [Residue, Nucleotide, Ion, Ligand]
         self.classes = classes
 
+    @abstractmethod
+    def create(self, *args):
+        pass
+
     @property
     def chainable(self):
         return [i for i in self.classes if i.is_chainable()]
@@ -39,51 +44,17 @@ class MerFactory:
     def other(self):
         return [i for i in self.classes if not i.is_chainable()]
 
-    def copy_mer(self, mer):
+    @classmethod
+    def copy_mer(cls, mer):
         """Return copy of given mer.
 
         Argument:
         mer -- mer subclass instance.
         """
-        base_data = self.unpack_base(mer)
-        mer = self._create_mer_of_type(
-            type(mer), base_data[:-1] + (deepcopy(base_data[-1]),)
-        )
+        base_data = cls.unpack_base(mer)
+        base_data = base_data[:-1] + (deepcopy(base_data[-1]),)
+        mer = cls._create_mer_of_type(type(mer), base_data)
         return mer
-
-    def create_from_biopdb(
-        self,
-        pdb_residue,
-        structure_obj=None,
-        warn_in_place=True,
-        warnings_=None,
-        base=None,
-    ):
-
-        name = self.get_pdb_residue_name(pdb_residue)
-        if name in ConfigManager.mers.solvent:
-            return None, None
-
-        if warnings_ is None:
-            warnings_ = WarnManager(pdb_residue)
-
-        try:
-            ind = structure_obj.converter.get_ind(
-                PDBid.create_from_pdb_residue(pdb_residue)
-            )
-        except (AttributeError, KeyError):
-            ind = None
-
-        if base is None:
-            base = Mer(structure_obj, ind, *self.unpack_pdb_residue(pdb_residue, name))
-
-        mers, warnings_ = self._create_possible_monomers(base, warnings_, self.classes)
-        if warn_in_place:
-            for class_ in self.classes:
-                warnings_.raise_all(class_)
-
-        mers[Mer] = base
-        return mers, warnings_
 
     def _create_possible_monomers(self, base_monomer, warnings_, classes):
         """Return dictionary of different monomer types as values and
@@ -120,6 +91,51 @@ class MerFactory:
         """
         return monomer_type(*base_data)
 
+    @staticmethod
+    def unpack_base(base):
+        """Return structure, PyDesc index, name, chain and atoms from given
+        base (monomer.Monomer instance)."""
+        return base.structure, base.ind, base.name, base.chain, base.atoms
+
+
+class BioPythonMerFactory(MerFactory):
+    def create(
+        self,
+        pdb_residue,
+        structure_obj=None,
+        warn_in_place=True,
+        warnings_=None,
+        base=None,
+    ):
+        """Create all possible mer subclass from given BioPython residue.
+
+        Returns dict of created classes and WarnManager ready to raise warnings.
+        """
+        name = self.get_pdb_residue_name(pdb_residue)
+        if name in ConfigManager.mers.solvent:
+            return None, None
+
+        if warnings_ is None:
+            warnings_ = WarnManager(pdb_residue)
+
+        try:
+            ind = structure_obj.converter.get_ind(
+                PDBid.create_from_pdb_residue(pdb_residue)
+            )
+        except (AttributeError, KeyError):
+            ind = None
+
+        if base is None:
+            base = Mer(structure_obj, ind, *self.unpack_pdb_residue(pdb_residue, name))
+
+        mers, warnings_ = self._create_possible_monomers(base, warnings_, self.classes)
+        if warn_in_place:
+            for class_ in self.classes:
+                warnings_.raise_all(class_)
+
+        mers[Mer] = base
+        return mers, warnings_
+
     def unpack_pdb_residue(self, pdb_residue, name=None):
         """Return important data from pdb_residue.
 
@@ -142,16 +158,29 @@ class MerFactory:
     @staticmethod
     def create_atom_from_bio_atom(pdb_atom):
         """Return Atom instance from given Bio.Atom instance."""
-        return Atom(numpy.array(pdb_atom.get_coord()), pdb_atom.element)
-
-    @staticmethod
-    def unpack_base(base):
-        """Return structure, PyDesc index, name, chain and atoms from given
-        base (monomer.Monomer instance)."""
-        return base.structure, base.ind, base.name, base.chain, base.atoms
+        coords = numpy.array(pdb_atom.get_coord())
+        serial_number = pdb_atom.get_serial_number()
+        element = pdb_atom.element
+        return Atom(coords, element, serial_number)
 
     @staticmethod
     def get_pdb_residue_name(pdb_residue):
         """Get residue name from given *pdb_residue* (Bio.PDBResidue
         instance)."""
         return pdb_residue.get_resname().strip()
+
+
+class MDTrajMerFactory(MerFactory):
+
+    """Mer factory responsible for creating mers consisting of AtomProxy objects."""
+
+    def create(self, mer, trajectory):
+        """Create mer linked with given pydesc Trajectory instance."""
+        *base_data, atoms = self.unpack_base(mer)
+        atoms_proxies = {}
+        for atom_name, atom in atoms.items():
+            new_atom = AtomProxy(atom, trajectory)
+            atoms_proxies[atom_name] = new_atom
+        new_base = *base_data, atoms_proxies
+        proxy_mer = self._create_mer_of_type(type(mer), new_base)
+        return proxy_mer

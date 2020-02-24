@@ -12,6 +12,7 @@ from pydesc.warnexcept import warn
 from pydesc.warnexcept import WrongAtomDistances
 
 norm = scipy.linalg.get_blas_funcs("nrm2")
+NotSet = object()
 
 
 def register_pseudoatom(method):
@@ -53,12 +54,15 @@ class Atom(pydesc.geometry.Coord):
     pdb_atom -- instance of BioPython Atom class.
     """
 
-    def __init__(self, coords, element, occupancy=0.0, b_factor=0.0):
+    def __init__(
+        self, coords, element, serial_number=None, occupancy=0.0, b_factor=0.0
+    ):
         """Initialize Atom.
 
         Arguments:
         coords -- np.array of x, y, z coordinates.
         element -- one letter string indicating element.
+        serial_number -- serial number in pdb file, None by default.
         occupancy -- value from pdb file, 0.0 by default
         b_factor -- value from pdb file, 0.0 by default
         """
@@ -66,9 +70,32 @@ class Atom(pydesc.geometry.Coord):
         self.element = element
         self.occupancy = occupancy
         self.b_factor = b_factor
+        self.serial_number = serial_number
 
     def __repr__(self):
         return "<Atom at %s>" % " ".join(["%.2f" % i for i in self.vector])
+
+
+class AtomProxy(pydesc.geometry.Coord):
+
+    """Proxy implementing Atom interface, but taking coords from given Trajectory
+    object."""
+
+    def __init__(self, atom, trajectory):
+        """Initialize with topology atom and trajectory to read coords from."""
+        self.atom = atom
+        self.trajectory = trajectory
+
+    @property
+    def vector(self):
+        """Shadow vector attribute with readings from trajectory object."""
+        return self.trajectory.get_atom_coords(self.atom)
+
+    def __repr__(self):
+        return "<AtomProxy to #%i from %s>" % (
+            self.atom.serial_number,
+            repr(self.trajectory),
+        )
 
 
 class Pseudoatom(pydesc.geometry.Coord):
@@ -192,8 +219,8 @@ class Mer:
         self._ss = "="
 
     def __len__(self):
-        """Return sum of lengths of monomer's atoms and pseudoatoms."""
-        return len(list(iter(self)))
+        """Return sum of lengths of monomer's atoms."""
+        return len(self.atoms)
 
     def __repr__(self):
         try:
@@ -211,10 +238,7 @@ class Mer:
 
         Monomer iterator iterates over its atoms and pseudoatoms dictionaries.
         """
-        return iter(
-            [self.atoms[atom] for atom in sorted(self.atoms)]
-            + [self.pseudoatoms[point] for point in sorted(self.pseudoatoms)]
-        )
+        return iter(self.atoms.values())
 
     def __getattr__(self, name):
         """Returns proper attribute value.
@@ -228,10 +252,6 @@ class Mer:
         except KeyError:
             repr_ = self.ind if self.ind is not None else str(self)
             raise AttributeError("Monomer %s has no attribute %s" % (repr_, name))
-
-    def iter_atoms(self):
-        """Returns iterator that iterates over monomer's atoms."""
-        return iter(list(self.atoms.values()))
 
     def has_bond(self, mer):
         """Tell if mer has bond with another mer. Returns False by default. Meant to

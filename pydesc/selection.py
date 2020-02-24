@@ -176,7 +176,7 @@ class Set(Selection):
             structure_obj.derived_from.converter,
         )
         list_of_inds = self._get_list_of_inds(structure_obj)
-        mf = MerFactory()
+        mf = MerFactory
         mers = [mf.copy_mer(structure_obj[ind]) for ind in list_of_inds]
         structure.set_mers(mers)
         return structure
