@@ -26,13 +26,14 @@ import re
 import numpy as np
 
 from pydesc.mers import ConfigManager
+from pydesc.warnexcept import UnknownPDBid
 
 
 def perform_smith_waterman(models_ids):  # pylint: disable=invalid-name
     """Aligns given PDB_ids using Smith-Waterman algorithm.
 
     Argument:
-    models_ids -- list of lists containing PDB_ids to be aligned.
+        models_ids -- list of lists containing PDB_ids to be aligned.
 
     Used by NumberConverter to align PDB_ids provided by different models
     (e.g. NMR) of the same structure.
@@ -48,8 +49,8 @@ def build_smith_waterman_matrix(ids, aligned_ids):
     """Builds and returns Smith-Waterman matrix.
 
     Arguments:
-    ids -- sequence of horizontal PDB_ids to be aligned.
-    aligned_ids -- sequence of vertical PDB_ids to be aligned.
+        ids -- sequence of horizontal PDB_ids to be aligned.
+        aligned_ids -- sequence of vertical PDB_ids to be aligned.
 
     Returns SW_matrix - list of lists containing scoring tuples. Scoring
     tuple is a tuple containing value of alignment represented by current
@@ -110,7 +111,7 @@ def go_backwards(sw_matrix):
     """Aligns two sequences contained by Smith-Waterman matrix.
 
     Arguments:
-    sw_matrix -- matrix created by build_smith_waterman_matrix function.
+        sw_matrix -- matrix created by build_smith_waterman_matrix function.
 
     Returns list of aligned items.
     """
@@ -128,10 +129,6 @@ def go_backwards(sw_matrix):
             break
         row, col = new_row, new_col
     return [i for i in reversed(new_aligned_ids)]
-
-
-class UnknownPDBid(Exception):
-    pass
 
 
 class PDBid(tuple):
@@ -168,7 +165,7 @@ class PDBid(tuple):
         """Returns PDB id tuple.
 
         Argument:
-        pdb_id -- string in format <chain><pdb_number><pdb_insertion_code>,
+            pdb_id -- string in format <chain><pdb_number><pdb_insertion_code>,
         e.g. C12A.
         """
         match = re.match("^(.)([0-9]*)([^0-9])?$", pdb_id)
@@ -182,47 +179,81 @@ class PDBid(tuple):
 
     @staticmethod
     def create_from_pdb_residue(pdb_residue):
-        """Returns PDB id tuple.
-
-        Argument:
-        pdb_residue -- BioPython residue.
-        """
+        """Returns PDB id tuple based on given BioPythons residue."""
         id_tuple = pdb_residue.get_full_id()
         icode = None if id_tuple[3][2] == " " else id_tuple[3][2]
         return PDBid((id_tuple[2], int(id_tuple[3][1]), icode))
 
+    @staticmethod
+    def create_from_md_residue(md_residue):
+        """Return PDB id tuple based on given MDTraj residue."""
+        chain_index = str(md_residue.chain.index)
+        return PDBid((chain_index, md_residue.resSeq, None))
 
-class NumberConverter(object):
-    """Class of objects responsible for converting PDB names of mers to PyDesc
-    integers (inds).
-    """
 
-    def __init__(self, pdb_models):
-        """NumberConverter constructor.
+class NumberConverterFactory:
+    """Class responsible for creating number converters."""
 
-        Arguments:
-        pdb_models -- list of pdb models from Bio.PDB parser.
+    def __init__(self):
+        """Initialize reading solvent from configuration."""
+        self.solvent_names = ConfigManager.mers.solvent
 
-        Sets attributes ind2pdb and pdb2ind which provides translation between
-        PDB_id and PyDesc integers (inds).
+    def _is_solvent(self, name):
+        """Check if given name is in solvent names list."""
+        return name in self.solvent_names
+
+    def from_md_topology(self, topology):
+        """Create NumberConverter from MDTraj Topology object.
+
+        Argument:
+            topology -- mdtraj.Topology instance.
+        """
+        no_solvent_mers = [
+            mer for mer in topology.residues if not self._is_solvent(mer.name)
+        ]
+        id_factory = PDBid.create_from_md_residue
+        ids = [id_factory(mer) for mer in no_solvent_mers]
+
+        converter = NumberConverter(ids)
+
+        return converter
+
+    def from_pdb_models(self, pdb_models):
+        """Create NumberConverter from BioPythons pdb models.
+
+        Argument:
+            pdb_models -- list of pdb models from Bio.PDB parser.
 
         For structures containing few models - performs Smith-Waterman
         algorithm to establish correct order of mers common for all models.
         """
-
-        def is_not_water(pdb_residue):
-            return not pdb_residue.get_resname() in ConfigManager.mers.solvent
-
-        factory_mth = PDBid.create_from_pdb_residue
+        id_factory = PDBid.create_from_pdb_residue
         models_ids = []
         for pdb_model in pdb_models:
-            no_solvent_ids = list(filter(is_not_water, pdb_model.get_residues()))
-            models_ids.append([factory_mth(id_) for id_ in no_solvent_ids])
+            mers = pdb_model.get_residues()
+            no_solvent_mers = [
+                mer for mer in mers if not self._is_solvent(mer.get_resname())
+            ]
+            models_ids.append([id_factory(mer) for mer in no_solvent_mers])
 
         if len(models_ids) > 1:
             models_ids = perform_smith_waterman(models_ids)
 
-        self.ind2pdb = models_ids[0]
+        converter = NumberConverter(models_ids[0])
+
+        return converter
+
+
+class NumberConverter:
+    """Class of objects responsible for converting PDB names of mers to PyDesc
+    integers (inds)."""
+
+    def __init__(self, ids):
+        """Initialize converter with sorted PDB ids.
+
+        Sets mapping backwards automatically.
+        """
+        self.ind2pdb = ids
         self.pdb2ind = {tuple(v): i for i, v in enumerate(self.ind2pdb)}
 
     def get_pdb_id(self, ind):
@@ -247,7 +278,7 @@ class NumberConverter(object):
 
         None is returned for any key absent in structure.
         Arguments:
-        pdb_id_tuples -- list of PDB id instances or proper tuples (see
+            pdb_id_tuples -- list of PDB id instances or proper tuples (see
         PDB_id object docstring for more information).
         """
         inds = []
@@ -264,7 +295,7 @@ class NumberConverter(object):
         PyDesc integer (ind).
 
         Argument:
-        pdb_id -- PDB id object or tuple congaing proper pdb id.
+            pdb_id -- PDB id object or tuple congaing proper pdb id.
         """
         try:
             return self.pdb2ind[pdb_id]
