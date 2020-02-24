@@ -6,14 +6,18 @@ created: 10.07.2013 - , Tymoteusz 'hert' Oleniecki
 
 import os.path
 
+import mdtraj
+
 import pydesc.dbhandler
 import pydesc.geometry
 from pydesc.config import ConfigManager
-from pydesc.mers.factories import MerFactory
-from pydesc.numberconverter import NumberConverter
+from pydesc.structure.trajectory import Trajectory
+from pydesc.mers.factories import BioPythonMerFactory, MDTrajMerFactory
+from pydesc.numberconverter import NumberConverterFactory
 from pydesc.structure.topology import Chain
 from pydesc.structure.topology import Structure
-from pydesc.warnexcept import set_filters
+from pydesc import warnexcept
+from pydesc.structure.trajectory import Trajectory
 
 # pylint: disable=no-member
 ConfigManager.new_branch("element")
@@ -32,7 +36,7 @@ class StructureLoader(object):
         self,
         handler=pydesc.dbhandler.MetaHandler(),
         parser=pydesc.dbhandler.MetaParser(QUIET=True),
-        mer_factory=MerFactory(),
+        mer_factory=BioPythonMerFactory(),
     ):
         """Structure loader constructor.
 
@@ -85,7 +89,7 @@ class StructureLoader(object):
             models.extend([pdb_model for pdb_model in pdb_structure])
         return models
 
-    def _create_chain(self, pdb_chain, structure):
+    def create_chain(self, pdb_chain, structure):
         """Return Chain instance.
 
         Arguments:
@@ -110,7 +114,7 @@ class StructureLoader(object):
         hits = dict((klass, 0) for klass in self.mer_factory.chainable)
 
         for pdb_residue in pdb_chain:
-            mer_dct, warns = self.mer_factory.create_from_biopdb(
+            mer_dct, warns = self.mer_factory.create(
                 pdb_residue=pdb_residue, structure_obj=structure, warn_in_place=False
             )
             if mer_dct is None:
@@ -130,7 +134,7 @@ class StructureLoader(object):
 
         return Chain(structure, pdb_chain.get_id(), chain_mers)
 
-    def _create_structure(self, model, path, converter):
+    def create_structure(self, model, path, converter):
         """Return structure for given model
 
         Argument:
@@ -141,7 +145,7 @@ class StructureLoader(object):
         name = model.get_full_id()[0]
         structure = Structure(name, path, converter)
 
-        chains = [self._create_chain(pdb_chain, structure) for pdb_chain in model]
+        chains = [self.create_chain(pdb_chain, structure) for pdb_chain in model]
 
         structure.finalize(chains)
         return structure
@@ -164,14 +168,49 @@ class StructureLoader(object):
         "1no5/1"
         in case of UnitHandler.
         """
-
-        set_filters()
+        warnexcept.set_filters()
         path, open_files = self._get_files_and_path(code, path)
         code = self._get_code(code, path)
         models = self._get_models(open_files, code)
-        converter = pydesc.numberconverter.NumberConverter(models)
-        structures = [
-            self._create_structure(pdb_model, path, converter) for pdb_model in models
-        ]
+        converter = NumberConverterFactory().from_pdb_models(models)
+        structures = [self.create_structure(model, path, converter) for model in models]
 
         return structures
+
+
+class TrajectoryLoader:
+
+    """Trajectory loading class."""
+
+    def __init__(self, mer_proxy_factory=None):
+        """Initialize loader with mer_proxy_factory creating residues with proxy
+        atoms. If None is given (default) -- assumes factory able to copy MDTraj mer
+        factory."""
+        if mer_proxy_factory is None:
+            mer_proxy_factory = MDTrajMerFactory()
+        self.mer_factory = mer_proxy_factory
+
+    def load_trajectory(self, trajectory_path, structure_obj):
+        """Create Trajectory instance loaded from given path for topology in given
+        structure instance."""
+        md_trajectory = mdtraj.load(trajectory_path, top=structure_obj.path)
+        trajectory_obj = self.create_trajectory(md_trajectory, structure_obj)
+        return trajectory_obj
+
+    def create_trajectory(self, mdtraj_obj, structure_obj):
+        """Create Trajectory instance from given MDTraj.Trajectory reading
+        topology information from given pydesc structure instance."""
+        trajectory_obj = Trajectory(
+            structure_obj.name, structure_obj.path, structure_obj.converter, mdtraj_obj
+        )
+        chains = [
+            self.create_chain(chain, trajectory_obj) for chain in structure_obj.chains
+        ]
+        trajectory_obj.finalize(chains)
+        return trajectory_obj
+
+    def create_chain(self, chain, trajectory_obj):
+        """Copy given chain into chain containing proxy atoms to given trajectory
+        object."""
+        mers = [self.mer_factory.create(mer, trajectory_obj) for mer in chain]
+        return Chain(trajectory_obj, chain.name, mers)
