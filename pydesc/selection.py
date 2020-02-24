@@ -156,9 +156,9 @@ class Set(Selection):
         INFLUENCE CREATED User Structure OBJECT.
         """
         inds = self._get_list_of_inds(structure_obj)
-        substructure = PartialStructure(
-            [structure_obj[ind] for ind in inds], structure_obj.derived_from.converter
-        )
+        converter = structure_obj.derived_from.converter
+        mers = [structure_obj[ind] for ind in inds]
+        substructure = PartialStructure(mers, converter)
         return substructure
 
     def create_new_structure(self, structure_obj):

@@ -73,9 +73,8 @@ class MerFactory(metaclass=ABCMeta):
         for monomer_type in classes:
             try:
                 with warnings_(monomer_type):
-                    mers[monomer_type] = self._create_mer_of_type(
-                        monomer_type, base_data
-                    )
+                    new_mer = self._create_mer_of_type(monomer_type, base_data)
+                    mers[monomer_type] = new_mer
             except (IncompleteParticle, WrongAtomDistances, WrongMerType):
                 pass
 
@@ -171,7 +170,6 @@ class BioPythonMerFactory(MerFactory):
 
 
 class MDTrajMerFactory(MerFactory):
-
     """Mer factory responsible for creating mers consisting of AtomProxy objects."""
 
     def create(self, mer, trajectory):

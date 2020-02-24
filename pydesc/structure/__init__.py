@@ -179,7 +179,6 @@ class StructureLoader(object):
 
 
 class TrajectoryLoader:
-
     """Trajectory loading class."""
 
     def __init__(self, mer_proxy_factory=None):
