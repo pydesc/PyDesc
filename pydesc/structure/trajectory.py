@@ -3,7 +3,6 @@ from pydesc.warnexcept import FrameNotAvailable
 
 
 class Trajectory(Structure):
-
     """Extension of Structure meant to consist of objects containing AtomProxy
     instances to given MDTraj trajectory."""
 

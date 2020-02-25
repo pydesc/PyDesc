@@ -27,10 +27,42 @@ from abc import abstractmethod
 from functools import reduce
 
 from pydesc.mers.base import Mer
-from pydesc.mers.factories import MerFactory
 from pydesc.mers.factories import WrongMerType
 from pydesc.structure.topology import PartialStructure
 from pydesc.structure.topology import Segment
+
+
+class Selector:
+    """Class able to create new or entangled (sub)structures from selections."""
+
+    def __init__(self, mer_factory):
+        """Initialize selector with mer factory."""
+        self.mer_factory = mer_factory
+
+    def create_new_structure(self, selection, structure_obj):
+        """Creates new user structure instance under selection conditions
+        (mers are copied).
+
+        Arguments:
+        selection -- selection instance.
+        structure_obj -- an instance of any abstract structure subclass.
+        distinguish_chains -- True or False; temporarily changes property
+        distinguish_chains. Initially set to None, if so default value set
+        by constructor is used.
+
+        CHANGES IN structure_obj.converter (its number converter) WILL
+        INFLUENCE CREATED User Structure OBJECT.
+        """
+        set_selection = selection.specify(structure_obj)
+        structure = PartialStructure(
+            [],  # initialize with empty set of mers
+            structure_obj.derived_from.converter,
+        )
+        list_of_inds = set_selection.get_list_of_inds(structure_obj)
+        mf = self.mer_factory
+        mers = [mf.copy_mer(structure_obj[ind]) for ind in list_of_inds]
+        structure.set_mers(mers)
+        return structure
 
 
 class Selection(metaclass=ABCMeta):
@@ -57,34 +89,6 @@ class Selection(metaclass=ABCMeta):
     def __repr__(self):
         return "<Selection: %s>" % self.__class__.__name__.lower()
 
-    def create_structure(self, structure_obj):
-        """Creates user structure instance under selection conditions.
-
-        Arguments:
-        structure_obj -- an instance of any abstract structure subclass.
-
-        CHANGES IN structure_obj.converter (its number converter) WILL
-        INFLUENCE CREATED User Structure OBJECT.
-        """
-        set_selection = self.specify(structure_obj)
-        new_structure = set_selection.create_structure(structure_obj)
-        return new_structure
-
-    def create_new_structure(self, structure_obj):
-        """Creates new user structure instance under selection conditions
-        (mers are copied).
-
-        Arguments:
-        structure_obj -- an instance of any abstract structure subclass.
-        distinguish_chains -- True or False; temporarily changes property
-        distinguish_chains. Initially set to None, if so default value set
-        by constructor is used.
-
-        CHANGES IN structure_obj.converter (its number converter) WILL
-        INFLUENCE CREATED User Structure OBJECT.
-        """
-        return self.specify(structure_obj).create_new_structure(structure_obj)
-
     @abstractmethod
     def specify(self, structure_obj):
         """Returns Set of current selection pdb-id tuples for given structure.
@@ -99,6 +103,20 @@ class Selection(metaclass=ABCMeta):
         Initially set to None, if so default value set by constructor is used.
         """
         pass
+
+    def create_structure(self, structure_obj):
+        """Creates user structure instance under selection conditions.
+
+        Arguments:
+        selection -- selection instance.
+        structure_obj -- an instance of any abstract structure subclass.
+
+        CHANGES IN structure_obj.converter (its number converter) WILL
+        INFLUENCE CREATED User Structure OBJECT.
+        """
+        set_selection = self.specify(structure_obj)
+        substructure = set_selection.create_structure(structure_obj)
+        return substructure
 
     @staticmethod
     def _finalize_specify(list_of_inds, converter):
@@ -141,45 +159,10 @@ class Set(Selection):
     def __repr__(self):
         return "<Selection: set of %s mers>" % str(len(self.ids))
 
-    def _get_list_of_inds(self, structure_obj):
+    def get_list_of_inds(self, structure_obj):
         converter = structure_obj.derived_from.converter
         list_of_inds = converter.get_list_of_inds(self.ids)
         return list_of_inds
-
-    def create_structure(self, structure_obj):
-        """Creates user structure based on given set of PDB-ids.
-
-        Arguments:
-        structure_obj -- an instance of any abstract structure subclass.
-
-        NOTE: CHANGES IN structure_obj.converter (its number converter) WILL
-        INFLUENCE CREATED User Structure OBJECT.
-        """
-        inds = self._get_list_of_inds(structure_obj)
-        converter = structure_obj.derived_from.converter
-        mers = [structure_obj[ind] for ind in inds]
-        substructure = PartialStructure(mers, converter)
-        return substructure
-
-    def create_new_structure(self, structure_obj):
-        """Creates new user structure based on given set of PDB-ids with
-        copied mers.
-
-        Arguments:
-        structure_obj -- an instance of any abstract structure subclass.
-
-        NOTE: CHANGES IN structure_obj.converter (its number converter) WILL
-        INFLUENCE CREATED User Structure OBJECT.
-        """
-        structure = PartialStructure(
-            [],  # initialize with empty set of mers
-            structure_obj.derived_from.converter,
-        )
-        list_of_inds = self._get_list_of_inds(structure_obj)
-        mf = MerFactory
-        mers = [mf.copy_mer(structure_obj[ind]) for ind in list_of_inds]
-        structure.set_mers(mers)
-        return structure
 
     def specify(self, structure_obj):
         """Returns Set of current set pdb-id tuples.
@@ -189,10 +172,26 @@ class Set(Selection):
         Arguments:
         structure_obj -- a structure to be base for new selection.
         """
-        list_of_inds = self._get_list_of_inds(structure_obj)
+        list_of_inds = self.get_list_of_inds(structure_obj)
         get_pdb_id_method = structure_obj.derived_from.converter.get_pdb_id
         list_of_pdb_ids = list(map(get_pdb_id_method, list_of_inds))
         return Set(list_of_pdb_ids)
+
+    def create_structure(self, structure_obj):
+        """Creates user structure instance under selection conditions.
+
+        Arguments:
+        selection -- selection instance.
+        structure_obj -- an instance of any abstract structure subclass.
+
+        CHANGES IN structure_obj.converter (its number converter) WILL
+        INFLUENCE CREATED User Structure OBJECT.
+        """
+        inds = self.get_list_of_inds(structure_obj)
+        converter = structure_obj.derived_from.converter
+        mers = [structure_obj[ind] for ind in inds]
+        substructure = PartialStructure(mers, converter)
+        return substructure
 
 
 class Range(Selection):
@@ -375,7 +374,9 @@ class Everything(Selection):
             list_of_inds, structure_obj.derived_from.converter
         )
 
-    def create_structure(self, structure_obj):
+    @staticmethod
+    def create_structure(structure_obj):
+        """Create structure in optimal way."""
         return structure_obj
 
 
@@ -385,15 +386,6 @@ class Nothing(Selection):
     def __init__(self):
         """Empty selection constructor (extended superclass method)."""
         Selection.__init__(self)
-
-    def create_structure(self, structure_obj):
-        """Returns empty UserStructure.
-
-        Arguments:
-        structure_obj -- instance od pydesc.structure.AbstractStructure.
-        """
-        substructure = PartialStructure([], structure_obj.derived_from.converter)
-        return substructure
 
     def specify(self, structure_obj):
         """Returns empty (containing 0 mers) user structure instance.

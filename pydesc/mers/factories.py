@@ -98,6 +98,8 @@ class MerFactory(metaclass=ABCMeta):
 
 
 class BioPythonMerFactory(MerFactory):
+    """Mer factory producing basic mers read from pdb files."""
+
     def create(
         self,
         pdb_residue,

@@ -31,6 +31,8 @@ from pydesc.warnexcept import WrongMerType
 
 
 class ContactMapCalculator:
+    """Class responsible for calculating contact maps."""
+
     def __init__(
         self,
         structure_obj,

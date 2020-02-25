@@ -29,7 +29,7 @@ ConfigManager.structure.set_default("dssp_path", "dssp")
 # pylint: enable=no-member
 
 
-class StructureLoader(object):
+class StructureLoader:
     """Loads structures from the databases using a given designation."""
 
     def __init__(

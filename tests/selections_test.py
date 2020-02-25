@@ -17,6 +17,7 @@ from pydesc.structure.topology import PartialStructure
 from pydesc.warnexcept import DiscontinuityError
 from tests.conftest import PDB_FILES_WITH_TYPE_SHORT
 from tests.conftest import TEST_STRUCTURES_DIR
+from pydesc.mers.factories import BioPythonMerFactory
 
 ConfigManager.warnings.quiet = True
 
@@ -36,24 +37,55 @@ def stc_2dlc():
     return sl.load_structures(path=pth)[0]
 
 
-class TestEverythingSelection:
-    def test_create_structure(self, structure):
-        stc = selection.Everything().create_structure(structure)
-        assert isinstance(stc, AbstractStructure)
-        assert len(stc) == len(structure)
-        assert stc[0] is structure[0]
-        assert sorted(stc[0].atoms.keys()) == sorted(structure[0].atoms.keys())
+class SelectionTestBase:
+    @staticmethod
+    def assert_atoms(new_structure, old_structure):
+        new_sorted_atoms = sorted(new_structure[0].atoms.keys())
+        old_sorted_atoms = sorted(old_structure[0].atoms.keys())
+        assert new_sorted_atoms == old_sorted_atoms
 
-    @pytest.mark.long
-    def test_create_new_structure(self, structure):
-        new_stc = selection.Everything().create_new_structure(structure)
-        assert isinstance(new_stc, AbstractStructure)
-        assert len(new_stc) == len(structure)
-        assert new_stc[0] is not structure[0]
-        assert sorted(new_stc[0].atoms.keys()) == sorted(structure[0].atoms.keys())
-        assert sorted(new_stc[0].pseudoatoms.keys()) == sorted(
-            structure[0].pseudoatoms.keys()
-        )
+
+class TestSelector(SelectionTestBase):
+    def test_everything_create_new_structure(self, structure):
+        sel = selection.Everything()
+        picker = selection.Selector(BioPythonMerFactory())
+        new_structure = picker.create_new_structure(sel, structure)
+        assert new_structure != structure
+        for mer1, mer2 in zip(structure, new_structure):
+            assert type(mer1) == type(mer2)
+            for at1, at2 in zip(mer1, mer2):
+                assert tuple(at1.vector) == tuple(at2.vector)
+        assert isinstance(new_structure, AbstractStructure)
+        assert len(new_structure) == len(structure)
+        assert new_structure[0] is not structure[0]
+        self.assert_atoms(new_structure, structure)
+        new_sorted_pseudoatoms = sorted(new_structure[0].pseudoatoms.keys())
+        old_sorted_pseudoatoms = sorted(structure[0].pseudoatoms.keys())
+        assert new_sorted_pseudoatoms == old_sorted_pseudoatoms
+
+    def test_set_create_new_structure(self, structure):
+        sel = selection.Set([i.get_pdb_id() for i in tuple(structure)[:6]])
+        picker = selection.Selector(BioPythonMerFactory())
+        stc = picker.create_new_structure(sel, structure)
+        assert isinstance(stc, AbstractStructure)
+        assert len(stc) == 6
+        assert stc[0] is not structure[0]
+        self.assert_atoms(stc, structure)
+
+    def test_range_create_new_structure(self, structure):
+        chain0 = structure.chains[0]
+        start_mer, *dummy, end_mer = chain0
+        start_pdb = start_mer.get_pdb_id()
+        end_pdb = end_mer.get_pdb_id()
+        sel = selection.Range(start_pdb, end_pdb)
+        picker = selection.Selector(BioPythonMerFactory())
+        new_structure = picker.create_new_structure(sel, structure)
+        assert len(new_structure) == len(chain0)
+        self.assert_atoms(new_structure, chain0)
+
+
+class TestEverythingSelection(SelectionTestBase):
+    """Test methods from Everything selection."""
 
     def test_specify(self, structure):
         sel = selection.Everything().specify(structure)
@@ -65,8 +97,17 @@ class TestEverythingSelection:
         assert type(sel) is selection.Set
         assert len(tuple(sel)) == 6
 
+    def test_create_structure(self, structure):
+        sel = selection.Everything()
+        new_structure = sel.create_structure(structure)
+        assert new_structure == structure
+        assert new_structure[0] is structure[0]
+        self.assert_atoms(new_structure, structure)
 
-class TestSetSelection:
+
+class TestSetSelection(SelectionTestBase):
+    """Test methods from Set type of selection."""
+
     def test_specify(self, structure):
         sel = selection.Set([i.get_pdb_id() for i in tuple(structure)[:6]])
         assert type(sel) is selection.Set
@@ -78,23 +119,16 @@ class TestSetSelection:
 
     def test_create_structure(self, structure):
         sel = selection.Set([i.get_pdb_id() for i in tuple(structure)[:6]])
-        stc = sel.create_structure(structure)
-        assert isinstance(stc, AbstractStructure)
-        assert len(stc) == 6
-        assert stc[0] is structure[0]
-        assert sorted(stc[0].atoms.keys()) == sorted(structure[0].atoms.keys())
-
-    def test_create_new_structure(self, structure):
-        sel = selection.Set([i.get_pdb_id() for i in tuple(structure)[:6]])
-
-        stc = sel.create_new_structure(structure)
-        assert isinstance(stc, AbstractStructure)
-        assert len(stc) == 6
-        assert stc[0] is not structure[0]
-        assert sorted(stc[0].atoms.keys()) == sorted(structure[0].atoms.keys())
+        new_structure = sel.create_structure(structure)
+        assert isinstance(new_structure, AbstractStructure)
+        assert len(new_structure) == 6
+        assert new_structure[0] is structure[0]
+        self.assert_atoms(new_structure, structure)
 
 
 class TestRangeSelection:
+    """Test methods from Range selection."""
+
     @staticmethod
     def create_6_mer_range(structure):
         start = structure[0].get_pdb_id()
