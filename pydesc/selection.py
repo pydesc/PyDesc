@@ -58,9 +58,8 @@ class Selector:
             [],  # initialize with empty set of mers
             structure_obj.derived_from.converter,
         )
-        list_of_inds = set_selection.get_list_of_inds(structure_obj)
-        mf = self.mer_factory
-        mers = [mf.copy_mer(structure_obj[ind]) for ind in list_of_inds]
+        temporary_structure = set_selection.create_structure(structure_obj)
+        mers = [self.mer_factory.copy_mer(mer) for mer in temporary_structure]
         structure.set_mers(mers)
         return structure
 

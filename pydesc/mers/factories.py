@@ -51,8 +51,9 @@ class MerFactory(metaclass=ABCMeta):
         Argument:
         mer -- mer subclass instance.
         """
-        base_data = cls.unpack_base(mer)
-        base_data = base_data[:-1] + (deepcopy(base_data[-1]),)
+        *base_data, atoms = cls.unpack_base(mer)
+        copied_atoms = {k: v.copy() for k, v in atoms.items()}
+        base_data += (copied_atoms,)
         mer = cls._create_mer_of_type(type(mer), base_data)
         return mer
 

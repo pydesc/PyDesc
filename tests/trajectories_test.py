@@ -1,8 +1,11 @@
 import pytest
 
+from pydesc.mers.factories import BioPythonMerFactory
 from pydesc.mers.full_atom import Nucleotide
 from pydesc.mers.full_atom import Residue
 from pydesc.selection import MerSubclasses
+from pydesc.selection import Selector
+from pydesc.selection import Set
 from pydesc.structure import StructureLoader
 from pydesc.structure import TrajectoryLoader
 from pydesc.structure.trajectory import Trajectory
@@ -120,3 +123,12 @@ class TestTrajectory:
         frame2_atom_coords = tuple(trajectory[0])[0].vector
         selection_atom_coords = tuple(new_stc[0])[0].vector
         assert tuple(frame2_atom_coords) == tuple(selection_atom_coords)
+
+    def test_freezing_substructure(self, ext, stc):
+        trajectory = self.load_traj(ext, stc)
+
+        pdb_inds = [mer.get_pdb_id() for mer in trajectory[:5]]
+        set_sel = Set(pdb_inds)
+
+        picker = Selector(BioPythonMerFactory)
+        picker.create_new_structure(set_sel, trajectory)

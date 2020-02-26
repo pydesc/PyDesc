@@ -418,7 +418,10 @@ class PartialStructure(BackbonedMixIn, AbstractStructure):
     def _set_segments(self):
         """Sets segments attribute."""
         self.segments = []
-        start = self._mers[0]
+        try:
+            start = self._mers[0]
+        except IndexError:
+            return
         for pair in zip(self._mers, self._mers[1:]):
             set_start = True
             try:

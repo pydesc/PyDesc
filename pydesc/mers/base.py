@@ -75,9 +75,20 @@ class Atom(pydesc.geometry.Coord):
     def __repr__(self):
         return "<Atom at %s>" % " ".join(["%.2f" % i for i in self.vector])
 
+    def copy(self):
+        """Return copy of self"""
+        klass = type(self)
+        data = (
+            self.vector,
+            self.element,
+            self.serial_number,
+            self.occupancy,
+            self.b_factor,
+        )
+        return klass(*data)
+
 
 class AtomProxy(pydesc.geometry.Coord):
-
     """Proxy implementing Atom interface, but taking coords from given Trajectory
     object."""
 
@@ -85,6 +96,16 @@ class AtomProxy(pydesc.geometry.Coord):
         """Initialize with topology atom and trajectory to read coords from."""
         self.atom = atom
         self.trajectory = trajectory
+
+    def copy(self):
+        """Cast self to atom."""
+        return self.cast_to_atom()
+
+    def cast_to_atom(self):
+        """Return new Atom instance holding state of represented trajectory atom."""
+        atom_copy = self.atom.copy()
+        atom_copy.vector = self.vector
+        return atom_copy
 
     @property
     def vector(self):

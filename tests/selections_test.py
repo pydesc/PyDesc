@@ -39,17 +39,18 @@ def stc_2dlc():
 
 class SelectionTestBase:
     @staticmethod
-    def assert_atoms(new_structure, old_structure):
-        new_sorted_atoms = sorted(new_structure[0].atoms.keys())
-        old_sorted_atoms = sorted(old_structure[0].atoms.keys())
+    def assert_atoms(new_mer, old_mer):
+        new_sorted_atoms = sorted(new_mer.atoms.keys())
+        old_sorted_atoms = sorted(old_mer.atoms.keys())
         assert new_sorted_atoms == old_sorted_atoms
 
 
-class TestSelector(SelectionTestBase):
-    def test_everything_create_new_structure(self, structure):
+class TestSelectorCreateNewStructure(SelectionTestBase):
+    picker = selection.Selector(BioPythonMerFactory())
+
+    def test_everything(self, structure):
         sel = selection.Everything()
-        picker = selection.Selector(BioPythonMerFactory())
-        new_structure = picker.create_new_structure(sel, structure)
+        new_structure = self.picker.create_new_structure(sel, structure)
         assert new_structure != structure
         for mer1, mer2 in zip(structure, new_structure):
             assert type(mer1) == type(mer2)
@@ -58,30 +59,56 @@ class TestSelector(SelectionTestBase):
         assert isinstance(new_structure, AbstractStructure)
         assert len(new_structure) == len(structure)
         assert new_structure[0] is not structure[0]
-        self.assert_atoms(new_structure, structure)
+        self.assert_atoms(new_structure[0], structure[0])
         new_sorted_pseudoatoms = sorted(new_structure[0].pseudoatoms.keys())
         old_sorted_pseudoatoms = sorted(structure[0].pseudoatoms.keys())
         assert new_sorted_pseudoatoms == old_sorted_pseudoatoms
+        assert new_structure
 
-    def test_set_create_new_structure(self, structure):
+    def test_set(self, structure):
         sel = selection.Set([i.get_pdb_id() for i in tuple(structure)[:6]])
-        picker = selection.Selector(BioPythonMerFactory())
-        stc = picker.create_new_structure(sel, structure)
+        stc = self.picker.create_new_structure(sel, structure)
         assert isinstance(stc, AbstractStructure)
         assert len(stc) == 6
         assert stc[0] is not structure[0]
-        self.assert_atoms(stc, structure)
+        self.assert_atoms(stc[0], structure[0])
 
-    def test_range_create_new_structure(self, structure):
+    def test_range(self, structure):
         chain0 = structure.chains[0]
         start_mer, *dummy, end_mer = chain0
         start_pdb = start_mer.get_pdb_id()
         end_pdb = end_mer.get_pdb_id()
         sel = selection.Range(start_pdb, end_pdb)
-        picker = selection.Selector(BioPythonMerFactory())
-        new_structure = picker.create_new_structure(sel, structure)
+        new_structure = self.picker.create_new_structure(sel, structure)
         assert len(new_structure) == len(chain0)
-        self.assert_atoms(new_structure, chain0)
+        self.assert_atoms(new_structure[0], chain0[0])
+
+    def test_chain(self, structure):
+        chain0 = structure.chains[0]
+        chain_name = chain0.chain_name
+        sel = selection.ChainSelection(chain_name)
+        new_structure = self.picker.create_new_structure(sel, structure)
+        assert len(new_structure) == len(chain0)
+        self.assert_atoms(new_structure[0], chain0[0])
+
+    def test_mer_name(self, structure):
+        names = {mer.name: mer for mer in structure}
+        for name, mer in names.items():
+            sele = selection.MerName(name)
+            new_structure = self.picker.create_new_structure(sele, structure)
+            self.assert_atoms(new_structure[-1], mer)
+
+    def test_mer_type(self, structure):
+        types = {type(mer): mer for mer in structure}
+        for type_, mer in types.items():
+            sele = selection.MerExactType(type_)
+            new_structure = self.picker.create_new_structure(sele, structure)
+            self.assert_atoms(new_structure[-1], mer)
+
+    def test_nothing(self, structure):
+        sele = selection.Nothing()
+        new_structure = self.picker.create_new_structure(sele, structure)
+        assert len(new_structure) == 0
 
 
 class TestEverythingSelection(SelectionTestBase):
@@ -102,7 +129,7 @@ class TestEverythingSelection(SelectionTestBase):
         new_structure = sel.create_structure(structure)
         assert new_structure == structure
         assert new_structure[0] is structure[0]
-        self.assert_atoms(new_structure, structure)
+        self.assert_atoms(new_structure[0], structure[0])
 
 
 class TestSetSelection(SelectionTestBase):
@@ -123,7 +150,7 @@ class TestSetSelection(SelectionTestBase):
         assert isinstance(new_structure, AbstractStructure)
         assert len(new_structure) == 6
         assert new_structure[0] is structure[0]
-        self.assert_atoms(new_structure, structure)
+        self.assert_atoms(new_structure[0], structure[0])
 
 
 class TestRangeSelection:
