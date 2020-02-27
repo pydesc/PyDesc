@@ -66,7 +66,9 @@ class TestSelectorCreateNewStructure(SelectionTestBase):
         assert new_structure
 
     def test_set(self, structure):
-        sel = selection.Set([i.get_pdb_id() for i in tuple(structure)[:6]])
+        get_id = structure.converter.get_pdb_id
+        ids = [get_id(mer.ind) for mer in tuple(structure)[:6]]
+        sel = selection.Set(ids)
         stc = self.picker.create_new_structure(sel, structure)
         assert isinstance(stc, AbstractStructure)
         assert len(stc) == 6
@@ -74,10 +76,11 @@ class TestSelectorCreateNewStructure(SelectionTestBase):
         self.assert_atoms(stc[0], structure[0])
 
     def test_range(self, structure):
+        get_id = structure.converter.get_pdb_id
         chain0 = structure.chains[0]
         start_mer, *dummy, end_mer = chain0
-        start_pdb = start_mer.get_pdb_id()
-        end_pdb = end_mer.get_pdb_id()
+        start_pdb = get_id(start_mer.ind)
+        end_pdb = get_id(end_mer.ind)
         sel = selection.Range(start_pdb, end_pdb)
         new_structure = self.picker.create_new_structure(sel, structure)
         assert len(new_structure) == len(chain0)
@@ -119,7 +122,7 @@ class TestEverythingSelection(SelectionTestBase):
         assert type(sel) is selection.Set
         assert len(tuple(sel)) == len(structure)
 
-        segment_6 = PartialStructure(tuple(structure)[:6])
+        segment_6 = PartialStructure(structure, tuple(structure)[:6])
         sel = selection.Everything().specify(segment_6)
         assert type(sel) is selection.Set
         assert len(tuple(sel)) == 6
@@ -136,7 +139,8 @@ class TestSetSelection(SelectionTestBase):
     """Test methods from Set type of selection."""
 
     def test_specify(self, structure):
-        sel = selection.Set([i.get_pdb_id() for i in tuple(structure)[:6]])
+        get_id = structure.converter.get_pdb_id
+        sel = selection.Set([get_id(mer.ind) for mer in tuple(structure)[:6]])
         assert type(sel) is selection.Set
         assert len(tuple(sel)) == 6
 
@@ -145,7 +149,8 @@ class TestSetSelection(SelectionTestBase):
         assert len(tuple(new_sel)) == 6
 
     def test_create_structure(self, structure):
-        sel = selection.Set([i.get_pdb_id() for i in tuple(structure)[:6]])
+        get_id = structure.converter.get_pdb_id
+        sel = selection.Set([get_id(mer.ind) for mer in tuple(structure)[:6]])
         new_structure = sel.create_structure(structure)
         assert isinstance(new_structure, AbstractStructure)
         assert len(new_structure) == 6
@@ -158,8 +163,9 @@ class TestRangeSelection:
 
     @staticmethod
     def create_6_mer_range(structure):
-        start = structure[0].get_pdb_id()
-        end = structure[5].get_pdb_id()
+        get_id = structure.converter.get_pdb_id
+        start = get_id(structure[0].ind)
+        end = get_id(structure[5].ind)
         return selection.Range(start, end), start, end
 
     def test_range_specify(self, structure):
@@ -190,12 +196,13 @@ class TestRangeSelection:
         sl = StructureLoader()
         pth = os.path.join(TEST_STRUCTURES_DIR, "prots_only", "3NPU.pdb")
         stc = sl.load_structures(path=pth)[0]
+        get_id = stc.converter.get_pdb_id
         # discontinuity occurs between A19 and A24 (1! res missing)
         msg = "Something is wrong with structure that supposed have broken " "backbone."
-        assert str(stc[17].get_pdb_id()) == "A19", msg
-        assert str(stc[18].get_pdb_id()) == "A24", msg
+        assert str(get_id(17)) == "A19", msg
+        assert str(get_id(18)) == "A24", msg
 
-        range_selection = selection.Range(stc[16].get_pdb_id(), stc[19].get_pdb_id())
+        range_selection = selection.Range(get_id(16), get_id(19))
         new_sel = range_selection.specify(stc)
 
         assert len(tuple(new_sel)) == 4
@@ -205,12 +212,13 @@ class TestRangeSelection:
 
 class TestChainSelection:
     def test_specify(self, structure):
+        get_id = structure.converter.get_pdb_id
         for chain in structure.chains:
             chain_selection = selection.ChainSelection(chain.chain_name)
             new_selection = chain_selection.specify(structure)
             assert len(tuple(new_selection)) == len(chain)
             for mer in chain:
-                assert mer.get_pdb_id() in new_selection.ids
+                assert get_id(mer.ind) in new_selection.ids
 
     def test_not_existing_chain(self, structure):
         chain_selection = selection.ChainSelection("fake_name")
@@ -218,13 +226,14 @@ class TestChainSelection:
         assert len(tuple(new_selection)) == 0
 
     def test_chain_from_mixed_structure(self, structure):
+        get_id = structure.converter.get_pdb_id
         if len(structure.chains) > 2:
             pytest.skip("Not enough chains to perform test.")
         chain_samples = {
             chain.chain_name: tuple(chain)[-5:] for chain in structure.chains
         }
         mixed_mers = tuple(itertools.chain(*list(chain_samples.values())))
-        mixed_partial = PartialStructure(mixed_mers, structure.converter)
+        mixed_partial = PartialStructure(structure, mixed_mers)
 
         test_chain_name = max(chain_samples)
 
@@ -234,16 +243,17 @@ class TestChainSelection:
 
         assert len(tuple(new_sel)) == len(chain_samples[test_chain_name])
         for mer in chain_samples[test_chain_name]:
-            assert mer.get_pdb_id() in new_sel.ids
+            assert get_id(mer.ind) in new_sel.ids
 
 
 class TestMerNameSelection:
     def test_specify(self, structure):
+        get_id = structure.converter.get_pdb_id
         mers = tuple(structure)[:6]
         for mer in mers:
             mer_name_selection = selection.MerName(mer.name)
             new_selection = mer_name_selection.specify(structure)
-            assert mer.get_pdb_id() in new_selection
+            assert get_id(mer.ind) in new_selection
             assert len(tuple(new_selection)) >= 1
             new_stc = mer_name_selection.create_structure(structure)
             for selected_mer in new_stc:
@@ -256,22 +266,24 @@ class TestMerExactTypeSelection:
             selection.MerExactType(type(None))
 
     def test_specify_residue(self, stc_2dlc):
+        get_id = stc_2dlc.converter.get_pdb_id
         residue_selection = selection.MerExactType(Residue)
         residues_set = residue_selection.specify(stc_2dlc)
         assert len(tuple(residues_set)) > 0
         for mer in stc_2dlc.get_chain("X"):
             if not mer.is_chainable():
                 continue
-            assert mer.get_pdb_id() in residues_set.ids
+            assert get_id(mer.ind) in residues_set.ids
 
     def test_specify_nucleotide(self, stc_2dlc):
+        get_id = stc_2dlc.converter.get_pdb_id
         nucleotide_selection = selection.MerExactType(Nucleotide)
         nucleotides_set = nucleotide_selection.specify(stc_2dlc)
         assert len(tuple(nucleotides_set)) > 0
         for mer in stc_2dlc.get_chain("Y"):
             if not mer.is_chainable():
                 continue
-            assert mer.get_pdb_id() in nucleotides_set.ids
+            assert get_id(mer.ind) in nucleotides_set.ids
 
     def test_specify_ligand(self, stc_2dlc):
         ligand_selection = selection.MerExactType(Ligand)
@@ -295,7 +307,10 @@ class TestNothing:
 
 @pytest.mark.system
 class TestComplexSelections:
+    """Test Union, Complement and Intersection selections."""
+
     def test_name_and_type_intersection(self, structure):
+        get_id = structure.converter.get_pdb_id
         the_mer = max(structure, key=lambda mer: mer.is_chainable())
         test_name = the_mer.name
         test_type = type(the_mer)
@@ -305,9 +320,10 @@ class TestComplexSelections:
         assert isinstance(intersection, selection.SelectionsIntersection)
 
         set_sel = intersection.specify(structure)
-        assert the_mer.get_pdb_id() in set_sel.ids
+        assert get_id(the_mer.ind) in set_sel.ids
 
     def test_chains_union(self, structure):
+        get_id = structure.converter.get_pdb_id
         if len(structure.chains) < 2:
             pytest.skip("Not enough chains to perform test.")
         chain_sels = []
@@ -318,7 +334,7 @@ class TestComplexSelections:
         new_sel = union.specify(structure)
 
         for mer in structure:
-            assert mer.get_pdb_id() in new_sel.ids
+            assert get_id(mer.ind) in new_sel.ids
 
         union = chain_sels[0] + chain_sels[1]
         assert isinstance(union, selection.SelectionsUnion)

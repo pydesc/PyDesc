@@ -21,7 +21,7 @@ class TestElementBuilder:
             failed = 0
             for mer in chainable[2:-2]:
                 try:
-                    elem = ElementFactory.build(mer)
+                    elem = ElementFactory.build(mer, structure)
                 except ValueError:
                     failed += 1
                 else:
@@ -30,7 +30,7 @@ class TestElementBuilder:
 
             for mer in chainable[:2] + chainable[-2:]:
                 with pytest.raises(ValueError):
-                    ElementFactory.build(mer)
+                    ElementFactory.build(mer, structure)
 
 
 class TestProteinDescriptor:

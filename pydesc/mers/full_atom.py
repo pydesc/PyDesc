@@ -80,13 +80,14 @@ class Residue(MerChainable):
         for res, (psi, phi) in zip(residues, list(zip(*angs))):
             res.dynamic_properties["angles"] = (psi, phi)
 
-    def __init__(self, structure_obj, ind, name, chain, atoms):
-        """Residue constructor.
+    def __init__(self, ind, name, chain, atoms):
+        """Residue initializer.
 
         Arguments:
-        pdb_residue -- BioPython Bio.PDB.Residue instance based on which the
-        Residue is being created.
-        structure_obj -- the Structure instance which the Residue belongs to.
+        ind -- mers index.
+        name -- mers name.
+        chain -- mers chain name (str).
+        atoms -- dict mapping atoms names to Atom instances.
 
         Raises Warning if a given pdb_residue does not contain proper atoms
         or if its atoms occur in wrong distances.
@@ -102,7 +103,7 @@ class Residue(MerChainable):
         max_c_o_dist
         old_cbx_calculation -- True or False
         """
-        MerChainable.__init__(self, structure_obj, ind, name, chain, atoms)
+        super().__init__(ind, name, chain, atoms)
 
     @register_pseudoatom
     def backbone_average(self):
@@ -193,7 +194,7 @@ class Residue(MerChainable):
 class Nucleotide(MerChainable):
     """Representation of a nucleotide."""
 
-    def __init__(self, structure_obj, ind, name, chain, atoms):
+    def __init__(self, ind, name, chain, atoms):
         """Nucleotide constructor.
 
         Arguments:
@@ -218,7 +219,7 @@ class Nucleotide(MerChainable):
         min_c3'_o3'_dist
         max_c3'_o3'_dist
         """
-        MerChainable.__init__(self, structure_obj, ind, name, chain, atoms)
+        super().__init__(ind, name, chain, atoms)
 
         rats = self.get_config("ring_atoms")
 
@@ -289,7 +290,7 @@ class Nucleotide(MerChainable):
 class Ion(MerOther):
     """Representation of an ion ligand."""
 
-    def __init__(self, structure_obj, ind, name, chain, atoms):
+    def __init__(self, ind, name, chain, atoms):
         """Ion constructor.
 
         Sets basic attributes.
@@ -298,7 +299,7 @@ class Ion(MerOther):
         pdb_residue -- Bio.PDB.Residue instance representing ion.
         structure_obj -- instance of parental PyDesc structure.
         """
-        super(Ion, self).__init__(structure_obj, ind, name, chain, atoms)
+        super(Ion, self).__init__(ind, name, chain, atoms)
         if len(self.atoms) != 1:
             raise WrongMerType(
                 "Failed to create Ion, given BioPython residue consists of "
@@ -318,7 +319,7 @@ class Ion(MerOther):
 class Ligand(MerOther):
     """Representation of any ligand except ions."""
 
-    def __init__(self, structure_obj, ind, name, chain, atoms):
+    def __init__(self, ind, name, chain, atoms):
         """Ligand constructor.
 
         Sets basic attributes.
@@ -328,7 +329,7 @@ class Ligand(MerOther):
         than ions.
         structure_obj -- instance of parental PyDesc structure.
         """
-        super(Ligand, self).__init__(structure_obj, ind, name, chain, atoms)
+        super(Ligand, self).__init__(ind, name, chain, atoms)
 
 
 Mer.reset_config_cache()

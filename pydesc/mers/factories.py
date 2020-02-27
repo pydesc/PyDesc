@@ -96,7 +96,7 @@ class MerFactory(metaclass=ABCMeta):
     def unpack_base(base):
         """Return structure, PyDesc index, name, chain and atoms from given
         base (monomer.Monomer instance)."""
-        return base.structure, base.ind, base.name, base.chain, base.atoms
+        return base.ind, base.name, base.chain, base.atoms
 
 
 class BioPythonMerFactory(MerFactory):
@@ -129,7 +129,7 @@ class BioPythonMerFactory(MerFactory):
             ind = None
 
         if base is None:
-            base = Mer(structure_obj, ind, *self.unpack_pdb_residue(pdb_residue, name))
+            base = Mer(ind, *self.unpack_pdb_residue(pdb_residue, name))
 
         mers, warnings_ = self._create_possible_monomers(base, warnings_, self.classes)
         if warn_in_place:

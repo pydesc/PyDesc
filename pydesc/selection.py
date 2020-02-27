@@ -54,10 +54,9 @@ class Selector:
         INFLUENCE CREATED User Structure OBJECT.
         """
         set_selection = selection.specify(structure_obj)
-        structure = PartialStructure(
-            [],  # initialize with empty set of mers
-            structure_obj.derived_from.converter,
-        )
+        derived_from = structure_obj.derived_from
+        structure = PartialStructure(derived_from, [])
+        # initialize with empty set of mers
         temporary_structure = set_selection.create_structure(structure_obj)
         mers = [self.mer_factory.copy_mer(mer) for mer in temporary_structure]
         structure.set_mers(mers)
@@ -187,9 +186,8 @@ class Set(Selection):
         INFLUENCE CREATED User Structure OBJECT.
         """
         inds = self.get_list_of_inds(structure_obj)
-        converter = structure_obj.derived_from.converter
         mers = [structure_obj[ind] for ind in inds]
-        substructure = PartialStructure(mers, converter)
+        substructure = PartialStructure(structure_obj.derived_from, mers)
         return substructure
 
 
@@ -230,12 +228,14 @@ class Range(Selection):
         """
         converter = structure_obj.derived_from.converter
         start_ind, end_ind = converter.get_list_of_inds([self.start, self.end])
-        ids = converter.ind2pdb[start_ind : end_ind + 1]
+        ids = converter.ind2pdb[start_ind: end_ind + 1]
         return Set(list_of_pdb_ids=ids)
 
     def create_segment(self, structure_obj):
         """Returns pydesc.structure.Segment."""
-        return Segment(structure_obj[self.start], structure_obj[self.end])
+        start_mer = structure_obj[self.start]
+        end_mer = structure_obj[self.end]
+        return Segment(structure_obj, start_mer, end_mer)
 
 
 class MerAttr(Selection, metaclass=ABCMeta):

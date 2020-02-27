@@ -126,8 +126,9 @@ class TestTrajectory:
 
     def test_freezing_substructure(self, ext, stc):
         trajectory = self.load_traj(ext, stc)
+        get_id = trajectory.converter.get_pdb_id
 
-        pdb_inds = [mer.get_pdb_id() for mer in trajectory[:5]]
+        pdb_inds = [get_id(mer.ind) for mer in trajectory[:5]]
         set_sel = Set(pdb_inds)
 
         picker = Selector(BioPythonMerFactory)

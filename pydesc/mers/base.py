@@ -205,11 +205,10 @@ class Mer:
 
         return res
 
-    def __init__(self, structure_obj, ind, name, chain, atoms):
+    def __init__(self, ind, name, chain, atoms):
         """Initialize Mer.
 
         Arguments:
-        structure_obj -- Structure in which current mer is included.
         name -- str; mers name.
         chain -- str; chain name.
         atoms -- dict; dict of str names of atoms as keys and Atom instances
@@ -217,7 +216,6 @@ class Mer:
 
         Sets attributes:
         name -- mer or ligand name, up to three letters, according to PDB file.
-        structure -- the Structure instance to which the monomer belongs.
         chain -- character of the chain that the mers belong to, according
         to PDB file.
         atoms - dict of atoms building current monomer represented by Atom
@@ -229,7 +227,6 @@ class Mer:
         _ss -- secondary structure sign.
         """
 
-        self.structure = structure_obj
         self.name = name
         self.chain = chain
         self.ind = ind
@@ -245,11 +242,10 @@ class Mer:
 
     def __repr__(self):
         try:
-            return "<%s: %s no. %i, PDB: %s>" % (
+            return "<%s: %s no. %i>" % (
                 self.__class__.__name__,
                 self.name,
                 self.ind,
-                str(self.get_pdb_id()),
             )
         except (TypeError, KeyError):
             return "<%s: %s>" % (self.__class__.__name__, self.name)
@@ -278,13 +274,6 @@ class Mer:
         """Tell if mer has bond with another mer. Returns False by default. Meant to
         be overwritten in different chainable mers."""
         return False
-
-    def get_pdb_id(self):
-        """Returns pdb id if possible, otherwise returns None."""
-        try:
-            return self.structure.converter.get_pdb_id(self.ind)
-        except AttributeError:
-            return None
 
     def reset_dynamic_cache(self):
         """Reset pseudoatoms and dynamic features."""
@@ -376,12 +365,12 @@ class MerChainable(Mer):
         """Return True if mer is chainable."""
         return True
 
-    def __init__(self, structure_obj, ind, name, chain, atoms):
+    def __init__(self, ind, name, chain, atoms):
         """Chainable monomer constructor.
 
         Extends superclass method.
         """
-        Mer.__init__(self, structure_obj, ind, name, chain, atoms)
+        Mer.__init__(self, ind, name, chain, atoms)
 
         try:
             if self.get_config("check_distances"):
@@ -392,11 +381,9 @@ class MerChainable(Mer):
                     self._check_distance(backbone_atoms, *atom_pair)
             self._check_bbatoms()
         except (AttributeError, KeyError):
-            data = type(self).__name__, self.get_pdb_id()
-            msg = (
-                "Backbone atoms lacking, unable to create %s from residue " "%s" % data
-            )
-            raise IncompleteParticle(msg)
+            data = type(self).__name__, self.ind
+            msg = "Backbone atoms lacking, unable to create %s from residue %s"
+            raise IncompleteParticle(msg % data)
 
         self._asa = None
         self._next_mer = None
@@ -488,16 +475,18 @@ class MerOther(Mer):
         """Return True if mer is chainable."""
         return False
 
-    def __init__(self, structure_obj, ind, name, chain, atoms):
+    def __init__(self, ind, name, chain, atoms):
         """Monomer Other constructor.
 
-        pdb_residue -- instance of BioPython residue.
-        structure_obj -- instance of pydesc structure object mer should be
-        attached to.
+        Arguments:
+        ind -- mers index.
+        name -- mers name.
+        chain -- mers chain name (str).
+        atoms -- dict mapping atoms names to Atom instances.
 
         Extends superclass method.
         """
-        Mer.__init__(self, structure_obj, ind, name, chain, atoms)
+        Mer.__init__(self, ind, name, chain, atoms)
 
     @register_pseudoatom
     def rc(self):

@@ -11,7 +11,7 @@ from pydesc.structure.topology import Segment
 
 class ElementFactory:
     @staticmethod
-    def build(mer):
+    def build(mer, derived_from):
         """Static builder.
 
         Returns appropriate Element subclass instance.
@@ -20,12 +20,15 @@ class ElementFactory:
         mer -- instance of pydesc.monomer.Monomer.
         """
         if mer.is_chainable():
-            return ElementChainable(mer)
-        return ElementOther(mer)
+            return ElementChainable(derived_from, mer)
+        return ElementOther(derived_from, mer)
 
 
 class DescriptorBuilderDriver:
-    def build(self, central_element, contact_map):
+    """Descriptor building driver."""
+
+    @staticmethod
+    def build(structure_obj, central_element, contact_map):
         """Create descriptor builder and return built descriptor.
 
         Arguments:
@@ -36,6 +39,7 @@ class DescriptorBuilderDriver:
 
         """
         builder = DescriptorBuilder()
+        builder.set_derived_from(structure_obj)
         builder.set_central_element(central_element)
         builder.create_contacts(central_element, contact_map)
         builder.set_mers()
@@ -43,7 +47,8 @@ class DescriptorBuilderDriver:
         builder.set_elements()
         return builder.build()
 
-    def create_descriptors(self, structure_obj, contact_map):
+    @classmethod
+    def create_descriptors(cls, structure_obj, contact_map):
         """Static method that creates all possible Descriptor instances for
         a given (sub)structure.
 
@@ -55,8 +60,12 @@ class DescriptorBuilderDriver:
 
         def mk_desc(mer):
             try:
-                return self.build(ElementFactory.build(mer), contact_map)
+                central_element = ElementFactory.build(mer, structure_obj)
+                descriptor = cls.build(structure_obj, central_element, contact_map)
+                return descriptor
             except (TypeError, ValueError, AttributeError):
+                import traceback
+                traceback.print_exc()
                 return
 
         return [mk_desc(mer) for mer in structure_obj]
@@ -72,12 +81,22 @@ class DescriptorBuilder(metaclass=ABCMeta):
         self.contacts = []
         self.segments = []
         self.elements = []
+        self.derived_from = None
 
     def build(self):
         """Build descriptor using set attributes."""
-        return Descriptor(
-            self.central_element, self.mers, self.elements, self.segments, self.contacts
+        data = (
+            self.central_element,
+            self.mers,
+            self.elements,
+            self.segments,
+            self.contacts
         )
+        return Descriptor(*data)
+
+    def set_derived_from(self, structure_obj):
+        """Set structure holding number converter and all descriptor mers."""
+        self.derived_from = structure_obj
 
     def set_mers(self):
         """Set mers on basis of calculated contacts."""
@@ -113,9 +132,9 @@ class DescriptorBuilder(metaclass=ABCMeta):
             """
             ((ind_1, ind_2), value) = input_
             try:
-                return Contact(
-                    ElementFactory.build(central_mer), ElementFactory.build(stc[ind_2])
-                )
+                element_1 = ElementFactory.build(central_mer, stc)
+                element_2 = ElementFactory.build(stc[ind_2], stc)
+                return Contact(element_1, element_2)
             except (ValueError,):
                 # TypeError is raised during creation of Contacts based on
                 # pairs of mers that cannot be used to create Elements
@@ -132,10 +151,10 @@ class DescriptorBuilder(metaclass=ABCMeta):
             end are distant more then proper segment length.
             """
             element_length = ConfigManager.element.element_chainable_length
-            segment = Segment(start, end)
+            segment = Segment(self.derived_from, start, end)
             if len(segment) == element_length:
                 central_mer = tuple(segment)[element_length // 2]
-                segment = ElementChainable(central_mer)
+                segment = ElementChainable(self.derived_from, central_mer)
             segments.append(segment)
 
         def reduce_tuple(presegment_1, presegment_2):
