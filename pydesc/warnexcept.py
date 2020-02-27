@@ -47,7 +47,6 @@ UserWarning -- default warning.
 created: 04.02.2014 , Tymoteusz 'hert' Oleniecki
 """
 
-import operator
 import warnings
 
 from pydesc.config import ConfigManager

@@ -1,20 +1,21 @@
-from copy import deepcopy
+from abc import ABCMeta
+from abc import abstractmethod
 
 import numpy
 
 from pydesc.config import ConfigManager
-from pydesc.numberconverter import PDBid
-from pydesc.warnexcept import IncompleteParticle
-from pydesc.warnexcept import WarnManager
-from pydesc.warnexcept import WrongAtomDistances
-from pydesc.warnexcept import WrongMerType
-from pydesc.mers.base import Atom, AtomProxy
+from pydesc.mers.base import Atom
+from pydesc.mers.base import AtomProxy
 from pydesc.mers.base import Mer
 from pydesc.mers.full_atom import Ion
 from pydesc.mers.full_atom import Ligand
 from pydesc.mers.full_atom import Nucleotide
 from pydesc.mers.full_atom import Residue
-from abc import ABCMeta, abstractmethod
+from pydesc.numberconverter import PDBid
+from pydesc.warnexcept import IncompleteParticle
+from pydesc.warnexcept import WarnManager
+from pydesc.warnexcept import WrongAtomDistances
+from pydesc.warnexcept import WrongMerType
 
 
 class MerFactory(metaclass=ABCMeta):

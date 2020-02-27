@@ -16,7 +16,7 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 
-class Param(object):
+class Param:
 
     """
 
@@ -34,7 +34,7 @@ class Param(object):
         return str(self.name)
 
 
-class Branch(object):
+class Branch:
     def __init__(self, branch_name):
         self.name = branch_name
 
@@ -101,7 +101,7 @@ class Branch(object):
         return slownik
 
 
-class ConfigManager(object):
+class ConfigManager:
     @staticmethod
     def new_branch(branch_name):
         setattr(
