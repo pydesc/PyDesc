@@ -25,9 +25,9 @@ from Bio.PDB import PDBParser
 try:
     from Bio.PDB import MMCIFParser
 except ImportError:
+
     def MMCIFParser(*a, **ka):
         return None
-
 
     warn(Info("No MMCIFParser in Bio.PDB"))
 from pydesc.config import ConfigManager
@@ -58,12 +58,11 @@ class InvalidID(Exception):
 
 
 class DBHandler(object):
-
     def __init__(self, mode):
         self.mode = mode
 
     def get_cache(self, val):
-        return ConfigManager.dbhandler.cachedir + self.db_name + '/' + val[1:3] + '/'
+        return ConfigManager.dbhandler.cachedir + self.db_name + "/" + val[1:3] + "/"
 
     def is_id_valid(self, val):
         return True
@@ -79,7 +78,7 @@ class DBHandler(object):
     def assert_val(self, val):
         pth = self.get_file_location(val)
         if not os.path.exists(pth):
-            raise IOError('No such file: %s' % pth)
+            raise IOError("No such file: %s" % pth)
 
     @validate_id
     def get_file_url(self, val):
@@ -88,7 +87,7 @@ class DBHandler(object):
     @validate_id
     def download_file(self, val):
         try:
-            u = urllib.urlopen(self.get_file_url(val))
+            u = urllib.request.urlopen(self.get_file_url(val))
         except urllib.HTTPError as e:
             if e.getcode() == 404:
                 raise InvalidID(2)
@@ -112,7 +111,7 @@ class DBHandler(object):
         if not self.is_file_valid(buf):
             raise InvalidID(3)
 
-        local_file = open(self.get_file_location(val), 'w')
+        local_file = open(self.get_file_location(val), "w")
         local_file.write(buf)
         local_file.close()
 
@@ -128,10 +127,11 @@ class DBHandler(object):
         In mode 3 handler access file from biodb without earlier attempt at getting file from other sources.
         """
         mode = self.mode if mode is None else mode
-        dct = {3: (self.assert_val, Info("local copy access to %s" % val)),
-               2: (self.get_from_local_db, Info("picking %s file from local db" % val)),
-               1: (self.download_file, Info("downloading copy of %s" % val)),
-               }
+        dct = {
+            3: (self.assert_val, Info("local copy access to %s" % val)),
+            2: (self.get_from_local_db, Info("picking %s file from local db" % val)),
+            1: (self.download_file, Info("downloading copy of %s" % val)),
+        }
         for i in mode:
             try:
                 mth, info = dct[i]
@@ -143,7 +143,7 @@ class DBHandler(object):
                 continue
             else:
                 return [self._get_file(val)]
-        raise IOError('No file to load for %s' % val)
+        raise IOError("No file to load for %s" % val)
 
     def _get_file(self, val):
         """Private method creating file handler.
@@ -153,28 +153,34 @@ class DBHandler(object):
 
         Meant to be overwritten in db handlers that should return more than one handler.
         """
-        return open(self.get_file_location(val), 'r')
+        return open(self.get_file_location(val), "r")
 
 
 class SCOPHandler(DBHandler):
-
     def __init__(self, mode=0):
-        self.db_name = 'scop'
-        self.url_template = 'http://scop.berkeley.edu/astral/pdbstyle/?ver=2.03&id=%s&output=pdb'
+        self.db_name = "scop"
+        self.url_template = (
+            "http://scop.berkeley.edu/astral/pdbstyle/?ver=2.03&id=%s&output=pdb"
+        )
         DBHandler.__init__(self, mode)
 
     def is_id_valid(self, val):
         if len(val) != 7:
             return False
 
-        if val[0] != 'd' or not val[1].isdigit() or not val[2:4].isalnum() or not (
-                val[5].isalnum() or val[5] in ['_', '.']) or not (val[6].isalnum() or val[6] == '_'):
+        if (
+            val[0] != "d"
+            or not val[1].isdigit()
+            or not val[2:4].isalnum()
+            or not (val[5].isalnum() or val[5] in ["_", "."])
+            or not (val[6].isalnum() or val[6] == "_")
+        ):
             return False
 
         return True
 
     def is_file_valid(self, buf):
-        if buf.startswith('ERROR'):
+        if buf.startswith("ERROR"):
             return False
 
         return True
@@ -182,14 +188,13 @@ class SCOPHandler(DBHandler):
     @validate_id
     @add_db_dir
     def get_file_location(self, val):
-        return '%s/%s.ent' % (val[2:4], val)
+        return "%s/%s.ent" % (val[2:4], val)
 
 
 class PDBHandler(DBHandler):
-
     def __init__(self, mode=(1, 2, 3)):
-        self.db_name = 'pdb'
-        self.url_template = 'http://www.rcsb.org/pdb/files/%s.pdb'
+        self.db_name = "pdb"
+        self.url_template = "http://www.rcsb.org/pdb/files/%s.pdb"
         DBHandler.__init__(self, mode)
 
     def is_id_valid(self, val):
@@ -207,26 +212,29 @@ class PDBHandler(DBHandler):
     @validate_id
     @add_db_dir
     def get_file_location(self, val):
-        return '%s.pdb' % (val,)
+        return "%s.pdb" % (val,)
 
     @validate_id
     def get_from_local_db(self, val):
-        with gzip.open(ConfigManager.dbhandler.pdb_handler + 'data/structures/divided/pdb/%s/pdb%s.ent.gz' % (
-                val[1:3], val)) as f:
+        with gzip.open(
+            ConfigManager.dbhandler.pdb_handler
+            + "data/structures/divided/pdb/%s/pdb%s.ent.gz" % (val[1:3], val)
+        ) as f:
             self.save_stream(f, val)
 
 
 class PDBBundleHandler(DBHandler):
-
     def __init__(self, mode=(1, 2, 3)):
-        self.db_name = 'pdb-bundle'
-        self.url_template = 'ftp://ftp.wwpdb.org/pub/pdb/compatible/pdb_bundle/'
+        self.db_name = "pdb-bundle"
+        self.url_template = "ftp://ftp.wwpdb.org/pub/pdb/compatible/pdb_bundle/"
         DBHandler.__init__(self, mode)
 
     def get_bundle(self, val):
         cache = self.get_cache(val.lower())
-        with open(cache + val.lower() + '-chain-id-mapping.txt') as f:
-            bundle = [i.replace(":", "") for i in map(str.strip, f.readlines()) if '.pdb' in i]
+        with open(cache + val.lower() + "-chain-id-mapping.txt") as f:
+            bundle = [
+                i.replace(":", "") for i in map(str.strip, f.readlines()) if ".pdb" in i
+            ]
         return bundle
 
     def get_file_location(self, val):
@@ -240,8 +248,13 @@ class PDBBundleHandler(DBHandler):
 
     def get_from_local_db(self, val):
         cache = self.get_cache(val)
-        dir = ConfigManager.dbhandler.pdb_handler + 'compatible/pdb_bundle/'
-        tar = tarfile.open(dir + '%s/%s/%s-pdb-bundle.tar.gz' % tuple(map(str.lower, (val[1:3], val, val))), 'r:gz')
+        dir = ConfigManager.dbhandler.pdb_handler + "compatible/pdb_bundle/"
+        tar = tarfile.open(
+            dir
+            + "%s/%s/%s-pdb-bundle.tar.gz"
+            % tuple(map(str.lower, (val[1:3], val, val))),
+            "r:gz",
+        )
         try:
             os.makedirs(cache)
         except OSError:
@@ -253,7 +266,7 @@ class PDBBundleHandler(DBHandler):
         bundle = self.get_bundle(val)
         for file in bundle:
             if file not in os.listdir(cache):
-                raise IOError('Lacking files for %s bundle.' % val)
+                raise IOError("Lacking files for %s bundle." % val)
 
     def _get_file(self, val):
         """Returns list of handlers to bundle of pdb files."""
@@ -266,33 +279,31 @@ class PDBBundleHandler(DBHandler):
          """
         cache = self.get_cache(val.lower())
         dct = {}
-        with open(cache + val.lower() + '-chain-id-mapping.txt') as f:
-            for blk in f.read().split('\n\n')[1:]:
-                ls = blk.split('\n')
+        with open(cache + val.lower() + "-chain-id-mapping.txt") as f:
+            for blk in f.read().split("\n\n")[1:]:
+                ls = blk.split("\n")
                 pdbn = ls[0].strip()[:-1]
-                dct[pdbn] = dict(map(str.split, filter(bool, ls[1:])))
+                dct[pdbn] = dict(list(map(str.split, list(filter(bool, ls[1:])))))
         return dct
 
 
 class MMCIFHandler(PDBHandler):
-
     def __init__(self, mode=(1, 2, 3)):
-        self.db_name = 'mmCIF'
-        self.url_template = 'http://www.rcsb.org/pdb/files/%s.cif'
+        self.db_name = "mmCIF"
+        self.url_template = "http://www.rcsb.org/pdb/files/%s.cif"
         DBHandler.__init__(self, mode)
 
     @validate_id
     @add_db_dir
     def get_file_location(self, val):
-        return '%s/%s.cif' % (val[1:3], val)
+        return "%s/%s.cif" % (val[1:3], val)
 
 
 class CATHHandler(DBHandler):
-
     def __init__(self, mode=(1, 2, 3)):
-        self.db_name = 'CATH'
+        self.db_name = "CATH"
         # unpublished path, subject to change w/o notice
-        self.url_template = 'http://data.cathdb.info/v4_0_0/pdb/%s'
+        self.url_template = "http://data.cathdb.info/v4_0_0/pdb/%s"
         DBHandler.__init__(self, mode)
 
     def is_id_valid(self, val):
@@ -307,14 +318,13 @@ class CATHHandler(DBHandler):
     @validate_id
     @add_db_dir
     def get_file_location(self, val):
-        return '%s/%s.pdb' % (val[2:4], val)
+        return "%s/%s.pdb" % (val[2:4], val)
 
 
 class BioUnitHandler(DBHandler):
-
     def __init__(self, mode=(1, 2, 3)):
-        self.db_name = 'PDBBioUnit'
-        self.url_template = 'http://www.rcsb.org/pdb/files/%s.pdb%d.gz'
+        self.db_name = "PDBBioUnit"
+        self.url_template = "http://www.rcsb.org/pdb/files/%s.pdb%d.gz"
         DBHandler.__init__(self, mode)
 
     def is_id_valid(self, val):
@@ -329,7 +339,7 @@ class BioUnitHandler(DBHandler):
     @validate_id
     @add_db_dir
     def get_file_location(self, val, unit):
-        return '%s/%s.pdb%d.gz' % (val[2:4], val, unit)
+        return "%s/%s.pdb%d.gz" % (val[2:4], val, unit)
 
     @validate_id
     def get_file_url(self, val, unit):
@@ -338,7 +348,7 @@ class BioUnitHandler(DBHandler):
     @validate_id
     def download_file(self, val, unit):
         try:
-            u = urllib.urlopen(self.get_file_url(val, unit))
+            u = urllib.request.urlopen(self.get_file_url(val, unit))
         except urllib.HTTPError as e:
             if e.getcode() == 404:
                 raise InvalidID(4)
@@ -355,7 +365,7 @@ class BioUnitHandler(DBHandler):
         if not self.is_file_valid(buf):
             raise InvalidID(5)
 
-        local_file = open(self.get_file_location(val, unit), 'w')
+        local_file = open(self.get_file_location(val, unit), "w")
         local_file.write(buf)
         local_file.close()
 
@@ -367,16 +377,19 @@ class BioUnitHandler(DBHandler):
             try:
                 if mode == 1:
                     raise
-                print(self.get_file_location(val, unit))
-                fh = gzip.open(self.get_file_location(val, unit), 'r')
-                print(val + "_" + str(unit) + ": accessing local copy...")
+                print((self.get_file_location(val, unit)))
+                fh = gzip.open(self.get_file_location(val, unit), "r")
+                print((val + "_" + str(unit) + ": accessing local copy..."))
             except:
                 if mode == 2:
                     raise Exception(
-                        'No local ' + str(val) + ' file. Check path or change access mode.')
+                        "No local "
+                        + str(val)
+                        + " file. Check path or change access mode."
+                    )
                 self.download_file(val, unit)
-                print("Downloading " + val + "_" + str(unit) + "...")
-                fh = gzip.open(self.get_file_location(val, unit), 'r')
+                print(("Downloading " + val + "_" + str(unit) + "..."))
+                fh = gzip.open(self.get_file_location(val, unit), "r")
             return [fh]
 
         else:
@@ -390,35 +403,39 @@ class BioUnitHandler(DBHandler):
                 except:
                     if not fh_list:
                         raise Exception(
-                            'No local ' + str(val) + ' biounit files. Check path or change access mode.')
+                            "No local "
+                            + str(val)
+                            + " biounit files. Check path or change access mode."
+                        )
                     return fh_list
 
 
 class MetaHandler(object):
-
     def __init__(self, mode=(3, 2, 1)):
         self.mode = mode
 
     def get_file(self, val, mode=(3, 2, 1)):
 
-        db, dummy, filename = val.partition('://')
+        db, dummy, filename = val.partition("://")
         db = db.lower()
 
         # repetitions for testing purposes only
-        db_tuple = ('pdb+mmCIF', 'cath', 'scop')
+        db_tuple = ("pdb+mmCIF", "cath", "scop")
 
         mode = self.mode if mode is None else mode
 
-        db_dict = {'cath': (CATHHandler(mode),),
-                   'pdb': (PDBHandler(mode),),
-                   'mmCIF': (MMCIFHandler(mode),),
-                   'pdb+mmCIF': (PDBHandler(mode), MMCIFHandler(mode)),
-                   'scop': (SCOPHandler(mode),),
-                   'unit': BioUnitHandler(mode)}
+        db_dict = {
+            "cath": (CATHHandler(mode),),
+            "pdb": (PDBHandler(mode),),
+            "mmCIF": (MMCIFHandler(mode),),
+            "pdb+mmCIF": (PDBHandler(mode), MMCIFHandler(mode)),
+            "scop": (SCOPHandler(mode),),
+            "unit": BioUnitHandler(mode),
+        }
 
         if db in db_dict:
-            if db == 'unit':
-                filename, dummy, unit = filename.partition('/')
+            if db == "unit":
+                filename, dummy, unit = filename.partition("/")
                 if not unit:
                     # when unitDB is to be searched, but no particular unit was given
                     return BioUnitHandler().get_file(filename, None, mode)
@@ -455,5 +472,7 @@ class MetaParser(object):
             except ValueError:  # the only exception known to be raised when proper mmCIF is passed to PDBParser
                 file.seek(0)
                 continue
-        raise ValueError('None of parsers could get %s structure. Tried: %s.' % (
-            stc, ", ".join([type(i).__name__ for i in self.parsers])))
+        raise ValueError(
+            "None of parsers could get %s structure. Tried: %s."
+            % (stc, ", ".join([type(i).__name__ for i in self.parsers]))
+        )

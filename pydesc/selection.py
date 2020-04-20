@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PyDesc is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -108,7 +108,7 @@ class Selection(metaclass=ABCMeta):
         converter -- an instance of number converter to be used to convert
         PyDesc integers to pdb-id tuples.
         """
-        list_of_pdb_ids = map(converter.get_pdb_id, list_of_inds)
+        list_of_pdb_ids = list(map(converter.get_pdb_id, list_of_inds))
         return Set(list_of_pdb_ids)
 
 
@@ -154,8 +154,8 @@ class Set(Selection):
         """
         inds = self._get_list_of_inds(structure_obj)
         substructure = pydesc.structure.PartialStructure(
-            [structure_obj[ind] for ind in inds],
-            structure_obj.derived_from.converter)
+            [structure_obj[ind] for ind in inds], structure_obj.derived_from.converter
+        )
         return substructure
 
     def create_new_structure(self, structure_obj):
@@ -170,7 +170,8 @@ class Set(Selection):
         """
         structure = pydesc.structure.PartialStructure(
             [],  # initialize with empty set of mers
-            structure_obj.derived_from.converter)
+            structure_obj.derived_from.converter,
+        )
         list_of_inds = self._get_list_of_inds(structure_obj)
         mf = MerFactory()
         mers = [mf.copy_mer(structure_obj[ind]) for ind in list_of_inds]
@@ -187,7 +188,7 @@ class Set(Selection):
         """
         list_of_inds = self._get_list_of_inds(structure_obj)
         get_pdb_id_method = structure_obj.derived_from.converter.get_pdb_id
-        list_of_pdb_ids = map(get_pdb_id_method, list_of_inds)
+        list_of_pdb_ids = list(map(get_pdb_id_method, list_of_inds))
         return Set(list_of_pdb_ids)
 
 
@@ -228,13 +229,14 @@ class Range(Selection):
         """
         converter = structure_obj.derived_from.converter
         start_ind, end_ind = converter.get_list_of_inds([self.start, self.end])
-        ids = converter.ind2pdb[start_ind: end_ind + 1]
+        ids = converter.ind2pdb[start_ind : end_ind + 1]
         return Set(list_of_pdb_ids=ids)
 
     def create_segment(self, structure_obj):
         """Returns pydesc.structure.Segment."""
-        return pydesc.structure.Segment(structure_obj[self.start],
-                                        structure_obj[self.end])
+        return pydesc.structure.Segment(
+            structure_obj[self.start], structure_obj[self.end]
+        )
 
 
 class MerAttr(Selection, metaclass=ABCMeta):
@@ -252,11 +254,14 @@ class MerAttr(Selection, metaclass=ABCMeta):
 
     def specify(self, structure_obj):
         """Return Set selection containing ids specific for given structure."""
-        list_of_inds = [mer.ind for mer in structure_obj if
-                        getattr(mer, self.attr_name) == self.value]
+        list_of_inds = [
+            mer.ind
+            for mer in structure_obj
+            if getattr(mer, self.attr_name) == self.value
+        ]
         return Selection._finalize_specify(
-            list_of_inds,
-            structure_obj.derived_from.converter)
+            list_of_inds, structure_obj.derived_from.converter
+        )
 
 
 class ChainSelection(MerAttr):
@@ -270,7 +275,7 @@ class ChainSelection(MerAttr):
 
     @property
     def attr_name(self):
-        return 'chain'
+        return "chain"
 
 
 class MerName(MerAttr):
@@ -281,7 +286,7 @@ class MerName(MerAttr):
 
     @property
     def attr_name(self):
-        return 'name'
+        return "name"
 
     def __repr__(self):
         return "<Selection: mers called %s>" % self.value.lstrip()
@@ -295,12 +300,12 @@ class MerExactType(MerAttr):
 
     def __init__(self, cls):
         if not issubclass(cls, Mer):
-            raise WrongMerType('Given class has to be subclass of Mer.')
+            raise WrongMerType("Given class has to be subclass of Mer.")
         MerAttr.__init__(self, cls)
 
     @property
     def attr_name(self):
-        return '__class__'
+        return "__class__"
 
     def __repr__(self):
         return "<Selection of mer exact type: %s>" % self.value.__name__
@@ -324,7 +329,7 @@ class MerSubclasses(Selection):
         self.monomer_subclass = monomer_subclass
 
     def __repr__(self):
-        pattern = re.compile('[A-Z]{1}[a-z]*')
+        pattern = re.compile("[A-Z]{1}[a-z]*")
         operation = re.findall(pattern, self.monomer_subclass.__name__)
         operation.reverse()
         operation = " ".join(operation).lower()
@@ -338,11 +343,14 @@ class MerSubclasses(Selection):
         Arguments:
         structure_obj -- a structure to be base for new structure.
         """
-        list_of_inds = [monomer.ind for monomer in structure_obj if
-                        isinstance(monomer, self.monomer_subclass)]
+        list_of_inds = [
+            monomer.ind
+            for monomer in structure_obj
+            if isinstance(monomer, self.monomer_subclass)
+        ]
         return Selection._finalize_specify(
-            list_of_inds,
-            structure_obj.derived_from.converter)
+            list_of_inds, structure_obj.derived_from.converter
+        )
 
 
 class Everything(Selection):
@@ -363,8 +371,8 @@ class Everything(Selection):
         """
         list_of_inds = [i.ind for i in structure_obj]
         return self._finalize_specify(
-            list_of_inds,
-            structure_obj.derived_from.converter)
+            list_of_inds, structure_obj.derived_from.converter
+        )
 
     def create_structure(self, structure_obj):
         return structure_obj
@@ -384,8 +392,8 @@ class Nothing(Selection):
         structure_obj -- instance od pydesc.structure.AbstractStructure.
         """
         substructure = pydesc.structure.PartialStructure(
-            [],
-            structure_obj.derived_from.converter)
+            [], structure_obj.derived_from.converter
+        )
         return substructure
 
     def specify(self, structure_obj):
@@ -397,11 +405,9 @@ class Nothing(Selection):
         return Set([])
 
 
-class CombinedSelection(Selection):
+class CombinedSelection(Selection, metaclass=ABCMeta):
     """Abstract class, a selection obtained via operation on other
     selections."""
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, list_of_selections):
         """Complex selections constructor.
@@ -436,7 +442,7 @@ class CombinedSelection(Selection):
             except AttributeError:
                 return [sel]
 
-        return iter(reduce(operator.add, map(iter_combined, self.selections)))
+        return iter(reduce(operator.add, list(map(iter_combined, self.selections))))
 
     def _create_list_of_id_sets(self, structure_obj):
         list_of_id_sets = []
@@ -446,7 +452,7 @@ class CombinedSelection(Selection):
         return list_of_id_sets
 
     def __repr__(self):
-        pattern = re.compile('[A-Z][a-z]*')
+        pattern = re.compile("[A-Z][a-z]*")
         name = self.__class__.__name__.replace("Selections", "")
         operation = " ".join(re.findall(pattern, name)).lower()
         operation = operation.capitalize()

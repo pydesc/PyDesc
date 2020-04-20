@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PyDesc is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -77,7 +77,7 @@ def build_smith_waterman_matrix(ids, aligned_ids):
         chain = pdb_id[0]
         ind = pdb_id[1]
         icode = pdb_id[2]
-        return val, x, y, ord(chain), ind, ord(icode or '\x00')
+        return val, x, y, ord(chain), ind, ord(icode or "\x00")
 
     match = 1
     sw_matrix = np.full((len(aligned_ids) + 1, len(ids) + 1, 6), None)
@@ -100,9 +100,8 @@ def build_smith_waterman_matrix(ids, aligned_ids):
             id_to_choose = (id2, id1, id1)
             # ids connected choose of, respectively, vertical,
             # horizontal and diagonal move
-            zipper = zip(sw_values, traceback, id_to_choose)
-            scoring_tuples = [pack_tuple(insertion_tuple) for insertion_tuple
-                              in zipper]
+            zipper = list(zip(sw_values, traceback, id_to_choose))
+            scoring_tuples = [pack_tuple(insertion_tuple) for insertion_tuple in zipper]
             sw_matrix[row, col] = max(scoring_tuples, key=key)
     return sw_matrix
 
@@ -145,8 +144,8 @@ class PDBid(tuple):
     """
 
     def __str__(self):
-        chain = '?' if self.chain is None else self.chain
-        icode = '' if self.icode is None else self.icode
+        chain = "?" if self.chain is None else self.chain
+        icode = "" if self.icode is None else self.icode
         return (chain + str(self.ind) + icode).strip()
 
     @property
@@ -172,13 +171,13 @@ class PDBid(tuple):
         pdb_id -- string in format <chain><pdb_number><pdb_insertion_code>,
         e.g. C12A.
         """
-        match = re.match('^(.)([0-9]*)([^0-9])?$', pdb_id)
+        match = re.match("^(.)([0-9]*)([^0-9])?$", pdb_id)
 
         if match is None:
             raise ValueError("Unexpected id string %s\n" % pdb_id)
 
         tuple_ = match.groups()
-        icode = None if tuple_[2] in (' ', '') else tuple_[2]
+        icode = None if tuple_[2] in (" ", "") else tuple_[2]
         return pdb_id([tuple_[0], int(tuple_[1]), icode])
 
     @staticmethod
@@ -189,7 +188,7 @@ class PDBid(tuple):
         pdb_residue -- BioPython residue.
         """
         id_tuple = pdb_residue.get_full_id()
-        icode = None if id_tuple[3][2] == ' ' else id_tuple[3][2]
+        icode = None if id_tuple[3][2] == " " else id_tuple[3][2]
         return PDBid((id_tuple[2], int(id_tuple[3][1]), icode))
 
 
@@ -217,7 +216,7 @@ class NumberConverter(object):
         factory_mth = PDBid.create_from_pdb_residue
         models_ids = []
         for pdb_model in pdb_models:
-            no_solvent_ids = filter(is_not_water, pdb_model.get_residues())
+            no_solvent_ids = list(filter(is_not_water, pdb_model.get_residues()))
             models_ids.append([factory_mth(id_) for id_ in no_solvent_ids])
 
         if len(models_ids) > 1:
@@ -270,4 +269,4 @@ class NumberConverter(object):
         try:
             return self.pdb2ind[pdb_id]
         except KeyError:
-            raise UnknownPDBid('Given PDB was not present in structure.')
+            raise UnknownPDBid("Given PDB was not present in structure.")

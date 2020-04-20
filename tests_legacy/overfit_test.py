@@ -169,8 +169,8 @@ class OverfitTest(unittest.TestCase):
 
             one = geometry.TRTMatrix()
             map(self.assertAlmostEqual, itertools.chain(*mat.rotation_matrix.tolist()), itertools.chain(*one.rotation_matrix.tolist()))
-            map(self.assertAlmostEqual, mat.prerotational_translation_vector.tolist(), one.prerotational_translation_vector.tolist())
-            map(self.assertAlmostEqual, mat.translation_vector.tolist(), one.translation_vector.tolist())
+            map(self.assertAlmostEqual, mat.prerotational_translation_vector.tolist(), one.pre_vector.tolist())
+            map(self.assertAlmostEqual, mat.translation_vector.tolist(), one.post_vector.tolist())
 
     @testing(overfit.Overfit.overfit)
     @testing(overfit.t_transrot)

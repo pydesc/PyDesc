@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PyDesc is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -25,7 +25,7 @@ import numpy
 from pydesc.mers import Residue
 
 eps = 0.00000001
-rtod = 180. / numpy.pi
+rtod = 180.0 / numpy.pi
 
 
 def calc_R(vec):
@@ -56,9 +56,9 @@ def adis(vec):
     Argument:
     vec -- numpy.array of angles.
     """
-    n = int(.05 * len(vec))
+    n = int(0.05 * len(vec))
     r1 = calc_R(vec[:n])
-    r2 = calc_R(vec[len(vec) - n:])
+    r2 = calc_R(vec[len(vec) - n :])
     return numpy.sign(numpy.cross(r1, r2)) * adi(vec)
 
 
@@ -107,7 +107,7 @@ def atip(vec):  # ATIP
         for imin in (0, int(0.5 * numbstep)):
             imax = imin + numbstep
             for k in range(0, p):
-                iadi = adi(vec[imin: imax])
+                iadi = adi(vec[imin:imax])
                 adimax = max(iadi, adimax)
                 adimin = min(iadi, adimin)
                 imin = imax
@@ -274,8 +274,10 @@ def corre(thetas):
     lst = [thetas[k] for k in thetas]
     res = numpy.zeros(len(lst), len(lst))
     for i, mer in enumerate(lst):
-        for k, mer2 in enumerate(lst[i + 1:]):
-            res[i, k] = numpy.mean(numpy.exp((0 + 1j) * mer) * numpy.exp((0 - 1j) * mer2))
+        for k, mer2 in enumerate(lst[i + 1 :]):
+            res[i, k] = numpy.mean(
+                numpy.exp((0 + 1j) * mer) * numpy.exp((0 - 1j) * mer2)
+            )
 
     return res
 
@@ -286,7 +288,10 @@ def corre1(vec, vec1):
     Argument:
     vec and vec1 contains time series of angular values, with the same number of elements
     """
-    return numpy.mean(numpy.exp((0 + 1j) * numpy.array(vec[1:])) * numpy.exp((0 - 1j) * numpy.array(vec1)))
+    return numpy.mean(
+        numpy.exp((0 + 1j) * numpy.array(vec[1:]))
+        * numpy.exp((0 - 1j) * numpy.array(vec1))
+    )
 
 
 def calculate_omega(stc):
@@ -311,7 +316,7 @@ def calculate_omega(stc):
         except IndexError:
             break
 
-    for k, v in mangs.items():
+    for k, v in list(mangs.items()):
         mangs[k] = numpy.array(v)
 
     return mangs
@@ -327,7 +332,8 @@ def calculate_theta(stc, mer_ind):
     while True:
         rvec = (mer.ca - mer.cbx).get_unit_vector()
         for m in stc:
-            if m == mer: continue
+            if m == mer:
+                continue
             vec = (m.ca - mer.ca).get_unit_vector()
             res[m].append(numpy.arccos(numpy.dot(vec, rvec)))
         try:
@@ -335,7 +341,7 @@ def calculate_theta(stc, mer_ind):
         except IndexError:
             break
 
-    for k, v in res.items():
+    for k, v in list(res.items()):
         res[k] = numpy.array(v)
 
     return res

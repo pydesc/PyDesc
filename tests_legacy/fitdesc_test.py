@@ -130,8 +130,8 @@ class FitDescTest(unittest.TestCase):
 
         one = geometry.TRTMatrix()
         map(almost_equal, itertools.chain(*mat.rotation_matrix.tolist()), itertools.chain(*one.rotation_matrix.tolist()))
-        map(almost_equal, mat.prerotational_translation_vector.tolist(), one.prerotational_translation_vector.tolist())
-        map(almost_equal, mat.translation_vector.tolist(), one.translation_vector.tolist())
+        map(almost_equal, mat.prerotational_translation_vector.tolist(), one.pre_vector.tolist())
+        map(almost_equal, mat.translation_vector.tolist(), one.post_vector.tolist())
 
         self.assertListEqual(*map(list, zip(*list(pair_al))), msg=msg)
         self.assertListEqual(list(motif), list(zip(*list(pair_al))[0]), msg=msg)

@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation, either version 3 of the License, or
 # (at your option) any later version.
-# 
+#
 # PyDesc is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-# 
+#
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -37,9 +37,10 @@ from Bio.Blast.Applications import NcbiblastnCommandline
 
 from abc import ABCMeta
 from itertools import chain
-from StringIO import StringIO
+from io import StringIO
 
 from pydesc.cydesc.overfit import Overfit
+from functools import reduce
 
 # pylint: disable=no-member
 pydesc.config.ConfigManager.new_branch("alignments")
@@ -83,13 +84,15 @@ def split_to_int_and_icode(string):
         pdb_number = int(string)
         insertion_code = None
     else:
-        print repr(string)
+        print(repr(string))
         pdb_number = int(string[:-1])
         insertion_code = string[-1]
     return pdb_number, insertion_code
 
 
-def blast_sequences(structure_1, structure_2, nucleotide=False, **kwargs):  # pylint:disable=too-many-locals
+def blast_sequences(
+    structure_1, structure_2, nucleotide=False, **kwargs
+):  # pylint:disable=too-many-locals
     """Return PairAlignment based on sequence alignment performed by BLAST.
 
     Arguments:
@@ -101,38 +104,53 @@ def blast_sequences(structure_1, structure_2, nucleotide=False, **kwargs):  # py
     Returns tuple containing two elements: NCBI BLAST result parsed by BioPython and pydesc PairAlignment object.
     See BioPython help to read more about BLAST result.
     """
-    s1mers = pydesc.selection.MonomerType(pydesc.monomer.MonomerChainable).create_structure(structure_1)
-    s2mers = pydesc.selection.MonomerType(pydesc.monomer.MonomerChainable).create_structure(structure_2)
+    s1mers = pydesc.selection.MonomerType(
+        pydesc.monomer.MonomerChainable
+    ).create_structure(structure_1)
+    s2mers = pydesc.selection.MonomerType(
+        pydesc.monomer.MonomerChainable
+    ).create_structure(structure_2)
     seq1 = SeqRecord(Seq(s1mers.get_sequence()), id=str(structure_1))
     seq2 = SeqRecord(Seq(s2mers.get_sequence()), id=str(structure_2))
 
     blast = NcbiblastnCommandline if nucleotide else NcbiblastpCommandline
 
     if 0 in (len(seq1), len(seq2)):
-        pydesc.warnexcept.warn(Warning('One of following structures you are trying to BLAST has no sequence -- %s, %s' % (str(structure_1), str(structure_2))))
+        pydesc.warnexcept.warn(
+            Warning(
+                "One of following structures you are trying to BLAST has no sequence -- %s, %s"
+                % (str(structure_1), str(structure_2))
+            )
+        )
 
     with tempfile.NamedTemporaryFile() as file1:
         with tempfile.NamedTemporaryFile() as file2:
             SeqIO.write(seq1, file1.name, "fasta")
             SeqIO.write(seq2, file2.name, "fasta")
-            blastres = blast(query=file1.name, subject=file2.name, outfmt=5, **kwargs)()[0]
+            blastres = blast(
+                query=file1.name, subject=file2.name, outfmt=5, **kwargs
+            )()[0]
     try:
         res = NCBIXML.read(StringIO(blastres)).alignments[0].hsps[0]
     except IndexError:
-        raise IndexError('No alignment for found with BLAST.')
+        raise IndexError("No alignment for found with BLAST.")
 
-    s1i = iter(list(s1mers)[res.query_start - 1:res.query_end])
-    s2i = iter(list(s2mers)[res.sbjct_start - 1:res.sbjct_end])
+    s1i = iter(list(s1mers)[res.query_start - 1 : res.query_end])
+    s2i = iter(list(s2mers)[res.sbjct_start - 1 : res.sbjct_end])
     aligned_mers = []
     for match, chr1, chr2 in zip(res.match, res.query, res.sbjct):
-        if match != ' ':
-            aligned_mers.append((s1i.next(), s2i.next()))
+        if match != " ":
+            aligned_mers.append((next(s1i), next(s2i)))
             continue
         for char, item in zip((chr1, chr2), (s1i, s2i)):
-            if char != '-':
-                dummy = item.next()
+            if char != "-":
+                dummy = next(item)
 
-    return (res, Alignment.build_from_list_of_mers((structure_1, structure_2), aligned_mers))
+    return (
+        res,
+        Alignment.build_from_list_of_mers((structure_1, structure_2), aligned_mers),
+    )
+
 
 def find_sequence(sequence, structure, nucleotide=False, **kwargs):
     """Returns substructures that fit to given pattern.
@@ -147,33 +165,42 @@ def find_sequence(sequence, structure, nucleotide=False, **kwargs):
     Returns list of tuples containing two elements: structure and NCBI BLAST result parsed by BioPython.
     See BioPython help to read more about BLAST result.
     """
-    seqmers = pydesc.selection.MonomerType(pydesc.monomer.MonomerChainable).create_structure(structure)
+    seqmers = pydesc.selection.MonomerType(
+        pydesc.monomer.MonomerChainable
+    ).create_structure(structure)
     seq2 = SeqRecord(Seq(seqmers.get_sequence()), id=str(structure))
 
     blast = NcbiblastnCommandline if nucleotide else NcbiblastpCommandline
 
     with tempfile.NamedTemporaryFile() as file1:
         with tempfile.NamedTemporaryFile() as file2:
-            SeqIO.write(SeqRecord(Seq(sequence), id='tempseq'), file1.name, "fasta")
+            SeqIO.write(SeqRecord(Seq(sequence), id="tempseq"), file1.name, "fasta")
             SeqIO.write(seq2, file2.name, "fasta")
-            blastres = blast(query=file1.name, subject=file2.name, outfmt=5, **kwargs)()[0]
+            blastres = blast(
+                query=file1.name, subject=file2.name, outfmt=5, **kwargs
+            )()[0]
 
     try:
         res = NCBIXML.read(StringIO(blastres)).alignments[0].hsps
     except IndexError:
-        raise IndexError('No alignment for %s found with BLAST.' % structure.name)
+        raise IndexError("No alignment for %s found with BLAST." % structure.name)
 
     def mk_thx(fit):
-        mrs = list(seqmers)[fit.sbjct_start - 1: fit.sbjct_end]
-        inds = map(len, filter(bool, fit.sbjct.split('-')))
+        mrs = list(seqmers)[fit.sbjct_start - 1 : fit.sbjct_end]
+        inds = list(map(len, list(filter(bool, fit.sbjct.split("-")))))
         i1 = 0
         rngs = []
         for i2 in inds:
             i2 = i2 + i1
-            rngs.append(pydesc.selection.Range(mrs[i1].pid, mrs[i2 - 1].pid).create_structure(structure))
+            rngs.append(
+                pydesc.selection.Range(mrs[i1].pid, mrs[i2 - 1].pid).create_structure(
+                    structure
+                )
+            )
             i1 = i2
         return rngs
-    #~ mk_thx = lambda x: pydesc.selection.Range(list(seqmers)[x.sbjct_start - 1].pid, list(seqmers)[x.sbjct_end - 1].pid).create_structure(structure)
+
+    # ~ mk_thx = lambda x: pydesc.selection.Range(list(seqmers)[x.sbjct_start - 1].pid, list(seqmers)[x.sbjct_end - 1].pid).create_structure(structure)
 
     return [(mk_thx(mtch), mtch) for mtch in res]
 
@@ -182,7 +209,9 @@ class AlignmentLoader(object):
 
     """Class responsible for loading alignments from files."""
 
-    def __init__(self, handler=pydesc.dbhandler.MetaHandler(), reload_=False, model_no=None):
+    def __init__(
+        self, handler=pydesc.dbhandler.MetaHandler(), reload_=False, model_no=None
+    ):
         """Alignment loader constructor.
 
         Arguments:
@@ -207,10 +236,10 @@ class AlignmentLoader(object):
 
         Method is able to load csv, fasta, xml and pal files.
         """
-        extension = file_name.split("/")[-1].split('.')[1]
-        if extension == 'xml':
+        extension = file_name.split("/")[-1].split(".")[1]
+        if extension == "xml":
             file_data = self.load_xml(file_name)
-        elif extension == 'csv':
+        elif extension == "csv":
             file_data = self.load_csv(file_name)
         elif extension == "pal":
             file_data = self.load_pal(file_name)
@@ -242,9 +271,13 @@ class AlignmentLoader(object):
         except KeyError:
             model = 0
         if path is None:
-            self.structures[structure_code] = self.structure_loader.load_structures(structure_code)[model]
+            self.structures[structure_code] = self.structure_loader.load_structures(
+                structure_code
+            )[model]
         else:
-            self.structures[structure_code] = self.structure_loader.load_structures(structure_code, path=path)[model]
+            self.structures[structure_code] = self.structure_loader.load_structures(
+                structure_code, path=path
+            )[model]
         return self.structures[structure_code]
 
     def load_xml(self, file_name):
@@ -269,13 +302,22 @@ class AlignmentLoader(object):
                 id_tuple = (chain, pdb_int, icode)
                 ind = structure_obj.converter.get_ind(id_tuple)
                 return structure_obj[ind]
-            except Exception:   # ??? jakiego typu bledy przy nieuliniowionych merach?
+            except Exception:  # ??? jakiego typu bledy przy nieuliniowionych merach?
                 return "-"
 
         alignment_doc = xml.dom.minidom.parse(file_name).childNodes[0]
-        structures = [self.load_structure(member.childNodes[0].nodeValue[:4]) for member in alignment_doc.getElementsByTagName('member')]
-        aligned_mers = [[mer.childNodes[0].nodeValue for mer in row.getElementsByTagName('meq')] for row in alignment_doc.getElementsByTagName('row')]
-        aligned_mers = [map(convert, alignment_tuple, structures) for alignment_tuple in aligned_mers]
+        structures = [
+            self.load_structure(member.childNodes[0].nodeValue[:4])
+            for member in alignment_doc.getElementsByTagName("member")
+        ]
+        aligned_mers = [
+            [mer.childNodes[0].nodeValue for mer in row.getElementsByTagName("meq")]
+            for row in alignment_doc.getElementsByTagName("row")
+        ]
+        aligned_mers = [
+            list(map(convert, alignment_tuple, structures))
+            for alignment_tuple in aligned_mers
+        ]
         return Alignment.build_from_list_of_mers(structures, aligned_mers)
 
     def load_csv(self, file_name):
@@ -289,13 +331,18 @@ class AlignmentLoader(object):
 
         with open(file_name, "r") as file_obj:
             csv_lines = file_obj.read().splitlines()
-        structures = [self.load_structure(structure_obj) for structure_obj in csv_lines[0].split()]
+        structures = [
+            self.load_structure(structure_obj) for structure_obj in csv_lines[0].split()
+        ]
 
-        def get_mers((structure_index, pdb_tuple)):
+        def get_mers(xxx_todo_changeme):
             """Returns mer ind for given structure index and pdb_id-tuple."""
+            (structure_index, pdb_tuple) = xxx_todo_changeme
             if type(pdb_tuple) is str:
                 return pdb_tuple
-            return structures[structure_index][structures[structure_index].converter.get_ind(pdb_tuple)]
+            return structures[structure_index][
+                structures[structure_index].converter.get_ind(pdb_tuple)
+            ]
 
         def convert_csv_mer_to_pdb_tuple(csv_mer):
             """Converts csv mers to pdb tuples."""
@@ -308,7 +355,7 @@ class AlignmentLoader(object):
         aligned_mers = []
         for line in csv_lines[1:]:
             line = line.split()
-            alignment_tuple = map(convert_csv_mer_to_pdb_tuple, line)
+            alignment_tuple = list(map(convert_csv_mer_to_pdb_tuple, line))
             alignment_tuple = tuple(map(get_mers, enumerate(alignment_tuple)))
             aligned_mers.append(alignment_tuple)
         return Alignment.build_from_list_of_mers(structures, aligned_mers)
@@ -329,7 +376,7 @@ class AlignmentLoader(object):
                 return self.load_structure(stcn)
 
         with open(file_name) as file_:
-            lines = map(str.strip, file_.readlines())
+            lines = list(map(str.strip, file_.readlines()))
 
         stc_n = int(lines.pop(0))
         structures = {i.name: i for i in [load(lines.pop(0)) for i in range(stc_n)]}
@@ -340,12 +387,17 @@ class AlignmentLoader(object):
             except IndexError:
                 break
             try:
-                (r1s, r1e), (r2s, r2e) = [map(str.strip, i.split("--")) for i in line[:line.find("(")].split("<-->")]
+                (r1s, r1e), (r2s, r2e) = [
+                    list(map(str.strip, i.split("--")))
+                    for i in line[: line.find("(")].split("<-->")
+                ]
                 try:
-                    aligned_mers.extend(zip(s1[r1s: r1e], s2[r2s: r2e]))
+                    aligned_mers.extend(list(zip(s1[r1s:r1e], s2[r2s:r2e])))
                 except KeyError:
                     # aligned_mers.extend(zip(s1[s1.name[5].upper() + r1s: s1.name[5].upper() + r1e], s2[s2.name[5].upper() + r2s: s2.name[5].upper() + r2e]))
-                    aligned_mers.extend(zip(s1[ch1 + r1s: ch1 + r1e], s2[ch2 + r2s: ch2 + r2e]))
+                    aligned_mers.extend(
+                        list(zip(s1[ch1 + r1s : ch1 + r1e], s2[ch2 + r2s : ch2 + r2e]))
+                    )
             except ValueError:
                 # print line
                 if line.startswith(">"):
@@ -354,7 +406,7 @@ class AlignmentLoader(object):
                     except NameError:
                         pass
 
-                    s1name, s2name=line[1:].split()
+                    s1name, s2name = line[1:].split()
 
                     # print s1name, s2name
                     try:
@@ -371,7 +423,7 @@ class AlignmentLoader(object):
 
                     aligned_mers = []
                 # elif line.strip() == '':
-                    # alignments.append(PairAlignment((s1, s2), aligned_mers))
+                # alignments.append(PairAlignment((s1, s2), aligned_mers))
 
         alignments.append(PairAlignment((s1, s2), aligned_mers))
 
@@ -386,7 +438,9 @@ class AlignmentLoader(object):
         Returns PairAlignment or MultipleAlignment object, depending on number of aligned structures.
         """
 
-        letters = pydesc.config.ConfigManager.monomer.residue.residue_additional_code.values()
+        letters = list(
+            pydesc.config.ConfigManager.monomer.residue.residue_additional_code.values()
+        )
 
         with open(file_name, "r") as file_:
             fasta_blocks = file_.read().split(">")[1:]
@@ -394,42 +448,61 @@ class AlignmentLoader(object):
         headers = []
         seqs = []
         for i in fasta_blocks:
-            splt = i.split('\n')
+            splt = i.split("\n")
             headers.append(splt[0])
             seqs.append("".join(splt[1:]))
         structures = [self.load_structure(i.split()[0]) for i in headers]
 
         def cvrt(rng):
-            chn=rng.split(":")[0]
-            return [chn + i for i in rng.split(":")[1].split('-')]
+            chn = rng.split(":")[0]
+            return [chn + i for i in rng.split(":")[1].split("-")]
 
         def mk_rng(patt, stream):
             try:
-                return reduce(operator.add, [pydesc.selection.Range(*cvrt(i)) for i in re.findall(patt, stream)[0][1:-1].split(',')])
+                return reduce(
+                    operator.add,
+                    [
+                        pydesc.selection.Range(*cvrt(i))
+                        for i in re.findall(patt, stream)[0][1:-1].split(",")
+                    ],
+                )
             except IndexError:
                 return pydesc.selection.Everything()
 
-        rng_pattern = re.compile('\[.:.*\]')
-        iters = [iter(mk_rng(rng_pattern, hea).create_structure(stc)) for hea, stc in zip(headers, structures)]
+        rng_pattern = re.compile("\[.:.*\]")
+        iters = [
+            iter(mk_rng(rng_pattern, hea).create_structure(stc))
+            for hea, stc in zip(headers, structures)
+        ]
 
-        def drop_mer((it, le), dbg=False):
+        def drop_mer(xxx_todo_changeme1, dbg=False):
+            (it, le) = xxx_todo_changeme1
             if not le.isalpha():
-                return '-'
-            mer = it.next()
+                return "-"
+            mer = next(it)
             if le not in letters:
                 return mer  # for unusual mers we assume next one is right one
             while mer.seq != le:
                 if dbg:
-                    print 'skipping', mer, 'because of', le
-                mer = it.next()
+                    print("skipping", mer, "because of", le)
+                mer = next(it)
             return mer
 
         try:
-            mrs = [tuple(map(drop_mer, zip(iters, col))) for col in zip(*seqs)]
+            mrs = [tuple(map(drop_mer, list(zip(iters, col)))) for col in zip(*seqs)]
         except StopIteration:
-            rlen = [len(mk_rng(rng_pattern, hea).create_structure(stc)) for hea, stc in zip(headers, structures)]
-            alen = [len(filter(lambda x: str.isalpha(x) and x in letters, i)) for i in seqs]
-            bad_ent = filter(lambda (rl, al, stc): rl < al, zip(rlen, alen, structures))
+            rlen = [
+                len(mk_rng(rng_pattern, hea).create_structure(stc))
+                for hea, stc in zip(headers, structures)
+            ]
+            alen = [
+                len([x for x in i if str.isalpha(x) and x in letters]) for i in seqs
+            ]
+            bad_ent = [
+                rl_al_stc
+                for rl_al_stc in zip(rlen, alen, structures)
+                if rl_al_stc[0] < rl_al_stc[1]
+            ]
             if bad_ent == []:
                 for stc, hea, seq in zip(structures, headers, seqs):
                     it = iter(mk_rng(rng_pattern, hea).create_structure(stc))
@@ -437,9 +510,12 @@ class AlignmentLoader(object):
                         [drop_mer((it, s), True) for s in seq]
                     except StopIteration:
                         bad_ent.append(stc)
-            raise ValueError('Following structures are to short to cover range given in fasta file: %s' % (','.join(map(str, bad_ent))))
+            raise ValueError(
+                "Following structures are to short to cover range given in fasta file: %s"
+                % (",".join(map(str, bad_ent)))
+            )
 
-        return Alignment.build_from_list_of_mers(structures, mrs) 
+        return Alignment.build_from_list_of_mers(structures, mrs)
 
 
 class Alignment(object):
@@ -458,7 +534,9 @@ class Alignment(object):
         Returns first element of given sequence if seqence length is 1. Otherwise returns MultipleAlignment instance.
         """
         if not len(list_of_pair_alignments) < 2:
-            return MultipleAlignment(alignments=list_of_pair_alignments)    # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
+            return MultipleAlignment(
+                alignments=list_of_pair_alignments
+            )  # pylint: disable=unexpected-keyword-arg, no-value-for-parameter
             # this arg is provided by ContextStateMeta class
             # since given parameteres steer kind of __init__ to be used - there is no point in giving 'structures' nor 'list_of_aligned_mers' parameters values
         else:
@@ -477,30 +555,56 @@ class Alignment(object):
         """
         if len(list_of_structures) == 2:
             return PairAlignment(list_of_structures, list_of_mers)
-        return MultipleAlignment(structures=list_of_structures, list_of_aligned_mers=list_of_mers)
+        return MultipleAlignment(
+            structures=list_of_structures, list_of_aligned_mers=list_of_mers
+        )
 
     def get_structures_names(self):
         """Returns a list of names of aligned structures in order given during initialization."""
-        return [str(structure_obj) for structure_obj in self.structures]      # pylint: disable=no-member
+        return [
+            str(structure_obj) for structure_obj in self.structures
+        ]  # pylint: disable=no-member
         # all subclasses provides structures attr
 
     def get_specified_structures(self):
-        return [sel.create_structure(stc) for sel, stc in zip(self.get_selections(), self.structures)]
+        return [
+            sel.create_structure(stc)
+            for sel, stc in zip(self.get_selections(), self.structures)
+        ]
 
     def get_selections(self):
         """Returns list of selections of mers used in current alignment in order refering to structures order."""
-        selections = [[] for i in self.structures]      # pylint: disable=no-member
+        selections = [[] for i in self.structures]  # pylint: disable=no-member
         # all subclasses provides structures attr
-        for i, str_segments in enumerate(map(get_segments, [[mer for mer in mers if mer != '-'] for mers in map(set, zip(*self.aligned_mers))])):   # pylint: disable=no-member
+        for i, str_segments in enumerate(
+            map(
+                get_segments,
+                [
+                    [mer for mer in mers if mer != "-"]
+                    for mers in map(set, list(zip(*self.aligned_mers)))
+                ],
+            )
+        ):  # pylint: disable=no-member
             set_ = []
             for segment in str_segments:
                 if segment[0] == segment[1]:
                     set_.append(segment[0])
                 else:
-                    selections[i].append(pydesc.selection.Range(*map(operator.methodcaller('get_pdb_id'), segment)))
+                    selections[i].append(
+                        pydesc.selection.Range(
+                            *list(map(operator.methodcaller("get_pdb_id"), segment))
+                        )
+                    )
             if len(set_) != 0:
-                selections[i].append(pydesc.selection.Set(map(operator.methodcaller('get_pdb_id'), set_)))
-        return [pydesc.selection.SelectionsUnion(sels) if len(sels) != 1 else sels[0] for sels in selections]
+                selections[i].append(
+                    pydesc.selection.Set(
+                        list(map(operator.methodcaller("get_pdb_id"), set_))
+                    )
+                )
+        return [
+            pydesc.selection.SelectionsUnion(sels) if len(sels) != 1 else sels[0]
+            for sels in selections
+        ]
 
     def get_aligned_with(self, mer):
         """Returns narrowed alignment containing only mers alignmed with given mer.
@@ -508,7 +612,17 @@ class Alignment(object):
         Argument:
         mer -- instance of pydesc.monomer.MonomerChainable subclass.
         """
-        res = zip(*[mers for mers in zip(self.structures, *[tup for tup in self if mer in tup]) if any(mer != "-" for mer in mers[1:])])  # pylint:disable=no-member
+        res = list(
+            zip(
+                *[
+                    mers
+                    for mers in zip(
+                        self.structures, *[tup for tup in self if mer in tup]
+                    )
+                    if any(mer != "-" for mer in mers[1:])
+                ]
+            )
+        )  # pylint:disable=no-member
         # res[0] is a list of filtered structures, res[1:] is a list of lists of aligned mers; structures that have no aligned mers are excluded
         if res == []:
             res = [[], []]
@@ -524,10 +638,12 @@ class Alignment(object):
         Structures are considered the same when they are the same python object.
         User can provied that by loading alignments with the same AlignmentLoader with reload_ argument set on False.
         """
-        #~ if not any(str(structure_obj) in alignment_obj.get_structures_names() for structure_obj in self.structures):    # pylint: disable=no-member
-            # checking, if any structure occures in all alignments
-            #~ raise AttributeError("Set of structures in given pair_alignments are disjoint, cannot sum pair_alignments' domains")
-        pair_alignments = self.alignments + alignment_obj.alignments    # pylint: disable=no-member
+        # ~ if not any(str(structure_obj) in alignment_obj.get_structures_names() for structure_obj in self.structures):    # pylint: disable=no-member
+        # checking, if any structure occures in all alignments
+        # ~ raise AttributeError("Set of structures in given pair_alignments are disjoint, cannot sum pair_alignments' domains")
+        pair_alignments = (
+            self.alignments + alignment_obj.alignments
+        )  # pylint: disable=no-member
         return Alignment.build_from_pair_alignments(pair_alignments)
 
     def save_csv(self, file_name):
@@ -538,7 +654,7 @@ class Alignment(object):
 
         def mer_to_csv(mer):
             """Turns given mer into csv string that describes mer PDB id."""
-            str_ = lambda x: '' if x is None else str(x)
+            str_ = lambda x: "" if x is None else str(x)
             if mer == "-":
                 return mer
             pdb_id = mer.get_pdb_id()
@@ -559,7 +675,9 @@ class Alignment(object):
         parts = []
         names = []
         for pair_alignment in self.alignments:  # pylint: disable=no-member
-            parts.append(pair_alignment._create_pal_string())   # pylint: disable=protected-access
+            parts.append(
+                pair_alignment._create_pal_string()
+            )  # pylint: disable=protected-access
             # the point of keeping this method is to access it here, but it is protected for users to know it is not important for them
             for line in parts[-1].splitlines():
                 if line.startswith(">"):
@@ -583,7 +701,7 @@ class Alignment(object):
             for index, mer in enumerate(alignment_tuple):
                 mers[self.structures[index]].append(mer)
         regions = dict((structure_obj, []) for structure_obj in self.structures)
-        for structure_obj, list_of_mers in mers.items():
+        for structure_obj, list_of_mers in list(mers.items()):
             list_of_mers = [mer for mer in list_of_mers if not isinstance(mer, str)]
             try:
                 start = list_of_mers[0]
@@ -601,12 +719,26 @@ class Alignment(object):
             for structure_obj in self.structures:
                 # pylint: enable=no-member
                 # structures attr is set in all subclasses of Alignment
-                switch_to_fasta = lambda (start, end): start.my_chain + ":" + start.pid[1:] + "-" + end.pid[1:]
+                switch_to_fasta = (
+                    lambda start_end: start_end[0].my_chain
+                    + ":"
+                    + start_end[0].pid[1:]
+                    + "-"
+                    + start_end[1].pid[1:]
+                )
                 ranges = ", ".join(map(switch_to_fasta, regions[structure_obj]))
                 dct.setdefault(structure_obj, []).append(
-                    ">" + str(structure_obj) + "[" + ranges + "]" + "\n")
+                    ">" + str(structure_obj) + "[" + ranges + "]" + "\n"
+                )
                 dct[structure_obj].append(
-                    "".join([mer.seq if type(mer) != str else "." for mer in mers[structure_obj]]) + "\n")
+                    "".join(
+                        [
+                            mer.seq if type(mer) != str else "."
+                            for mer in mers[structure_obj]
+                        ]
+                    )
+                    + "\n"
+                )
             for k in sorted(dct):
                 file_.write(dct[k][0])
                 file_.write(dct[k][1])
@@ -625,9 +757,11 @@ class Alignment(object):
             return str(pdb_id[1]) + pdb_id[2] + ":" + mer.seq + ":" + pdb_id[0]
 
         # pylint: disable=no-member
-        docu = xml.dom.minidom.getDOMImplementation().createDocument(None, "multiple-alignment", None)
+        docu = xml.dom.minidom.getDOMImplementation().createDocument(
+            None, "multiple-alignment", None
+        )
         ma_xml = docu.childNodes[0]
-        ma_xml.attributes['n'] = str(len(self.structures))
+        ma_xml.attributes["n"] = str(len(self.structures))
         ma_xml.appendChild(docu.createElement("description"))
         members = docu.createElement("members")
         for structure_obj in self.structures:
@@ -636,7 +770,7 @@ class Alignment(object):
             members.appendChild(member)
         ma_xml.appendChild(members)
         alter = docu.createElement("alternative")
-        alter.attributes['id'] = "1"
+        alter.attributes["id"] = "1"
         alter.attributes["n"] = str(len(self.aligned_mers))
         ma_xml.appendChild(alter)
         meqs = docu.createElement("mequivalences")
@@ -657,8 +791,10 @@ class Alignment(object):
     def expand(self):
         """Add tuples containing all mers of all structures (aligned with no other mers from other structures)."""
         all_mers = [set(stc) for stc in self.structures]
-        aligned_mers_by_stc = zip(*self.aligned_mers)
-        mers_to_add = [full - set(alg) for full, alg in zip(all_mers, aligned_mers_by_stc)]
+        aligned_mers_by_stc = list(zip(*self.aligned_mers))
+        mers_to_add = [
+            full - set(alg) for full, alg in zip(all_mers, aligned_mers_by_stc)
+        ]
         n_stcs = len(self.structures)
         for stc_ind, mers in enumerate(mers_to_add):
             for mer in mers:
@@ -670,7 +806,6 @@ class Alignment(object):
         """Sort tuples in self.aligned_mers by indexes of their mers in structures."""
 
         class TSLst(object):
-
             def __init__(self, c):
                 self.c = c
 
@@ -687,7 +822,11 @@ class Alignment(object):
                         self.c.insert(n, it)
                         break
 
-        tsl = TSLst(sorted([i for i in self.aligned_mers if i[0] != '-'], key=lambda x: x[0].ind))
+        tsl = TSLst(
+            sorted(
+                [i for i in self.aligned_mers if i[0] != "-"], key=lambda x: x[0].ind
+            )
+        )
 
         dct = {}
         for tup in self.aligned_mers:
@@ -696,7 +835,7 @@ class Alignment(object):
             dct.setdefault(tup.count("-"), []).append(tup)
 
         def show(tup):
-            print " ".join(map(str, [i if type(i) is str else i.ind for i in tup]))
+            print(" ".join(map(str, [i if type(i) is str else i.ind for i in tup])))
 
         for key in sorted(dct):
             for tup in dct[key]:
@@ -705,11 +844,9 @@ class Alignment(object):
         self.aligned_mers = tsl.c
 
 
-class PairAlignment(Alignment):
+class PairAlignment(Alignment, metaclass=ABCMeta):
 
     """Class that stores information about alignment of two structures."""
-
-    __metaclass__ = ABCMeta
 
     def __init__(self, list_of_structures, list_of_aligned_mers):
         """PairAlignment constructor.
@@ -719,7 +856,9 @@ class PairAlignment(Alignment):
         list_of_aligned_mers -- sequence of tuples containing aligned pydesc.Monomer instances representing mers from appropriate structures in list_of_structures.
         """
         self.structures = list_of_structures
-        self.aligned_mers = sorted(list_of_aligned_mers, key=lambda aligned_mers: aligned_mers[0].ind)
+        self.aligned_mers = sorted(
+            list_of_aligned_mers, key=lambda aligned_mers: aligned_mers[0].ind
+        )
         self.alignments = [self]
         self._hashdict = None
 
@@ -746,7 +885,11 @@ class PairAlignment(Alignment):
         return len(self.aligned_mers)
 
     def __repr__(self):
-        filling = (str(self.structures[0]), str(self.structures[1]), len(self.aligned_mers))
+        filling = (
+            str(self.structures[0]),
+            str(self.structures[1]),
+            len(self.aligned_mers),
+        )
         return "<PairAlignment of %s and %s: %i aligned mers>" % filling
 
     def _get_aligned_selections(self):
@@ -759,10 +902,19 @@ class PairAlignment(Alignment):
         Method used to pretty printing of pair alignemnts, thus - not supported.
         """
         if len(self.aligned_mers) == 1:
-            return map(pydesc.selection.Set, map(operator.methodcaller('get_pdb_id'), self.aligned_mers[0]))
+            return list(
+                map(
+                    pydesc.selection.Set,
+                    list(
+                        map(operator.methodcaller("get_pdb_id"), self.aligned_mers[0])
+                    ),
+                )
+            )
         seg0 = [[self.aligned_mers[0][0]]]
         seg1 = [[self.aligned_mers[0][1]]]
-        for (prev0, prev1), (curr0, curr1) in zip(self.aligned_mers[:-1], self.aligned_mers[1:]):
+        for (prev0, prev1), (curr0, curr1) in zip(
+            self.aligned_mers[:-1], self.aligned_mers[1:]
+        ):
             if prev0.next_mer == curr0 and prev1.next_mer == curr1:
                 continue
             seg0[-1].append(prev0)
@@ -775,13 +927,15 @@ class PairAlignment(Alignment):
         def mkrange(st_en):
             """Returns range selection"""
             try:
-                return pydesc.selection.Range(*map(operator.methodcaller("get_pdb_id"), st_en))
+                return pydesc.selection.Range(
+                    *list(map(operator.methodcaller("get_pdb_id"), st_en))
+                )
             except ValueError:
                 # risen if starting and ending mer is the same
                 return pydesc.selection.Set([st_en[0].get_pdb_id()])
 
-        uni0 = pydesc.selection.SelectionsUnion(map(mkrange, seg0))
-        uni1 = pydesc.selection.SelectionsUnion(map(mkrange, seg1))
+        uni0 = pydesc.selection.SelectionsUnion(list(map(mkrange, seg0)))
+        uni1 = pydesc.selection.SelectionsUnion(list(map(mkrange, seg1)))
         return uni0, uni1
 
     def __str__(self):  # pylint:disable=too-many-locals
@@ -791,10 +945,12 @@ class PairAlignment(Alignment):
         selections = self._get_aligned_selections()
 
         if all(isinstance(s, pydesc.selection.CombinedSelection) for s in selections):
-            list_of_aligned_sels = zip(*map(operator.methodcaller('iter_recursively'), selections))
+            list_of_aligned_sels = list(
+                zip(*list(map(operator.methodcaller("iter_recursively"), selections)))
+            )
         else:
             list_of_aligned_sels = [tuple(selections)]
-        max_struc = max(map(len, map(str, self.structures)))
+        max_struc = max(list(map(len, list(map(str, self.structures)))))
 
         def get_string_ranges(selection):
             """Returns string containing PDB ids of given segment starting and ending mers."""
@@ -803,54 +959,90 @@ class PairAlignment(Alignment):
             except AttributeError:  # non-Range selections have no start and end attr
                 return ",".join(map(str, selection.ids))
 
-        ranges_str = [map(get_string_ranges, aligned_sel_pair) for aligned_sel_pair in list_of_aligned_sels]
-        max_range = max(map(len, reduce(operator.add, ranges_str)))
-        for num, (aligned_selections, ranges) in enumerate(zip(list_of_aligned_sels, ranges_str)):
+        ranges_str = [
+            list(map(get_string_ranges, aligned_sel_pair))
+            for aligned_sel_pair in list_of_aligned_sels
+        ]
+        max_range = max(list(map(len, reduce(operator.add, ranges_str))))
+        for num, (aligned_selections, ranges) in enumerate(
+            zip(list_of_aligned_sels, ranges_str)
+        ):
             aligned_range_string = []
-            for struc, sel, range_str in zip(self.structures, aligned_selections, ranges):
+            for struc, sel, range_str in zip(
+                self.structures, aligned_selections, ranges
+            ):
                 name = str(struc)
                 name_margin = "".join([" " for i in range(max_struc - len(name) + 4)])
-                range_margin = "".join([" " for i in range(max_range - len(range_str) + 4)])
+                range_margin = "".join(
+                    [" " for i in range(max_range - len(range_str) + 4)]
+                )
                 seq = sel.create_structure(struc).get_sequence()
-                seq = seq if seq != '' else '(%s)' % sel.create_structure(struc)[0].name    #???
-                aligned_range_string.append(name + name_margin + range_str + range_margin + seq + "\n")
+                seq = (
+                    seq if seq != "" else "(%s)" % sel.create_structure(struc)[0].name
+                )  # ???
+                aligned_range_string.append(
+                    name + name_margin + range_str + range_margin + seq + "\n"
+                )
             intermission1 = "".join([" " for i in range(max_struc + max_range + 8)])
-            intermission2 = "".join(["-" if i % 5 != 0 else "|" for i in range(len(aligned_range_string[-1]) - len(intermission1) - 1)])
+            intermission2 = "".join(
+                [
+                    "-" if i % 5 != 0 else "|"
+                    for i in range(
+                        len(aligned_range_string[-1]) - len(intermission1) - 1
+                    )
+                ]
+            )
             intermission = intermission1 + intermission2 + "\n"
-            string.append("%i.\n" % (num + 1,) + intermission.join(aligned_range_string))
+            string.append(
+                "%i.\n" % (num + 1,) + intermission.join(aligned_range_string)
+            )
         return "\n".join(string)
 
     def _create_pal_string(self):
         """Creates string containing alignment information in pal file format."""
 
         def mkk(mer1, mer2):
-            return (str(mer1.structure) + mer1.my_chain, str(mer2.structure) + mer2.my_chain)
+            return (
+                str(mer1.structure) + mer1.my_chain,
+                str(mer2.structure) + mer2.my_chain,
+            )
 
         def gt_pids(mer1, mer2):
             return (mer1.pid, mer2.pid)
 
-        #~ def add_range(smer1, smer2):
-            #~ ranges[mkk(smer1, smer2)] = [(smer1.pid, smer2.pid)]
+        # ~ def add_range(smer1, smer2):
+        # ~ ranges[mkk(smer1, smer2)] = [(smer1.pid, smer2.pid)]
 
         pair0 = self.aligned_mers[0]
         ranges = {mkk(*pair0): [gt_pids(*pair0)]}
-        #~ add_range(*pair0)
+        # ~ add_range(*pair0)
 
-        for current_mers, next_mers in zip(self.aligned_mers[:-1], self.aligned_mers[1:]):
+        for current_mers, next_mers in zip(
+            self.aligned_mers[:-1], self.aligned_mers[1:]
+        ):
             # two subsequent pairs of aligned mers are taken: n and n + 1
             ent = mkk(*current_mers)
-            if current_mers[0].is_next(next_mers[0]) and current_mers[1].is_next(next_mers[1]):
+            if current_mers[0].is_next(next_mers[0]) and current_mers[1].is_next(
+                next_mers[1]
+            ):
                 continue
             ranges[ent].append(gt_pids(*current_mers))
             ranges.setdefault(mkk(*next_mers), []).append(gt_pids(*next_mers))
         pairm1 = self.aligned_mers[-1]
         ranges[mkk(*pairm1)].append(gt_pids(*pairm1))
         sections = []
-        for aligned_chains, rng in ranges.items():
+        for aligned_chains, rng in list(ranges.items()):
             strings_to_join = [">" + " ".join(aligned_chains) + "\n"]
             strings_to_join += ["@%i\n" % (len(rng) / 2)]
-            for (m1s, m2s), (m1e, m2e) in zip(rng[::2], rng[1::2]):   # m for mer, 1 or 2 for column, s or e for start or end
-                inpt = "%s -- %s <--> %s -- %s (1,0)\n" % (m1s, m1e, m2s, m2e) # ??? co za 1,0?
+            for (m1s, m2s), (m1e, m2e) in zip(
+                rng[::2], rng[1::2]
+            ):  # m for mer, 1 or 2 for column, s or e for start or end
+                inpt = "%s -- %s <--> %s -- %s (1,0)\n" % (
+                    m1s,
+                    m1e,
+                    m2s,
+                    m2e,
+                )  # ??? co za 1,0?
                 strings_to_join += [inpt]
             sections.append("".join(strings_to_join))
         return "".join(sections)
@@ -865,7 +1057,7 @@ class PairAlignment(Alignment):
         Returned lists are sorted by default key and contain sorted tuples of aligned mers.
         """
         if sorted(self.structures) != sorted(pairalignment.structures):
-            raise ValueError('Different sets of structures aligned')
+            raise ValueError("Different sets of structures aligned")
         foregin_sorted_mers = sorted(map(sorted, pairalignment.aligned_mers))
         native_sorted_mers = sorted(map(sorted, self.aligned_mers))
         return sorted(foregin_sorted_mers), sorted(native_sorted_mers)
@@ -873,7 +1065,9 @@ class PairAlignment(Alignment):
     def __eq__(self, pairalignment):
         """Returns True if compared PairAlignments align same sets of mers."""
         try:
-            foregin_sorted_mers, native_sorted_mers = self._prepare_comparison(pairalignment)
+            foregin_sorted_mers, native_sorted_mers = self._prepare_comparison(
+                pairalignment
+            )
         except ValueError:
             return False
         except AttributeError:
@@ -885,10 +1079,14 @@ class PairAlignment(Alignment):
     def __ge__(self, pairalignment):
         """Returns True if right compared alignment contains all mers aligned in left alignment."""
         try:
-            foregin_sorted_mers, native_sorted_mers = self._prepare_comparison(pairalignment)
+            foregin_sorted_mers, native_sorted_mers = self._prepare_comparison(
+                pairalignment
+            )
         except ValueError:
             return False
-        if all(aligned_mers in native_sorted_mers for aligned_mers in foregin_sorted_mers):
+        if all(
+            aligned_mers in native_sorted_mers for aligned_mers in foregin_sorted_mers
+        ):
             return True
         return False
 
@@ -906,7 +1104,11 @@ class PairAlignment(Alignment):
 
         Given alignment has to have exactly one structure common with current alignment object.
         """
-        common_structure = [structure_obj for structure_obj in self.structures if structure_obj in alignment_obj.structures][0]
+        common_structure = [
+            structure_obj
+            for structure_obj in self.structures
+            if structure_obj in alignment_obj.structures
+        ][0]
         transition_dict = {}
         # next step is to add mers from common structure present in both alignments as keys
         # respective mers from both structures aligned with common structure
@@ -922,7 +1124,9 @@ class PairAlignment(Alignment):
                     transition_dict[key] += aligned_mers_
                 except KeyError:
                     transition_dict[key] = aligned_mers_
-        aligned_mers = [mers for mers in transition_dict.values() if None not in mers]
+        aligned_mers = [
+            mers for mers in list(transition_dict.values()) if None not in mers
+        ]
         list_of_structures = [mer.structure for mer in aligned_mers[0]]
         return PairAlignment(list_of_structures, aligned_mers)
 
@@ -932,15 +1136,17 @@ class PairAlignment(Alignment):
         Argument:
         pair_alignment -- instance of PairAlignment to be compared.
         """
-        strcs1 = map(operator.attrgetter('derived_from'), self.structures)
-        strcs2 = map(operator.attrgetter('derived_from'), pair_alignment.structures)
+        strcs1 = list(map(operator.attrgetter("derived_from"), self.structures))
+        strcs2 = list(
+            map(operator.attrgetter("derived_from"), pair_alignment.structures)
+        )
         selfdict = dict(self)
-        selfdict_rev = dict(zip(*reversed(zip(*self))))
+        selfdict_rev = dict(list(zip(*reversed(list(zip(*self))))))
         if strcs1 == strcs2:
             otherdict = dict(pair_alignment)
-            otherdict_rev = dict(zip(*reversed(zip(*pair_alignment))))
+            otherdict_rev = dict(list(zip(*reversed(list(zip(*pair_alignment))))))
         elif strcs1 == list(reversed(strcs2)):
-            otherdict = dict(zip(*reversed(zip(*pair_alignment))))
+            otherdict = dict(list(zip(*reversed(list(zip(*pair_alignment))))))
             otherdict_rev = dict(pair_alignment)
         else:
             # when alignment aligns different sets of structures - they are consistent
@@ -960,7 +1166,11 @@ class PairAlignment(Alignment):
                     return False
             return True
 
-        return check_dict(self, selfdict, selfdict_rev, otherdict, otherdict_rev) and check_dict(pair_alignment, otherdict, otherdict_rev, selfdict, selfdict_rev)
+        return check_dict(
+            self, selfdict, selfdict_rev, otherdict, otherdict_rev
+        ) and check_dict(
+            pair_alignment, otherdict, otherdict_rev, selfdict, selfdict_rev
+        )
 
     def calculate_tension(self, cmaps=None):
         """Compares contact maps of aligned structures.
@@ -976,46 +1186,69 @@ class PairAlignment(Alignment):
             cm1, cm2 = cmaps
         else:
             try:
-                cm1, cm2 = map(operator.attrgetter("contact_map"), self.structures)
+                cm1, cm2 = list(
+                    map(operator.attrgetter("contact_map"), self.structures)
+                )
             except AttributeError:
-                map(pydesc.structure.AbstractStructure.set_contact_map, self.structures)
-                cm1, cm2 = map(operator.attrgetter("contact_map"), self.structures)
+                list(
+                    map(
+                        pydesc.structure.AbstractStructure.set_contact_map,
+                        self.structures,
+                    )
+                )
+                cm1, cm2 = list(
+                    map(operator.attrgetter("contact_map"), self.structures)
+                )
         cstc1, cstc2 = self.get_specified_structures()
         alg = dict(self.aligned_mers)
-        ralg = dict(map(reversed, self.aligned_mers))
+        ralg = dict(list(map(reversed, self.aligned_mers)))
         for m1, m2 in self.aligned_mers:
             for m1c in cm1.contacts[m1.ind]:
                 try:
-                    conts.add((pydesc.structure.Contact(pydesc.structure.ElementChainable(m1),\
-                                                        pydesc.structure.ElementChainable(cstc1[m1c])
-                                                        ),
-                               pydesc.structure.Contact(pydesc.structure.ElementChainable(m2),\
-                                                        pydesc.structure.ElementChainable(alg[cstc1[m1c]])
-                                                        )
-                              )
-                             )
+                    conts.add(
+                        (
+                            pydesc.structure.Contact(
+                                pydesc.structure.ElementChainable(m1),
+                                pydesc.structure.ElementChainable(cstc1[m1c]),
+                            ),
+                            pydesc.structure.Contact(
+                                pydesc.structure.ElementChainable(m2),
+                                pydesc.structure.ElementChainable(alg[cstc1[m1c]]),
+                            ),
+                        )
+                    )
                 except (ValueError, KeyError):
                     pass
             for m2c in cm2.contacts[m2.ind]:
                 try:
-                    conts.add((pydesc.structure.Contact(m1.ind, ralg[cstc2[m2c]].ind, cstc1), pydesc.structure.Contact(m2.ind, m2c, cstc2)))
+                    conts.add(
+                        (
+                            pydesc.structure.Contact(
+                                m1.ind, ralg[cstc2[m2c]].ind, cstc1
+                            ),
+                            pydesc.structure.Contact(m2.ind, m2c, cstc2),
+                        )
+                    )
                 except (ValueError, KeyError):
                     pass
+
         def overfit(o1, o2):
             oft = Overfit()
             oft.add_structure(o1, o2)
             return oft.overfit()[0]
+
         rmsds = [overfit(c1, c2) for c1, c2 in conts]
         try:
             return sum(rmsds) / len(rmsds)
         except ZeroDivisionError:
             ZeroDivisionError("There is no contacts aligned.")
 
+
 class AlignedTuples(Alignment):
 
     """Class representing multiple alignment as list of aligned mers from all aligned structures."""
 
-    _state_attr = ['structures', 'aligned_mers']
+    _state_attr = ["structures", "aligned_mers"]
 
     def __init__(self, structures, list_of_aligned_mers):
         """AlignedTuples constructor.
@@ -1027,7 +1260,7 @@ class AlignedTuples(Alignment):
         self.structures = structures
         self.aligned_mers = list_of_aligned_mers
 
-    def _fill_from_MergedPairAlignments(self, obj):   # pylint: disable=invalid-name
+    def _fill_from_MergedPairAlignments(self, obj):  # pylint: disable=invalid-name
         # method name is as described in contextmeta.py documentation
         """Method required and called by ContextStateMeta - metaclass of MultipleAlignment.
 
@@ -1036,12 +1269,19 @@ class AlignedTuples(Alignment):
 
         See contextmeta documentation for more information.
         """
-        self.structures = set(reduce(operator.add, [pair_alignment.structures for pair_alignment in obj.alignments]))
+        self.structures = set(
+            reduce(
+                operator.add,
+                [pair_alignment.structures for pair_alignment in obj.alignments],
+            )
+        )
         self.structures = list(self.structures)
         self.aligned_mers = set()
         for pair in obj.iterate_pairs():
-            t_tup = ['-' for dummy in self.structures]
-            for mer in list(obj._hash(pair[0])) + [pair[0]]:    # pylint:disable=protected-access
+            t_tup = ["-" for dummy in self.structures]
+            for mer in list(obj._hash(pair[0])) + [
+                pair[0]
+            ]:  # pylint:disable=protected-access
                 # that is the method that should use protected attr
                 t_tup[self.structures.index(mer.structure)] = mer
             self.aligned_mers.add(tuple(t_tup))
@@ -1071,12 +1311,16 @@ class AlignedTuples(Alignment):
             """
             acc_n = 0
             for mer in p_clq:
-                if all(m in graph[mer] or m == mer for m in p_clq):  # pylint:disable=undefined-loop-variable
+                if all(
+                    m in graph[mer] or m == mer for m in p_clq
+                ):  # pylint:disable=undefined-loop-variable
                     # this variable is defined for sure
                     acc_n += 1
                     continue
                 mk_clq([i for i in p_clq if i != mer])
-                mk_clq([i for i in graph[mer] if i in p_clq] + [mer])  # pylint:disable=undefined-loop-variable
+                mk_clq(
+                    [i for i in graph[mer] if i in p_clq] + [mer]
+                )  # pylint:disable=undefined-loop-variable
             if len(p_clq) != acc_n:
                 return
             clq = ["-" for i in self.structures]
@@ -1085,8 +1329,8 @@ class AlignedTuples(Alignment):
             clicques.add(tuple(clq))
 
         for ory_col, graph in zip(obj.columns, obj.graphs):
-            col = [i for i in ory_col if i != '-']
-            if all(len(val) + 1 == len(col) for val in graph.values()):
+            col = [i for i in ory_col if i != "-"]
+            if all(len(val) + 1 == len(col) for val in list(graph.values())):
                 # when every vertices has no. of vertices - 1 neighbours - column equals tuple
                 self.aligned_mers.append(tuple(ory_col))
                 continue
@@ -1100,7 +1344,10 @@ class AlignedTuples(Alignment):
         return iter(self.aligned_mers)
 
     def __repr__(self):
-        return "<AlignedTuples of %i structures (%i merged mers)>" % (len(self.structures), len(self.aligned_mers))
+        return "<AlignedTuples of %i structures (%i merged mers)>" % (
+            len(self.structures),
+            len(self.aligned_mers),
+        )
 
     def close(self):
         """Returns closed copy of current alignment.
@@ -1108,7 +1355,9 @@ class AlignedTuples(Alignment):
         If any mer from one structure is aligned with mers from more than one structure - this method merges all alignments in one alignment, if it is possible.
         Closed AlignedTupless generates all possible PairAlignments when changed to MultiplePairAlignments.
         """
-        all_aligned_mers = dict((mer, None) for aligned_mers in self for mer in aligned_mers if mer != "-")
+        all_aligned_mers = dict(
+            (mer, None) for aligned_mers in self for mer in aligned_mers if mer != "-"
+        )
         hash_ = []
         for aligned_mers in self:
             aligned_mers = tuple(sorted([mer for mer in aligned_mers if mer != "-"]))
@@ -1128,7 +1377,10 @@ class AlignedTuples(Alignment):
             for mer in aligned_mers:
                 all_aligned_mers[mer] = len(hash_)
             hash_.append(aligned_mers)
-        structures_indexes = dict((structure_obj, self.structures.index(structure_obj)) for structure_obj in self.structures)
+        structures_indexes = dict(
+            (structure_obj, self.structures.index(structure_obj))
+            for structure_obj in self.structures
+        )
         gl_aligned_mers = []
         for alignment_tuple in reversed(hash_):
             if all_aligned_mers[alignment_tuple[0]] is not None:
@@ -1137,7 +1389,9 @@ class AlignedTuples(Alignment):
                     all_aligned_mers[mer] = None
                     aligned_mers[structures_indexes[mer.structure]] = mer
                 gl_aligned_mers.append(aligned_mers)
-        return Alignment.build_from_list_of_mers([i for i in self.structures], gl_aligned_mers)
+        return Alignment.build_from_list_of_mers(
+            [i for i in self.structures], gl_aligned_mers
+        )
 
     def get_index(self, mer):
         """Returns index of alignment tuple in which given mere is present.
@@ -1148,15 +1402,19 @@ class AlignedTuples(Alignment):
         Raises KeyError if mer is not present.
         """
         for n, mrs in enumerate(self.aligned_mers):
-            if mer in mrs: return n
-        raise KeyError('Given instance of %s is not present in alignment %s' % (str(mer.pid), str(self)))
+            if mer in mrs:
+                return n
+        raise KeyError(
+            "Given instance of %s is not present in alignment %s"
+            % (str(mer.pid), str(self))
+        )
 
 
 class MergedPairAlignments(Alignment):
 
     """Class representing multiple alignment as list of (all possible) pair alignment between aligned structures."""
 
-    _state_attr = ['alignments']
+    _state_attr = ["alignments"]
 
     def __init__(self, alignments):
         """MergedPairAlignment constructor.
@@ -1167,7 +1425,9 @@ class MergedPairAlignments(Alignment):
         Raises ValueError if given sequence is shorter than 2.
         """
         if len(alignments) < 2:
-            raise ValueError("Cannot create multiple alignment: less than two alignments given")
+            raise ValueError(
+                "Cannot create multiple alignment: less than two alignments given"
+            )
         self.alignments = list(alignments)
 
     def __repr__(self):
@@ -1187,7 +1447,7 @@ class MergedPairAlignments(Alignment):
                 pass
         return tuple(algd)
 
-    def _fill_from_AlignedTuples(self, obj):   # pylint: disable=invalid-name
+    def _fill_from_AlignedTuples(self, obj):  # pylint: disable=invalid-name
         # method name is as described in contextmeta.py documentation
         """Method required and called by ContextStateMeta - metaclass of MultipleAlignment.
 
@@ -1198,7 +1458,7 @@ class MergedPairAlignments(Alignment):
         """
         self.alignments = []
         for i_1, structure_1 in enumerate(obj.structures):
-            for structure_2 in obj.structures[i_1 + 1:]:
+            for structure_2 in obj.structures[i_1 + 1 :]:
                 i_2 = obj.structures.index(structure_2)
                 aligned_pairs = []
                 for aligned_mers in obj.aligned_mers:
@@ -1206,7 +1466,9 @@ class MergedPairAlignments(Alignment):
                         continue
                     aligned_pairs.append((aligned_mers[i_1], aligned_mers[i_2]))
                 if len(aligned_pairs) != 0:
-                    self.alignments.append(PairAlignment([structure_1, structure_2], aligned_pairs))
+                    self.alignments.append(
+                        PairAlignment([structure_1, structure_2], aligned_pairs)
+                    )
 
     def _fill_from_GraphsAndColumns(self, obj):  # pylint:disable=invalid-name
         """Method required and called by ContextStateMeta - metaclass of MultipleAlignment.
@@ -1216,16 +1478,22 @@ class MergedPairAlignments(Alignment):
 
         See contextmeta documentation for more information.
         """
-        algs = dict(((str1, str2), []) for i, str1 in enumerate(obj.structures) for str2 in obj.structures[i + 1:])
+        algs = dict(
+            ((str1, str2), [])
+            for i, str1 in enumerate(obj.structures)
+            for str2 in obj.structures[i + 1 :]
+        )
         for graph in obj.graphs:
-            for mer1, aligned in graph.items():
+            for mer1, aligned in list(graph.items()):
                 for mer2 in aligned:
                     try:
                         algs[(mer1.structure, mer2.structure)].append((mer1, mer2))
                     except KeyError:
                         pass
                         # to avoid duplicated tuples in pair alignments
-        self.alignments = [PairAlignment(key, aligned_mers) for key, aligned_mers in algs.items()]
+        self.alignments = [
+            PairAlignment(key, aligned_mers) for key, aligned_mers in list(algs.items())
+        ]
 
     def intersect_with(self, alignment_obj):
         """Returns narrowed alignment that aligns all structures common for both, current and given, alignments.
@@ -1237,8 +1505,21 @@ class MergedPairAlignments(Alignment):
         """
         current_alignment_structures = list()
         for pair_alignment in self.alignments:
-            current_alignment_structures.extend([structure_obj for structure_obj in pair_alignment.structures if structure_obj not in current_alignment_structures])
-        alignments = [pair_alignment for pair_alignment in alignment_obj.alignments if all(structure_obj in current_alignment_structures for structure_obj in pair_alignment.structures)]
+            current_alignment_structures.extend(
+                [
+                    structure_obj
+                    for structure_obj in pair_alignment.structures
+                    if structure_obj not in current_alignment_structures
+                ]
+            )
+        alignments = [
+            pair_alignment
+            for pair_alignment in alignment_obj.alignments
+            if all(
+                structure_obj in current_alignment_structures
+                for structure_obj in pair_alignment.structures
+            )
+        ]
         return Alignment.build_from_pair_alignments(alignments)
 
     def iterate_pairs(self):
@@ -1255,7 +1536,14 @@ class MergedPairAlignments(Alignment):
 
         Returns alignment represented by one of Alignment subclasses
         """
-        validated_alignments = [alignment_obj for alignment_obj in self.alignments if all(structure_obj in list_of_structures for structure_obj in alignment_obj.structures)]
+        validated_alignments = [
+            alignment_obj
+            for alignment_obj in self.alignments
+            if all(
+                structure_obj in list_of_structures
+                for structure_obj in alignment_obj.structures
+            )
+        ]
         # taking only those alignments, whose structures occure in given list of structures
         return Alignment.build_from_pair_alignments(validated_alignments)
 
@@ -1267,15 +1555,21 @@ class MergedPairAlignments(Alignment):
 
         Returns alignment represented by one of Alignment subclasses
         """
+
         def discard_common(pair_alignment):
             """Returns False if given PairAlignment is common for given and current alignments."""
-            if any(structure_obj in alignment_obj.structures for structure_obj in pair_alignment.structures):
+            if any(
+                structure_obj in alignment_obj.structures
+                for structure_obj in pair_alignment.structures
+            ):
                 return False
             return True
 
-        filtered = filter(discard_common, self.alignments)
+        filtered = list(filter(discard_common, self.alignments))
         if len(filtered) > 2:
-            return MultipleAlignment(alignments=filtered)   # pylint: disable=no-value-for-parameter, unexpected-keyword-arg
+            return MultipleAlignment(
+                alignments=filtered
+            )  # pylint: disable=no-value-for-parameter, unexpected-keyword-arg
         return filtered[0]
 
     def get_alignment_for(self, stc1, stc2):
@@ -1289,16 +1583,22 @@ class MergedPairAlignments(Alignment):
                 nms.add(i.name)
             except AttributeError:
                 nms.add(i)
-        return max([i for i in self.alignments if set(map(operator.attrgetter('name'), i.structures)) == nms])
+        return max(
+            [
+                i
+                for i in self.alignments
+                if set(map(operator.attrgetter("name"), i.structures)) == nms
+            ]
+        )
 
 
 class GraphsAndColumns(object):
 
     """Class representing """
 
-    _state_attr = ['columns', 'graphs', 'structures']
+    _state_attr = ["columns", "graphs", "structures"]
 
-    def _fill_from_AlignedTuples(self, obj):    # pylint:disable=invalid-name
+    def _fill_from_AlignedTuples(self, obj):  # pylint:disable=invalid-name
         """Method required and called by ContextStateMeta - metaclass of MultipleAlignment.
 
         Argument:
@@ -1308,21 +1608,31 @@ class GraphsAndColumns(object):
         """
         closed_obj = obj.close()
         graphs = [{} for i in closed_obj.aligned_mers]
-        hash_ = dict((mer, i) for i, col in enumerate(closed_obj.aligned_mers) for mer in col)
+        hash_ = dict(
+            (mer, i) for i, col in enumerate(closed_obj.aligned_mers) for mer in col
+        )
         for aligned_mers in obj.aligned_mers:
-            aligned_mers = [i for i in aligned_mers if i != '-']
+            aligned_mers = [i for i in aligned_mers if i != "-"]
             for mer_obj in aligned_mers:
                 col_hash = hash_[mer_obj]
                 try:
-                    graphs[col_hash][mer_obj].extend([i for i in aligned_mers if i != mer_obj])
+                    graphs[col_hash][mer_obj].extend(
+                        [i for i in aligned_mers if i != mer_obj]
+                    )
                 except KeyError:
-                    graphs[col_hash][mer_obj] = [i for i in aligned_mers if i != mer_obj]
+                    graphs[col_hash][mer_obj] = [
+                        i for i in aligned_mers if i != mer_obj
+                    ]
                 # graphs is a list of dicts containing mers as keys and list of merf from other strucutures
                 # which they are aligned with as keys.
                 # hash_ is used to get index of proper dict on graphs list, so filling of dicts could be performed.
-        self.structures = obj.structures    # pylint:disable=attribute-defined-outside-init
-        self.columns = closed_obj.aligned_mers  # pylint:disable=attribute-defined-outside-init
-        self.graphs = graphs    # pylint:disable=attribute-defined-outside-init
+        self.structures = (
+            obj.structures
+        )  # pylint:disable=attribute-defined-outside-init
+        self.columns = (
+            closed_obj.aligned_mers
+        )  # pylint:disable=attribute-defined-outside-init
+        self.graphs = graphs  # pylint:disable=attribute-defined-outside-init
         # method replaces init somehow
 
     def _fill_from_MergedPairAlignments(self, obj):  # pylint:disable=invalid-name
@@ -1337,8 +1647,11 @@ class GraphsAndColumns(object):
         # state is changed due to usage of AlignedTuples attributes in _fill_from method
 
 
-class MultipleAlignment(AlignedTuples, MergedPairAlignments, GraphsAndColumns):
+class MultipleAlignment(
+    AlignedTuples,
+    MergedPairAlignments,
+    GraphsAndColumns,
+    metaclass=contextmeta.ContextStateMeta,
+):
 
     """Class representing alignment between more than two structures. Metaclass is ContextStateMeta."""
-
-    __metaclass__ = contextmeta.ContextStateMeta
