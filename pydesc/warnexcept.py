@@ -47,7 +47,6 @@ UserWarning -- default warning.
 created: 04.02.2014 , Tymoteusz 'hert' Oleniecki
 """
 
-import operator
 import warnings
 
 from pydesc.config import ConfigManager
@@ -87,7 +86,7 @@ def set_filters():
     warnings.resetwarnings()
 
     # TODO: Scan for warnings and exceptions automatically. Add checks for
-    # warnings without entries in ConfigManager.
+    #  warnings without entries in ConfigManager.
     for wrn_cls in (
         Info,
         DeprecationWarning,
@@ -95,9 +94,8 @@ def set_filters():
         UnknownParticleName,
         UserWarning,
     ):
-        filter_ = getattr(
-            ConfigManager.warnings.class_filters, wrn_cls.__name__
-        )  # pylint: disable=no-member
+        warn_name = wrn_cls.__name__
+        filter_ = getattr(ConfigManager.warnings.class_filters, warn_name)
         warnings.filterwarnings(filter_, category=wrn_cls)
 
 
@@ -161,7 +159,7 @@ class WarnManager(warnings.catch_warnings):
         self.exceptions[self.last_context].extend(
             [
                 self.exceptions["__internal__"].pop(0).message
-                for wrn in self.exceptions["__internal__"]
+                for _ in self.exceptions["__internal__"]
             ]
         )
         warnings.catch_warnings.__exit__(self)
@@ -189,35 +187,8 @@ class WarnManager(warnings.catch_warnings):
             warn(warning, 4)
 
 
-class DiscontinuityError(Exception):
-    """Class of exceptions raised due to disnotinuity between chainable mers.
-
-    Arguments:
-    arg1 -- pydesc.monomer.Monomer subclass instance 1.
-    arg2 -- pydesc.monomer.Monomer subclass instance 2.
-    """
-
-    def __str__(self):
-        ending = (
-            "."
-            if len(self.args) == 0
-            else "between: %s and %s"
-            % tuple(map(operator.methodcaller("get_pdb_id", self.args)))
-        )
-        return "Discontinuity occurred" + ending
-
-
-class IncompleteParticle(Exception):
-    """Class of exceptions reised when incomplete particle is given to
-    create monomer insence.
-
-    Argument:
-    arg1 -- BioPython Residue instance.
-    """
-
-
 class CannotCalculateContact(Exception):
-    """Class of exceptions raised by contact criterions whenever given mers
+    """Class of exceptions raised by contact criteria whenever given mers
     lack attributes or properties needed to calculate contact.
 
     Arguments:
@@ -227,22 +198,49 @@ class CannotCalculateContact(Exception):
     """
 
 
-class WrongAtomDistances(Exception):
-    """Class of exceptions raised due to wrong distance between atoms
-    occurring in structures.
+class DiscontinuityError(Exception):
+    """Class of exceptions raised due to discontinuity between chainable mers.
 
     Arguments:
-    arg1 -- pydesc.monomer.Atom instance 1.
-    arg2 -- pydesc.monomer.Atom instance 2.
-    arg3 -- pydesc.monomer.Monomer instance.
+    arg1 -- pydesc.monomer.Monomer subclass instance 1.
+    arg2 -- pydesc.monomer.Monomer subclass instance 2.
     """
 
-    def __str__(self):
-        tpl = self.args[:2] + (self.args[2].ind,)
-        return (
-            "Wrong %s-%s distance in %s. Check if distance criteria in "
-            "config manager are not to strict." % tpl
-        )
+    pass
+
+
+class FrameNotAvailable(Exception):
+    """Raised when trajectory frame to be set exceeds available range."""
+
+    pass
+
+
+class IncompleteParticle(Exception):
+    """Class of exceptions raised when incomplete particle is given to
+    create monomer instance.
+
+    Argument:
+    arg1 -- BioPython Residue instance.
+    """
+
+
+class UnknownPDBid(Exception):
+    """Unknown PDB id error."""
+
+    pass
+
+
+class WrongAtomDistances(Exception):
+    """Class of exceptions raised due to wrong distance between atoms
+    occurring in structures."""
+
+    pass
+
+
+class WrongElement(Exception):
+    """Error shown when given element is incorrect."""
+
+    pass
 
 
 class WrongMerType(Exception):
@@ -254,7 +252,7 @@ class WrongMerType(Exception):
 
 
 class Info(Warning):
-    """Class of warnings. Standard informations. Printed by default."""
+    """Class of warnings. Standard information. Printed by default."""
 
 
 class NoConfiguration(Warning):

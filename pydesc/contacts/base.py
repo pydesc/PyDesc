@@ -29,7 +29,7 @@ from abc import abstractmethod
 from copy import deepcopy
 from functools import wraps
 
-import pydesc.mers
+from pydesc.mers.base import Mer
 from pydesc.warnexcept import WrongMerType
 
 
@@ -180,7 +180,7 @@ class ContactCriterion(metaclass=ABCMeta):
         if type_1 == type_2:
             type_2 = None
 
-        if type_1 == pydesc.mers.Mer and type_2 is None:
+        if type_1 == Mer and type_2 is None:
             type_1 = None
 
         self.type_1 = type_1
@@ -188,7 +188,7 @@ class ContactCriterion(metaclass=ABCMeta):
 
     def get_types(self):
         """Returns types of mer for which criterion is created."""
-        type_1 = pydesc.mers.Mer if self.type_1 is None else self.type_1
+        type_1 = Mer if self.type_1 is None else self.type_1
         type_2 = type_1 if self.type_2 is None else self.type_2
 
         return type_1, type_2
@@ -410,8 +410,8 @@ class ContactsConjunction(CombinedContact):
         """
         CombinedContact.__init__(self, *criteria_objs)
 
-        type_1 = pydesc.mers.Mer
-        type_2 = pydesc.mers.Mer
+        type_1 = Mer
+        type_2 = Mer
 
         for i in criteria_objs:
             (t1, t2) = i.get_types()

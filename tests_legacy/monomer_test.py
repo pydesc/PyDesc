@@ -340,7 +340,7 @@ def make_monomerfactorytest(strname, test_structure_dir, cls_):
             done = 0
             for ch in list(self.pdbS.get_models())[0]:
                 for m in ch:
-                    res = self.mf.create_from_biopdb(m)
+                    res = self.mf.create(m)
                     mn = m.get_resname().strip()
                     if mn == 'HOH':
                         self.assertIs(res, None)

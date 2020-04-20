@@ -8,3 +8,4 @@ PyDesc.egg-info/
 lib
 
 */*.pyc
+htmlcov/

@@ -57,7 +57,7 @@ class InvalidID(Exception):
     pass
 
 
-class DBHandler(object):
+class DBHandler:
     def __init__(self, mode):
         self.mode = mode
 
@@ -410,7 +410,7 @@ class BioUnitHandler(DBHandler):
                     return fh_list
 
 
-class MetaHandler(object):
+class MetaHandler:
     def __init__(self, mode=(3, 2, 1)):
         self.mode = mode
 
@@ -461,7 +461,7 @@ class MetaHandler(object):
             raise InvalidID("%s" % db)
 
 
-class MetaParser(object):
+class MetaParser:
     def __init__(self, *args, **kwargs):
         self.parsers = [PDBParser(*args, **kwargs), MMCIFParser(*args, **kwargs)]
 

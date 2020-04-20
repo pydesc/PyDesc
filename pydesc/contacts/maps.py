@@ -30,7 +30,9 @@ from pydesc.selection import Everything
 from pydesc.warnexcept import WrongMerType
 
 
-class ContactMapCalculator(object):
+class ContactMapCalculator:
+    """Class responsible for calculating contact maps."""
+
     def __init__(
         self,
         structure_obj,
@@ -38,7 +40,7 @@ class ContactMapCalculator(object):
         select1=Everything(),
         select2=None,
     ):
-        """ContactMapCalculator constructor.
+        """ContactMapCalculator initializer.
 
         Arguments:
         structure_obj -- instance of any pydesc.structure.AbstractStructure
@@ -178,7 +180,7 @@ class ContactMapCalculator(object):
         return ContactMap(contacts_mtx, self.structure)
 
 
-class ContactMap(object):
+class ContactMap:
     """Map of contacts present in a given (sub)structure."""
 
     def __init__(self, contacts_mtx, structure):
@@ -248,7 +250,7 @@ class ContactMap(object):
                 stream_out.write(line)
 
 
-class FrequencyContactMap(object):
+class FrequencyContactMap:
     """Class representing maps of contact frequencies in trajectories or NMR
     structures.
     """

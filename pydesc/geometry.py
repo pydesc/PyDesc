@@ -32,7 +32,7 @@ axpy = scipy.linalg.get_blas_funcs("axpy")
 # pylint: enable=no-member, invalid-name
 
 
-class TRTMatrix(object):
+class TRTMatrix:
     """Translation-Rotation-Translation matrices class.
 
     Stores prerotational translation vector, rotation matrix and
@@ -144,7 +144,7 @@ class TRTMatrix(object):
         return ret
 
 
-class Coord(object):
+class Coord:
     """Stores coordinates as position vector.
 
     Note, that addition and subtraction of coord instances can be performed.
@@ -165,8 +165,6 @@ class Coord(object):
             self.vector = numpy.array(
                 (float(x), float(y), float(z))
             )  # pylint: disable=no-member
-
-    # numpy.array exists
 
     def __add__(self, coord_obj):
         """Returns result of addition of two vectors represented by Coord
@@ -212,8 +210,13 @@ class Coord(object):
         return "<Coord: %f %f %f>" % tuple(self.vector)
 
     def __abs__(self):
-        """Returns Coord's vector lenght."""
+        """Returns Coord's vector length."""
         return self.calculate_length()
+
+    def copy(self):
+        """Return copy of self."""
+        coord_type = type(self)
+        return coord_type(numpy_vec=self.vector)
 
     def calculate_length(self):
         """Calculates the length of the position vector.
@@ -280,7 +283,7 @@ class Coord(object):
 # names x, y and z are the best possible here
 
 
-class Plane(object):
+class Plane:
     """Stores coordinates as position vector.
 
     Methods:
