@@ -6,6 +6,7 @@ from pydesc.mers.full_atom import Nucleotide
 from pydesc.mers.full_atom import Residue
 
 ConfigManager.warnings.class_filters.UnknownParticleName = "ignore"
+ConfigManager.warnings.class_filters.Info = "ignore"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_STRUCTURES_DIR = os.path.join(BASE_DIR, "data", "test_structures")
