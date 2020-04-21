@@ -242,11 +242,7 @@ class Mer:
 
     def __repr__(self):
         try:
-            return "<%s: %s no. %i>" % (
-                self.__class__.__name__,
-                self.name,
-                self.ind,
-            )
+            return "<%s: %s no. %i>" % (self.__class__.__name__, self.name, self.ind)
         except (TypeError, KeyError):
             return "<%s: %s>" % (self.__class__.__name__, self.name)
 
