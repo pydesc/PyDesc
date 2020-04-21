@@ -1,5 +1,6 @@
 import pytest
 
+from pydesc.api.trajectory import freeze_frame, from_frames
 from pydesc.mers.factories import CopyingFactor
 from pydesc.mers.full_atom import Nucleotide
 from pydesc.mers.full_atom import Residue
@@ -8,6 +9,7 @@ from pydesc.selection import Selector
 from pydesc.selection import Set
 from pydesc.structure import StructureLoader
 from pydesc.structure import TrajectoryLoader
+from pydesc.structure.topology import Structure
 from pydesc.structure.trajectory import Trajectory
 from pydesc.warnexcept import FrameNotAvailable
 
@@ -133,3 +135,48 @@ class TestTrajectory:
 
         picker = Selector(CopyingFactor())
         picker.create_new_structure(set_sel, trajectory)
+
+    def test_freezing_structure(self, ext, stc):
+        trajectory = self.load_traj(ext, stc)
+
+        trajectory.set_frame(2)
+
+        new_structure = freeze_frame(trajectory)
+
+        assert isinstance(new_structure, Structure)
+        for traj_chain, new_chain in zip(trajectory.chains, new_structure.chains):
+            assert traj_chain.name == new_chain.name
+            assert len(traj_chain) == len(new_chain)
+        assert len(new_structure) == len(trajectory)
+
+        mer0_atoms = new_structure[0].atoms
+        assert len(mer0_atoms) >= 1
+
+        for atom in mer0_atoms:
+            new_vector = new_structure[0].atoms[atom].vector
+            old_vector = trajectory[0].atoms[atom].vector
+            assert (new_vector == old_vector).all()
+
+        trajectory.set_frame(1)
+
+        for atom in mer0_atoms:
+            new_vector = new_structure[0].atoms[atom].vector
+            old_vector = trajectory[0].atoms[atom].vector
+            assert (new_vector != old_vector).all()
+
+    def test_assembling_frozen_frames(self, ext, stc):
+        trajectory = self.load_traj(ext, stc)
+        frames = []
+        for index in range(5):
+            trajectory.set_frame(index)
+            frame = freeze_frame(trajectory)
+            frames.append(frame)
+
+        new_trajectory = from_frames(frames)
+
+        assert trajectory.get_n_frames() == new_trajectory.get_n_frames()
+
+        for index in range(5):
+            trajectory.set_frame(index)
+            new_trajectory.set_frame(index)
+            assert (trajectory.md_matrix == new_trajectory.md_matrix).all()
