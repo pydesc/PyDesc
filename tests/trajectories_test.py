@@ -1,6 +1,6 @@
 import pytest
 
-from pydesc.mers.factories import BioPythonMerFactory
+from pydesc.mers.factories import CopyingFactor
 from pydesc.mers.full_atom import Nucleotide
 from pydesc.mers.full_atom import Residue
 from pydesc.selection import MerSubclasses
@@ -131,5 +131,5 @@ class TestTrajectory:
         pdb_inds = [get_id(mer.ind) for mer in trajectory[:5]]
         set_sel = Set(pdb_inds)
 
-        picker = Selector(BioPythonMerFactory)
+        picker = Selector(CopyingFactor())
         picker.create_new_structure(set_sel, trajectory)

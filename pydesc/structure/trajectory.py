@@ -30,6 +30,10 @@ class Trajectory(Structure):
                 mer.reset_dynamic_cache()
         self._frame = n
 
+    def get_frame(self):
+        """Return currently set frame."""
+        return self._frame
+
     def get_n_frames(self):
         """Get number of frames in trajectory."""
         return self._max_frames
