@@ -11,7 +11,6 @@ class Trajectory(Structure):
         MDTraj trajectory."""
         super().__init__(name, path, converter_obj)
         self._frame = 0
-        self._max_frames = md_trajectory.xyz.shape[0]
         self.md_matrix = md_trajectory.xyz
         atoms = md_trajectory.topology.atoms
         self.serial_map = {atom.serial: atom.index for atom in atoms}
@@ -23,16 +22,20 @@ class Trajectory(Structure):
 
     def set_frame(self, n):
         """Change trajectory frame to given one."""
-        if not (0 <= n <= self._max_frames):
+        if not (0 <= n <= self.md_matrix.shape[0]):
             raise FrameNotAvailable("Frame %i out of range." % n)
         if n != self._frame:
             for mer in self:
                 mer.reset_dynamic_cache()
         self._frame = n
 
+    def get_frame(self):
+        """Return currently set frame."""
+        return self._frame
+
     def get_n_frames(self):
         """Get number of frames in trajectory."""
-        return self._max_frames
+        return self.md_matrix.shape[0]
 
     def __repr__(self):
         return "<Trajectory %s>" % self.name

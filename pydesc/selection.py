@@ -58,7 +58,7 @@ class Selector:
         structure = PartialStructure(derived_from, [])
         # initialize with empty set of mers
         temporary_structure = set_selection.create_structure(structure_obj)
-        mers = [self.mer_factory.copy_mer(mer) for mer in temporary_structure]
+        mers = [self.mer_factory.create(mer) for mer in temporary_structure]
         structure.set_mers(mers)
         return structure
 

@@ -677,8 +677,8 @@ class Contact(AbstractStructure):
         return self.get_other_element(val)
 
     def __repr__(self):
-        items = (i.central_monomer.ind for i in self.elements)
-        return "<Contact of %i and %i elements>" % items
+        items = sorted(i.central_monomer.ind for i in self.elements)
+        return "<Contact of %i and %i elements>" % tuple(items)
 
     def get_other_element(self, element_obj):
         """Returns other than given element.

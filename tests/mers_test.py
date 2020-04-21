@@ -13,7 +13,7 @@ from tests.conftest import TEST_STRUCTURES_DIR
 TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, Ion: 0.0}
 
 
-class TestMonomerFactory(object):
+class TestMonomerFactory:
     def test_default_mer_factory_create_from_pdb_res(self, structure_file_w_pure_type):
         type_, fname = os.path.split(structure_file_w_pure_type)
         factory = BioPythonMerFactory()
@@ -38,12 +38,9 @@ class TestMonomerFactory(object):
                         length += 1
                         points[expected_type in result] += 1
 
-        assert (length - points[True]) / float(
-            length
-        ) <= type_threshold, "%i out of %i mers are of expected type" % (
-            points[True],
-            length,
-        )
+        success_rate = (length - points[True]) / float(length)
+        msg = "%i out of %i mers are of expected type" % (points[True], length)
+        assert success_rate <= type_threshold, msg
 
     def test_create_residue_from_pdb_res(self):
         factory = BioPythonMerFactory()
@@ -75,7 +72,7 @@ class TestMonomerFactory(object):
         assert res.previous_mer is prev
 
 
-class MerTest(object):
+class MerTest:
     @staticmethod
     def iter_structure(file_, class_):
         factory = BioPythonMerFactory()

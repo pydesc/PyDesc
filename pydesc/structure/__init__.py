@@ -10,13 +10,14 @@ import mdtraj
 
 import pydesc.dbhandler
 import pydesc.geometry
+from pydesc import warnexcept
 from pydesc.config import ConfigManager
-from pydesc.structure.trajectory import Trajectory
-from pydesc.mers.factories import BioPythonMerFactory, MDTrajMerFactory
+from pydesc.mers.factories import BioPythonMerFactory
+from pydesc.mers.factories import MDTrajMerFactory
 from pydesc.numberconverter import NumberConverterFactory
 from pydesc.structure.topology import Chain
 from pydesc.structure.topology import Structure
-from pydesc import warnexcept
+from pydesc.structure.trajectory import Trajectory
 from pydesc.structure.trajectory import Trajectory
 
 # pylint: disable=no-member

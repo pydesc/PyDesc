@@ -45,19 +45,6 @@ class MerFactory(metaclass=ABCMeta):
     def other(self):
         return [i for i in self.classes if not i.is_chainable()]
 
-    @classmethod
-    def copy_mer(cls, mer):
-        """Return copy of given mer.
-
-        Argument:
-        mer -- mer subclass instance.
-        """
-        *base_data, atoms = cls.unpack_base(mer)
-        copied_atoms = {k: v.copy() for k, v in atoms.items()}
-        base_data += (copied_atoms,)
-        mer = cls._create_mer_of_type(type(mer), base_data)
-        return mer
-
     def _create_possible_monomers(self, base_monomer, warnings_, classes):
         """Return dictionary of different monomer types as values and
         subclasses of MonomerChainable and MonomerOther
@@ -186,3 +173,19 @@ class MDTrajMerFactory(MerFactory):
         new_base = *base_data, atoms_proxies
         proxy_mer = self._create_mer_of_type(type(mer), new_base)
         return proxy_mer
+
+
+class CopyingFactor(MerFactory):
+    """Mer factory creating new mers from already existing ones."""
+
+    def create(self, mer):
+        """Return copy of given mer.
+
+        Argument:
+        mer -- mer subclass instance.
+        """
+        *base_data, atoms = self.unpack_base(mer)
+        copied_atoms = {k: v.copy() for k, v in atoms.items()}
+        base_data += (copied_atoms,)
+        mer = self._create_mer_of_type(type(mer), base_data)
+        return mer

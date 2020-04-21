@@ -6,6 +6,7 @@ import pytest
 from pydesc import selection
 from pydesc.config import ConfigManager
 from pydesc.mers.base import MerChainable
+from pydesc.mers.factories import CopyingFactor
 from pydesc.mers.factories import WrongMerType
 from pydesc.mers.full_atom import Ion
 from pydesc.mers.full_atom import Ligand
@@ -17,7 +18,6 @@ from pydesc.structure.topology import PartialStructure
 from pydesc.warnexcept import DiscontinuityError
 from tests.conftest import PDB_FILES_WITH_TYPE_SHORT
 from tests.conftest import TEST_STRUCTURES_DIR
-from pydesc.mers.factories import BioPythonMerFactory
 
 ConfigManager.warnings.quiet = True
 
@@ -46,7 +46,7 @@ class SelectionTestBase:
 
 
 class TestSelectorCreateNewStructure(SelectionTestBase):
-    picker = selection.Selector(BioPythonMerFactory())
+    picker = selection.Selector(CopyingFactor())
 
     def test_everything(self, structure):
         sel = selection.Everything()
