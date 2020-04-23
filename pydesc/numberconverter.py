@@ -63,47 +63,55 @@ def build_smith_waterman_matrix(ids, aligned_ids):
         return previous_value + (match if id1_ == id2_ else 0)
 
     def key(insertion_tuple):
-        """
-        Produces tuple of scoring tuple features that are to be submitted to
-        evaluation features to evaluate are, respectively:
-        -- Smith-Waterman value,
-        -- chain character of residue chain
-        -- residue pdb number
-        -- insertion code
-        """
-        return (insertion_tuple[0],) + insertion_tuple[3:]
+        reverted_id = [-1 * i for i in insertion_tuple[3:]]
+        return [insertion_tuple[0]] + reverted_id
 
-    def pack_tuple(tup):
-        val, (x, y), pdb_id = tup
-        chain = pdb_id[0]
-        ind = pdb_id[1]
-        icode = pdb_id[2]
-        return val, x, y, ord(chain), ind, ord(icode or "\x00")
+    def id_to_ints(id_tuple):
+        chain, ind, i_code = id_tuple
+        return ord(chain), ind, ord(i_code or "\x00")
 
     match = 1
     sw_matrix = np.full((len(aligned_ids) + 1, len(ids) + 1, 6), None)
-    sw_matrix[0, :, 0] = 1
-    sw_matrix[:, 0, 0] = 1
+    # 3 possible values to put into matrix
+    # columns as described in line 93
+    # rows correspond with moves in order:
+    # vertical, horizontal, diagonal
+    possible_values = np.zeros((3, 6), dtype=int)
+    # score for border rows:
+    sw_matrix[0, :, 0] = 0
+    sw_matrix[:, 0, 0] = 0
     # dimes: seq1 + 1, seq2 + 1,
     #  (score, back_trace_x_coord, back_trace_y_coord, chain, id, icode)
     for row, id1 in enumerate(aligned_ids, 1):
         for col, id2 in enumerate(ids, 1):
             # note that row and cols are shifted by 1
-            v1 = sw_matrix[row - 1, col, 0]
-            v2 = sw_matrix[row, col - 1, 0]
-            v3 = compare(col, row, id1, id2)
-            sw_values = (v1, v2, v3)
-            # Smith-Waterman values for, respectively: vertical
-            # move, horizontal move, match (diagonal move)
-            traceback = ((row - 1, col), (row, col - 1), (row - 1, col - 1))
-            # traceback is a tuple of matrix coordinates of
-            # appropriate matrix entries
-            id_to_choose = (id2, id1, id1)
-            # ids connected choose of, respectively, vertical,
-            # horizontal and diagonal move
-            zipper = list(zip(sw_values, traceback, id_to_choose))
-            scoring_tuples = [pack_tuple(insertion_tuple) for insertion_tuple in zipper]
+            possible_values[:, :] = 0
+            # scores for all three moves
+            possible_values[0, 0] = sw_matrix[row - 1, col, 0]
+            possible_values[1, 0] = sw_matrix[row, col - 1, 0]
+            possible_values[2, 0] = compare(col, row, id1, id2)
+            # landing points for all moves
+            possible_values[0, 1:3] = row - 1, col
+            possible_values[1, 1:3] = row, col - 1
+            possible_values[2, 1:3] = row - 1, col - 1
+            # id that should be picked when move is done
+            possible_values[0, 3:] = id_to_ints(id1)
+            possible_values[1, 3:] = id_to_ints(id2)
+            possible_values[2, 3:] = id_to_ints(id2)  # both are equally good
+            # pick highest score
+            # if all are equal -- pick lower id
+            # None in i_code < anything else
+            scoring_tuples = [tuple(row) for row in possible_values]
             sw_matrix[row, col] = max(scoring_tuples, key=key)
+    # set traceback for borders
+    # top row
+    sw_matrix[1, :, 1] = 1  # send to top row
+    sw_matrix[1, 1:, 2] = np.arange(0, len(ids))  # send 1 column right
+    # left column
+    sw_matrix[:, 1, 2] = 1  # sen to left row
+    sw_matrix[1:, 1, 1] = np.arange(0, len(aligned_ids))  # send 1 row up
+    # left top corner
+    sw_matrix[1, 1, 1:3] = 0
     return sw_matrix
 
 
@@ -122,12 +130,14 @@ def go_backwards(sw_matrix):
     row, col, dummy = sw_matrix.shape
     row, col = row - 1, col - 1
     new_aligned_ids = []
+
     while True:
         new_row, new_col, *tup = sw_matrix[row, col, 1:]
         new_aligned_ids.append(unpack_tuple(tup))
         if (new_row, new_col) == (0, 0):
             break
         row, col = new_row, new_col
+
     return [i for i in reversed(new_aligned_ids)]
 
 
@@ -231,10 +241,8 @@ class NumberConverterFactory:
         models_ids = []
         for pdb_model in pdb_models:
             mers = pdb_model.get_residues()
-            no_solvent_mers = [
-                mer for mer in mers if not self._is_solvent(mer.get_resname())
-            ]
-            models_ids.append([id_factory(mer) for mer in no_solvent_mers])
+            mers = [mer for mer in mers if not self._is_solvent(mer.get_resname())]
+            models_ids.append([id_factory(mer) for mer in mers])
 
         if len(models_ids) > 1:
             models_ids = perform_smith_waterman(models_ids)
