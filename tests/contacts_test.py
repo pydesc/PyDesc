@@ -19,11 +19,11 @@ class TestNucleotides:
         path_str = os.path.join(TEST_STRUCTURES_DIR, "rna_only", "1KIS.pdb")
         stc, = sl.load_structures(path=path_str)
 
-        mer1 = stc[18]
-        mer2 = stc[31]
-        mer3 = stc[4]
+        mer1 = stc[18]  # B:19
+        mer2 = stc[31]  # B:32
+        mer3 = stc[4]   # A:5
 
-        crt = crit(distance_threshold=10.0)
+        crt = crit(distance_threshold=12.5)
 
         val_close = crt.is_in_contact(mer1, mer2)
         val_far = crt.is_in_contact(mer1, mer3)
@@ -34,5 +34,5 @@ class TestNucleotides:
         assert val_close == 2
         assert val_far == 0
 
-        assert dist_far > 10
-        assert dist_close <= 10
+        assert dist_far > 12.5
+        assert dist_close <= 12.5
