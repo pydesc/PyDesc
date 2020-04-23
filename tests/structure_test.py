@@ -53,5 +53,6 @@ def test_default_structure_loader_load_from_pdb(structure_file_w_pure_type):
         for res in structure:
             counts[type(res)] += 1
 
-        assert max(counts, key=lambda x: counts[x]) is expected_main_mer_type
+        most_occurring_mer_type = max(counts, key=lambda x: counts[x])
+        assert most_occurring_mer_type is expected_main_mer_type
         assert_structure(structure)

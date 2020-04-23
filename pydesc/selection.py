@@ -228,7 +228,7 @@ class Range(Selection):
         """
         converter = structure_obj.derived_from.converter
         start_ind, end_ind = converter.get_list_of_inds([self.start, self.end])
-        ids = converter.ind2pdb[start_ind: end_ind + 1]
+        ids = converter.ind2pdb[start_ind : end_ind + 1]
         return Set(list_of_pdb_ids=ids)
 
     def create_segment(self, structure_obj):

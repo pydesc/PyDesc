@@ -65,6 +65,7 @@ class DescriptorBuilderDriver:
                 return descriptor
             except (TypeError, ValueError, AttributeError):
                 import traceback
+
                 traceback.print_exc()
                 return
 
@@ -90,7 +91,7 @@ class DescriptorBuilder(metaclass=ABCMeta):
             self.mers,
             self.elements,
             self.segments,
-            self.contacts
+            self.contacts,
         )
         return Descriptor(*data)
 
