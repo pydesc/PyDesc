@@ -369,12 +369,10 @@ class Everything(Selection):
         distinguish_chains -- always set to True.
         """
         list_of_inds = [i.ind for i in structure_obj]
-        return self._finalize_specify(
-            list_of_inds, structure_obj.derived_from.converter
-        )
+        converter = structure_obj.derived_from.converter
+        return self._finalize_specify(list_of_inds, converter)
 
-    @staticmethod
-    def create_structure(structure_obj):
+    def create_structure(self, structure_obj):
         """Create structure in optimal way."""
         return structure_obj
 
