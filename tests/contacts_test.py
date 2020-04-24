@@ -1,38 +1,25 @@
 import os.path
 
-import pytest
-
-from pydesc.contacts import NxContact
-from pydesc.contacts import PrcContact
-from pydesc.contacts import RcContact
-from pydesc.contacts import RingCenterContact
 from pydesc.structure import StructureLoader
 from tests.conftest import TEST_STRUCTURES_DIR
+from pydesc.contacts.geometrical import PointsDistanceCriterion
 
 
-class TestNucleotides:
-    @pytest.mark.parametrize(
-        "crit", [RcContact, NxContact, PrcContact, RingCenterContact]
-    )
-    def test_point_distance(self, crit):
-        sl = StructureLoader()
-        path_str = os.path.join(TEST_STRUCTURES_DIR, "rna_only", "1KIS.pdb")
-        stc, = sl.load_structures(path=path_str)
+def test_point_distance():
+    sl = StructureLoader()
+    path_str = os.path.join(TEST_STRUCTURES_DIR, "rna_only", "1KIS.pdb")
+    stc, = sl.load_structures(path=path_str)
 
-        mer1 = stc[18]  # B:19
-        mer2 = stc[31]  # B:32
-        mer3 = stc[4]   # A:5
+    mer1 = stc[18]  # B:19
+    mer2 = stc[31]  # B:32
+    mer3 = stc[4]   # A:5
+    # B:19.rc is 10.5 or so far from B:32.rc
+    # B:19.rc to A:5 is way more
 
-        crt = crit(distance_threshold=12.5)
+    crt = PointsDistanceCriterion("rc", 12, 0)
 
-        val_close = crt.is_in_contact(mer1, mer2)
-        val_far = crt.is_in_contact(mer1, mer3)
+    res=crt.calculate_contacts(stc)
 
-        dist_close = crt.calculate_distance(mer1, mer2)
-        dist_far = crt.calculate_distance(mer1, mer3)
+    assert res[mer1.ind, mer2.ind] == 2
+    assert res[mer1.ind, mer3.ind] == 0
 
-        assert val_close == 2
-        assert val_far == 0
-
-        assert dist_far > 12.5
-        assert dist_close <= 12.5

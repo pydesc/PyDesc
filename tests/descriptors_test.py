@@ -2,8 +2,8 @@ import os.path
 
 import pytest
 
-from pydesc.contacts import ContactMapCalculator
-from pydesc.contacts import RcContact
+from pydesc.contacts.criteria import RC_DISTANCE
+from pydesc.contacts.maps import ContactMapCalculator
 from pydesc.structure import StructureLoader
 from pydesc.structure.descriptors import DescriptorBuilderDriver
 from pydesc.structure.descriptors import ElementFactory
@@ -43,7 +43,7 @@ class TestProteinDescriptor:
         if max(list(map(len, s.chains))) < 10:
             pytest.skip("Structure %s has chains below 10 mers long, " "thus skipping.")
 
-        cmc = ContactMapCalculator(s, contact_criterion_obj=RcContact())
+        cmc = ContactMapCalculator(s, RC_DISTANCE)
         cm = cmc.calculate_contact_map()
 
         dbd = DescriptorBuilderDriver()

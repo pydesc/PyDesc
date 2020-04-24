@@ -4,8 +4,8 @@ import pickle
 import pytest
 
 from pydesc.config import ConfigManager
-from pydesc.contacts import ContactMapCalculator
-from pydesc.contacts.contacts import RcContact
+from pydesc.contacts.criteria import RC_DISTANCE, DEFAULT_PROTEIN
+from pydesc.contacts.maps import ContactMapCalculator
 from pydesc.structure import StructureLoader
 from tests.conftest import TEST_CMAPS_DIR
 from tests.conftest import TEST_STRUCTURES_DIR
@@ -20,7 +20,8 @@ def test_rc_contact_map(structure_file_w_type):
 
     for structure in structures:
         cm_calc = ContactMapCalculator(
-            structure_obj=structure, contact_criterion_obj=RcContact()
+            structure_obj=structure,
+            contact_criterion_obj=RC_DISTANCE
         )
         cm = cm_calc.calculate_contact_map()
         assert len(cm) > 0, "No contacts in structure %s" % str(structure)
@@ -40,7 +41,7 @@ def test_golden_standard_pydesc_criterion_protein(protein_file):
     pth = os.path.join(TEST_STRUCTURES_DIR, protein_file)
     structure = sl.load_structures(path=pth)[0]
 
-    cm_calc = ContactMapCalculator(structure)
+    cm_calc = ContactMapCalculator(structure, DEFAULT_PROTEIN)
     cm = cm_calc.calculate_contact_map()
     res = {frozenset(k): v for k, v in list(cm._contacts.items())}
 
@@ -59,7 +60,8 @@ def test_golden_standard_rc_protein(protein_file):
     structure = sl.load_structures(path=path_str)[0]
 
     cm_calc = ContactMapCalculator(
-        structure_obj=structure, contact_criterion_obj=RcContact()
+        structure_obj=structure,
+        contact_criterion_obj=RC_DISTANCE,
     )
     cm = cm_calc.calculate_contact_map()
 
@@ -73,7 +75,7 @@ def test_1no5_default_criteria_cmap():
     sl = StructureLoader()
     structure, = sl.load_structures("1no5")
 
-    cmc = ContactMapCalculator(structure)
+    cmc = ContactMapCalculator(structure, DEFAULT_PROTEIN)
     cmap = cmc.calculate_contact_map()
 
     assert len(cmap) > 30

@@ -5,5 +5,3 @@ created: 28.04.2014 - , Tymoteusz 'hert' Oleniecki
 """
 
 from .base import *
-from .contacts import *
-from .maps import ContactMapCalculator

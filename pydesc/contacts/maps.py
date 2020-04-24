@@ -21,143 +21,16 @@ Classes that deal with contacts among mers present in PyDesc (sub)structures.
 created: 28.04.2014 - , Tymoteusz 'hert' Oleniecki
 """
 
-import numpy as np
-import scipy.spatial
-from scipy.sparse import dok_matrix
-
-from pydesc.contacts import contacts
 from pydesc.selection import Everything
-from pydesc.warnexcept import WrongMerType
+from scipy.sparse import dok_matrix
 
 
 class ContactMapCalculator:
     """Class responsible for calculating contact maps."""
 
-    def __init__(
-        self,
-        structure_obj,
-        contact_criterion_obj=None,
-        select1=Everything(),
-        select2=None,
-    ):
-        """ContactMapCalculator initializer.
-
-        Arguments:
-        structure_obj -- instance of any pydesc.structure.AbstractStructure
-        subclass for which contact map is to be created.
-        contact_criterion_obj -- instance of
-        pydesc.contacts.ContactCriterion determining how to calculate contacts.
-        Initially set to None.
-        If so, contact for residues is based on ca-cbx criterion,
-        and contact for nucleotides is based on ion contact or ring center
-        contact.
-        select1, select2 -- pydesc.selection.Selection subclass instances to be
-        used in contact map calculation against each other.
-        By default Everything selection is used.
-        """
-        if contact_criterion_obj is None:
-            contact_criterion_obj = contacts.ContactsAlternative(
-                contacts.CaCbxContact(),
-                contacts.ContactsAlternative(
-                    contacts.NIContact(), contacts.RingCenterContact()
-                ),
-            )
+    def __init__(self, structure_obj, contact_criterion_obj):
         self.contact_criterion = contact_criterion_obj
         self.structure = structure_obj
-        self._rc_distC = None
-        self._rc_dist1C = None
-        self._rc_dist2C = None
-        self._rc_dist12 = None
-
-        if select2 is None:
-            self.sel1 = tuple(select1.create_structure(structure_obj))
-            self.sel2 = self.sel1
-            self.sel12 = self.sel1
-            self.sel1uni = ()
-            self.sel2uni = ()
-            return
-        self.sel1 = tuple(select1.create_structure(structure_obj))
-        self.sel2 = tuple(select2.create_structure(structure_obj))
-        sel12 = select1 * select2
-        self.sel12 = tuple(sel12.create_structure(structure_obj))
-        self.sel1uni = tuple((select1 - sel12).create_structure(structure_obj))
-        self.sel2uni = tuple((select2 - sel12).create_structure(structure_obj))
-
-    def calculate_rc_dist(self):
-        items = (
-            (self.sel12, self.sel12, "_rc_distC"),
-            (self.sel1uni, self.sel12, "_rc_dist1C"),
-            (self.sel2uni, self.sel12, "_rc_dist2C"),
-            (self.sel1uni, self.sel2uni, "_rc_dist12"),
-        )
-        for sel1, sel2, attr_name in items:
-            points1 = np.array([i.rc.vector for i in sel1])
-            points2 = np.array([i.rc.vector for i in sel2])
-            try:
-                res = scipy.spatial.distance.cdist(points1, points2)
-            except ValueError:  # TODO: determine what exceptions
-                res = None
-            setattr(self, attr_name, res)
-
-    def _get_dict_like_matrix(self):
-        structure_length = self.structure.derived_from[-1].ind + 1
-        dimension = (structure_length, structure_length)
-        return dok_matrix(dimension, dtype=int)
-
-    def _fill_interaction_matrix(self, interaction_function):
-        """Return interaction matrix filled with values returned by given
-        interaction function.
-
-        Argument:
-        interaction_function -- function taking mer1, mer2 and interaction
-        matrix and returning None.
-        Purpose of this function is to fill mtx with appropriate value in
-        appropriate way.
-        """
-        self.calculate_rc_dist()
-        max_rc_dist = getattr(self.contact_criterion, "max_rc_dist", None)
-        contacts_mtx = self._get_dict_like_matrix()
-
-        if max_rc_dist:
-            # common(C) vs C
-            try:
-                indexes = np.transpose(np.where(self._rc_distC <= max_rc_dist))
-                indexes = indexes[indexes[:, 0] < indexes[:, 1]]
-
-                for (i, j) in indexes:
-                    mer1 = self.sel12[i]
-                    mer2 = self.sel12[j]
-                    interaction_function(mer1, mer2, contacts_mtx)
-
-            except (ValueError, IndexError):
-                pass
-        else:
-            for i, mer1 in enumerate(self.sel12):
-                for mer2 in self.sel12[i + 1 :]:
-                    interaction_function(mer1, mer2, contacts_mtx)
-
-        items = (
-            (self.sel1uni, self.sel12, "_rc_dist1C"),  # uniA vs C
-            (self.sel2uni, self.sel12, "_rc_dist2C"),  # uniB vs C
-            (self.sel1uni, self.sel2uni, "_rc_dist12"),  # uniA vs uniB
-        )
-        for mer_tuple_1, mer_tuple_2, rc_name in items:
-            if max_rc_dist:
-                try:
-                    rc_mtx = getattr(self, rc_name)
-                    indexes = np.transpose(np.where(rc_mtx <= max_rc_dist))
-                    for (i, j) in indexes:
-                        mer1 = mer_tuple_1[i]
-                        mer2 = mer_tuple_2[j]
-                        interaction_function(mer1, mer2, contacts_mtx)
-                except (ValueError, TypeError):
-                    pass
-            else:
-                for mer1 in mer_tuple_1:
-                    for mer2 in mer_tuple_2:
-                        interaction_function(mer1, mer2, contacts_mtx)
-
-        return contacts_mtx
 
     def calculate_contact_map(self):
         """Return ContactMap for structure set during initialization.
@@ -165,17 +38,8 @@ class ContactMapCalculator:
         Contact is a tuple containing first and second Monomer, distance(s)
         between them and a contact value under the ContactMap criterion.
         """
-
-        def compare_mers(mer_1, mer_2, mtx):
-            try:
-                value = self.contact_criterion.is_in_contact_no_pre_check(mer_1, mer_2)
-            except WrongMerType:
-                return
-            if value > 0:
-                mtx[mer_1.ind, mer_2.ind] = value
-                mtx[mer_2.ind, mer_1.ind] = value
-
-        contacts_mtx = self._fill_interaction_matrix(compare_mers)
+        contacts_mtx = self.contact_criterion.calculate_contacts(self.structure)
+        contacts_mtx = dok_matrix(contacts_mtx)
 
         return ContactMap(contacts_mtx, self.structure)
 
@@ -256,12 +120,12 @@ class FrequencyContactMap:
     """
 
     def __init__(
-        self,
-        structures,
-        contact_criterion_obj=None,
-        ignore1=True,
-        select1=Everything(),
-        select2=Everything(),
+            self,
+            structures,
+            contact_criterion_obj=None,
+            ignore1=True,
+            select1=Everything(),
+            select2=Everything(),
     ):
         """Initialize ContactMap.
 
