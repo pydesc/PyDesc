@@ -5,11 +5,10 @@ from Bio.PDB import PDBParser
 
 from pydesc import config
 from pydesc import numberconverter
-from tests.conftest import TEST_STRUCTURES_DIR
 
 TWISTED_EXAMPLE = (
     (("b", 1, None), ("b", 1, "a"), ("b", 2, None), ("a", 8, None)),
-    (("b", 1, "a"), ("b", 2, None), ("b", 3, None), ("c", 6, None), ("a", 7, None),)
+    (("b", 1, "a"), ("b", 2, None), ("b", 3, None), ("c", 6, None), ("a", 7, None),),
 )
 SIMPLE_EXAMPLE = (
     (("b", 1, None), ("b", 2, None), ("a", 8, None)),
@@ -44,9 +43,9 @@ class TestSmithWaterman:
 
 class TestConverter:
     @pytest.mark.system
-    def test_simple_single_structure(self):
+    def test_simple_single_structure(self, structures_dir):
         structure_name = "5MPV.pdb"
-        file_path = os.path.join(TEST_STRUCTURES_DIR, "prots_only", structure_name)
+        file_path = os.path.join(structures_dir, "prots_only", structure_name)
         pdb_structure = PDBParser(QUIET=True).get_structure(structure_name, file_path)
 
         nc_factory = numberconverter.NumberConverterFactory()
@@ -68,12 +67,12 @@ class TestConverter:
                     # in case of this protein (5mpv) that works
 
     @pytest.mark.system
-    def test_solvent(self):
+    def test_solvent(self, structures_dir):
         old_solvent_setting = list(config.ConfigManager.mers.solvent)
         config.ConfigManager.mers.solvent = []
 
         structure_name = "5MPV.pdb"
-        file_path = os.path.join(TEST_STRUCTURES_DIR, "prots_only", structure_name)
+        file_path = os.path.join(structures_dir, "prots_only", structure_name)
         pdb_structure = PDBParser(QUIET=True).get_structure(structure_name, file_path)
 
         nc_factory = numberconverter.NumberConverterFactory()
@@ -94,9 +93,9 @@ class TestConverter:
         #   can we get rid of this?
 
     @pytest.mark.system
-    def test_nmr_20_structures(self):
+    def test_nmr_20_structures(self, structures_dir):
         structure_name = "2JRM.pdb"
-        file_path = os.path.join(TEST_STRUCTURES_DIR, "prots_only_nmr", structure_name)
+        file_path = os.path.join(structures_dir, "prots_only_nmr", structure_name)
         pdb_structure = PDBParser(QUIET=True).get_structure(structure_name, file_path)
 
         nc_factory = numberconverter.NumberConverterFactory()

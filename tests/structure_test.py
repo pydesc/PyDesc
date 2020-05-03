@@ -2,8 +2,6 @@ import os.path
 
 from pydesc.config import ConfigManager
 from pydesc.structure import StructureLoader
-from tests.conftest import PURE_TYPES_2_MERS_DICT
-from tests.conftest import TEST_STRUCTURES_DIR
 
 ConfigManager.warnings.set("quiet", True)
 
@@ -15,12 +13,19 @@ def assert_structure(structure):
         assert len(chain) > 0
 
 
-def test_default_structure_loader_load_local(structure_file_w_pure_type):
+def get_structure_type(file_path):
+    root, dummy = os.path.split(file_path)
+    dummy, type_ = os.path.split(root)
+    return type_
+
+
+def test_default_structure_loader_load_local(
+    structure_file_w_pure_type, pure_types_2_mers
+):
     sl = StructureLoader()
-    path_str = os.path.join(TEST_STRUCTURES_DIR, structure_file_w_pure_type)
-    structures = sl.load_structures(path=path_str)
-    type_ = os.path.split(structure_file_w_pure_type)[0]
-    expected_main_mer_type = PURE_TYPES_2_MERS_DICT[type_]
+    structures = sl.load_structures(path=structure_file_w_pure_type)
+    type_ = get_structure_type(structure_file_w_pure_type)
+    expected_main_mer_type = pure_types_2_mers[type_]
 
     if "nmr" in structure_file_w_pure_type:
         assert len(structures) > 1
@@ -36,12 +41,14 @@ def test_default_structure_loader_load_local(structure_file_w_pure_type):
         assert_structure(structure)
 
 
-def test_default_structure_loader_load_from_pdb(structure_file_w_pure_type):
+def test_default_structure_loader_load_from_pdb(
+    structure_file_w_pure_type, pure_types_2_mers
+):
     sl = StructureLoader()
     type_, file_ = os.path.split(structure_file_w_pure_type)
     code = os.path.splitext(file_)[0]
     structures = sl.load_structures(code=code)
-    expected_main_mer_type = PURE_TYPES_2_MERS_DICT[type_]
+    expected_main_mer_type = pure_types_2_mers[type_]
 
     if "nmr" in structure_file_w_pure_type:
         assert len(structures) > 1
