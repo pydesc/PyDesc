@@ -45,7 +45,8 @@ def test_default_structure_loader_load_from_pdb(
     structure_file_w_pure_type, pure_types_2_mers
 ):
     sl = StructureLoader()
-    type_, file_ = os.path.split(structure_file_w_pure_type)
+    dummy, file_ = os.path.split(structure_file_w_pure_type)
+    type_ = get_structure_type(structure_file_w_pure_type)
     code = os.path.splitext(file_)[0]
     structures = sl.load_structures(code=code)
     expected_main_mer_type = pure_types_2_mers[type_]

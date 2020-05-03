@@ -32,6 +32,7 @@ except ImportError:
 
     warn(Info("No MMCIFParser in Bio.PDB"))
 from pydesc.config import ConfigManager
+from io import StringIO
 
 ConfigManager.new_branch("dbhandler")
 ConfigManager.dbhandler.set_default("cachedir", "./biodb/")
@@ -93,7 +94,8 @@ class DBHandler:
             if e.getcode() == 404:
                 raise InvalidID(2)
             raise
-        self.save_stream(u, val)
+        reading = StringIO(u.read().decode("utf-8"))
+        self.save_stream(reading, val)
 
     @validate_id
     def get_from_local_db(self, val):
@@ -140,7 +142,8 @@ class DBHandler:
                 warn(info, 4)
             except NotImplementedError:
                 raise
-            except:
+            except Exception as e:
+                warn(Info("...failed (due to %s: %s)." % (str(type(e)), str(e))))
                 continue
             else:
                 return [self._get_file(val)]
