@@ -7,20 +7,21 @@ from pydesc.mers.factories import BioPythonMerFactory
 from pydesc.mers.full_atom import Ion
 from pydesc.mers.full_atom import Nucleotide
 from pydesc.mers.full_atom import Residue
-from tests.conftest import PURE_TYPES_2_MERS_DICT
-from tests.conftest import TEST_STRUCTURES_DIR
 
 TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, Ion: 0.0}
 
 
 class TestMonomerFactory:
-    def test_default_mer_factory_create_from_pdb_res(self, structure_file_w_pure_type):
-        type_, fname = os.path.split(structure_file_w_pure_type)
+    def test_default_mer_factory_create_from_pdb_res(
+        self, structure_file_w_pure_type, structures_dir, pure_types_2_mers
+    ):
+        root, fname = os.path.split(structure_file_w_pure_type)
+        dummy, type_ = os.path.split(root)
         factory = BioPythonMerFactory()
-        pth = os.path.join(TEST_STRUCTURES_DIR, structure_file_w_pure_type)
+        pth = os.path.join(structures_dir, structure_file_w_pure_type)
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(fname, pth)
 
-        expected_type = PURE_TYPES_2_MERS_DICT[type_]
+        expected_type = pure_types_2_mers[type_]
         type_threshold = TYPE_THRESHOLDS[expected_type]
 
         points = {True: 0, False: 1}
@@ -42,10 +43,10 @@ class TestMonomerFactory:
         msg = "%i out of %i mers are of expected type" % (points[True], length)
         assert success_rate <= type_threshold, msg
 
-    def test_create_residue_from_pdb_res(self):
+    def test_create_residue_from_pdb_res(self, structures_dir):
         factory = BioPythonMerFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
-            "5MPV.pdb", os.path.join(TEST_STRUCTURES_DIR, "prots_only", "5MPV.pdb")
+            "5MPV.pdb", os.path.join(structures_dir, "prots_only", "5MPV.pdb")
         )
 
         r1 = pdb_structure[0]["D"][15]
@@ -74,10 +75,10 @@ class TestMonomerFactory:
 
 class MerTest:
     @staticmethod
-    def iter_structure(file_, class_):
+    def iter_structure(file_, class_, test_structures_dir):
         factory = BioPythonMerFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
-            "test", os.path.join(TEST_STRUCTURES_DIR, file_)
+            "test", os.path.join(test_structures_dir, file_)
         )
         to_return = []
         for model in pdb_structure:
@@ -92,9 +93,9 @@ class MerTest:
 
 
 class TestResidue(MerTest):
-    def test_calculate_cbx(self, protein_file):
+    def test_calculate_cbx(self, protein_file, structures_dir):
         checked = 0
-        for result in self.iter_structure(protein_file, Residue):
+        for result in self.iter_structure(protein_file, Residue, structures_dir):
             if result.name == "GLY":
                 continue
             assert result.cbx
@@ -111,9 +112,9 @@ class TestResidue(MerTest):
 
 
 class TestNucleotide(MerTest):
-    def test_calculate_features(self, nuclei_file):
+    def test_calculate_features(self, nuclei_file, structures_dir):
         checked = 0
-        for result in self.iter_structure(nuclei_file, Nucleotide):
+        for result in self.iter_structure(nuclei_file, Nucleotide, structures_dir):
             assert result.nx
             assert result.ring_center
             assert result.prc

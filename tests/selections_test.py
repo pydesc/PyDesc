@@ -16,24 +16,21 @@ from pydesc.structure import StructureLoader
 from pydesc.structure.topology import AbstractStructure
 from pydesc.structure.topology import PartialStructure
 from pydesc.warnexcept import DiscontinuityError
-from tests.conftest import PDB_FILES_WITH_TYPE_SHORT
-from tests.conftest import TEST_STRUCTURES_DIR
 
 ConfigManager.warnings.quiet = True
 
 
-@pytest.fixture(scope="module", params=PDB_FILES_WITH_TYPE_SHORT)
-def structure(request):
+@pytest.fixture(scope="module")
+def structure(structure_file_w_type_short):
     sl = StructureLoader()
-    path_str = os.path.join(TEST_STRUCTURES_DIR, request.param)
-    structure = sl.load_structures(path=path_str)[0]
+    structure = sl.load_structures(path=structure_file_w_type_short)[0]
     return structure
 
 
 @pytest.fixture(scope="module")
-def stc_2dlc():
+def stc_2dlc(structures_dir):
     sl = StructureLoader()
-    pth = os.path.join(TEST_STRUCTURES_DIR, "mixed", "2DLC.cif")
+    pth = os.path.join(structures_dir, "mixed", "2DLC.cif")
     return sl.load_structures(path=pth)[0]
 
 
@@ -192,9 +189,9 @@ class TestRangeSelection:
             assert True
 
     @pytest.mark.system
-    def test_range_on_discontinuity_chain(self):
+    def test_range_on_discontinuity_chain(self, structures_dir):
         sl = StructureLoader()
-        pth = os.path.join(TEST_STRUCTURES_DIR, "prots_only", "3NPU.pdb")
+        pth = os.path.join(structures_dir, "prots_only", "3NPU.pdb")
         stc = sl.load_structures(path=pth)[0]
         get_id = stc.converter.get_pdb_id
         # discontinuity occurs between A19 and A24 (1! res missing)

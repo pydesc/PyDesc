@@ -1,5 +1,7 @@
 import os.path
 
+import pytest
+
 from pydesc.config import ConfigManager
 from pydesc.mers.full_atom import Ion
 from pydesc.mers.full_atom import Nucleotide
@@ -10,7 +12,6 @@ ConfigManager.warnings.class_filters.Info = "ignore"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_STRUCTURES_DIR = os.path.join(BASE_DIR, "data", "test_structures")
-TEST_CMAPS_DIR = os.path.join(BASE_DIR, "data", "validated_cmaps")
 
 CIF_FILES_WITH_TYPE = []
 
@@ -56,6 +57,29 @@ PURE_TYPES_2_MERS_DICT = {
 DIR_DICT = {v: k for k, v in list(PURE_TYPES_2_MERS_DICT.items())}
 
 
+@pytest.fixture(scope="session")
+def structures_dir():
+    return TEST_STRUCTURES_DIR
+
+
+@pytest.fixture
+def cmaps_dir():
+    return os.path.join(BASE_DIR, "data", "validated_cmaps")
+
+
+@pytest.fixture
+def pure_types_2_mers():
+    return PURE_TYPES_2_MERS_DICT
+
+
+@pytest.fixture(
+    scope="session",
+    params=[os.path.join(TEST_STRUCTURES_DIR, i) for i in PDB_FILES_WITH_TYPE_SHORT],
+)
+def structure_file_w_type_short(request):
+    return request.param
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--all-structures",
@@ -83,25 +107,47 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize(parameter_name, all_files)
 
     set_parameter_if_all(
-        FILES_WITH_TYPE, PDB_FILES_WITH_TYPE, PDB_FILES_WITH_TYPE_SHORT
+        FILES_WITH_TYPE,
+        [os.path.join(TEST_STRUCTURES_DIR, i) for i in PDB_FILES_WITH_TYPE],
+        [os.path.join(TEST_STRUCTURES_DIR, i) for i in PDB_FILES_WITH_TYPE_SHORT],
     )
     set_parameter_if_all(
-        PURE_FILES_WITH_TYPE, PDB_FILES_WITH_PURE_TYPE, PDB_FILES_WITH_PURE_TYPE_SHORT
+        PURE_FILES_WITH_TYPE,
+        [os.path.join(TEST_STRUCTURES_DIR, i) for i in PDB_FILES_WITH_PURE_TYPE],
+        [os.path.join(TEST_STRUCTURES_DIR, i) for i in PDB_FILES_WITH_PURE_TYPE_SHORT],
     )
     set_parameter_if_all(
         PROTEINS,
-        [os.path.join("prots_only", i) for i in PDB_FILES_DICT["prots_only"]],
-        [os.path.join("prots_only", i) for i in PDB_FILES_DICT_SHORT["prots_only"]],
+        [
+            os.path.join(TEST_STRUCTURES_DIR, "prots_only", i)
+            for i in PDB_FILES_DICT["prots_only"]
+        ],
+        [
+            os.path.join(TEST_STRUCTURES_DIR, "prots_only", i)
+            for i in PDB_FILES_DICT_SHORT["prots_only"]
+        ],
     )
     set_parameter_if_all(
         RNA,
-        [os.path.join("rna_only", i) for i in PDB_FILES_DICT["rna_only"]],
-        [os.path.join("rna_only", i) for i in PDB_FILES_DICT_SHORT["rna_only"]],
+        [
+            os.path.join(TEST_STRUCTURES_DIR, "rna_only", i)
+            for i in PDB_FILES_DICT["rna_only"]
+        ],
+        [
+            os.path.join(TEST_STRUCTURES_DIR, "rna_only", i)
+            for i in PDB_FILES_DICT_SHORT["rna_only"]
+        ],
     )
     set_parameter_if_all(
         DNA,
-        [os.path.join("dna_only", i) for i in PDB_FILES_DICT["dna_only"]],
-        [os.path.join("dna_only", i) for i in PDB_FILES_DICT_SHORT["dna_only"]],
+        [
+            os.path.join(TEST_STRUCTURES_DIR, "dna_only", i)
+            for i in PDB_FILES_DICT["dna_only"]
+        ],
+        [
+            os.path.join(TEST_STRUCTURES_DIR, "dna_only", i)
+            for i in PDB_FILES_DICT_SHORT["dna_only"]
+        ],
     )
     set_parameter_if_all(
         NUCLEOTIDE,
