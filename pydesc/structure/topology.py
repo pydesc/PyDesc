@@ -619,7 +619,7 @@ class ElementChainable(AbstractElement, Segment):
         if not length % 2 == 1:
             raise ValueError("Length of chainable element should be odd.")
         msg = "Cannot create chainable element for mer %i." % mer.ind
-        for dummy_step in range(length // 2):
+        for _ in range(length // 2):
             start = self._mers[0]
             end = self._mers[-1]
             try:

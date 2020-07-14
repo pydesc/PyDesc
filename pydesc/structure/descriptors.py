@@ -64,9 +64,8 @@ class DescriptorBuilderDriver:
                 descriptor = cls.build(structure_obj, central_element, contact_map)
                 return descriptor
             except (TypeError, ValueError, AttributeError):
-                import traceback
-
-                traceback.print_exc()
+                # TODO: it looks like it was catching too much -- investigate,
+                #  e.g. on 4NJ6
                 return
 
         return [mk_desc(mer) for mer in structure_obj]
