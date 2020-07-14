@@ -32,7 +32,7 @@ static void RMSD_add_monomers(int token,  int c_ind1, int c_ind2, CStructure *st
     if(mer1->type != mer2->type) {
         printf("RMSD_add_monomers: types differ "); P_INT(mer1->type); P_INT(mer2->type); P_NL;
         P_INT(mer1->ind); P_INT(mer2->ind); P_NL;
-        P_T(mer1->type_name); P_T(mer2->type_name); P_NL;
+        P_S(mer1->type_name); P_S(mer2->type_name); P_NL;
         abort();
     }
 

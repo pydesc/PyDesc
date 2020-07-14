@@ -121,7 +121,7 @@ int CContactMapTest_indices(CContactMap *cmap, int (*callback)(int, int, int))
     }
 
     if(cnt!=cmap->n_contacts) {
-        P_T("cnt!=cmap->n_contacts: "); P_INT(cnt); P_INT(cmap->n_contacts); P_NL;
+        P_S("cnt!=cmap->n_contacts: "); P_INT(cnt); P_INT(cmap->n_contacts); P_NL;
         return 1;
     }
 
@@ -220,7 +220,7 @@ void print_CMer(CMer *mer)
 
     P_INT(mer->n_points); P_NL;
     for(int i=0;i<mer->n_points;i++) {
-        P_T(mer->point_names[i]);
+        P_S(mer->point_names[i]);
         print_CPoint(&(mer->points[i]));
     }
 }

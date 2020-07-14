@@ -1,8 +1,9 @@
 import os.path
 
-from pydesc.structure import StructureLoader
 from tests.conftest import TEST_STRUCTURES_DIR
+
 from pydesc.contacts.geometrical import PointsDistanceCriterion
+from pydesc.structure import StructureLoader
 
 
 def test_point_distance():

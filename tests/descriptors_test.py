@@ -8,13 +8,12 @@ from pydesc.structure import StructureLoader
 from pydesc.structure.descriptors import DescriptorBuilderDriver
 from pydesc.structure.descriptors import ElementFactory
 from pydesc.structure.topology import ElementChainable
-from tests.conftest import TEST_STRUCTURES_DIR
 
 
 class TestElementBuilder:
-    def test_build(self, structure_file_w_pure_type):
+    def test_build(self, structure_file_w_pure_type, structures_dir):
         loader = StructureLoader()
-        pth = os.path.join(TEST_STRUCTURES_DIR, structure_file_w_pure_type)
+        pth = os.path.join(structures_dir, structure_file_w_pure_type)
         structure = loader.load_structures(path=pth)[0]
         for chain in structure.chains:
             chainable = [i for i in chain if i.is_chainable()]
@@ -34,11 +33,11 @@ class TestElementBuilder:
 
 
 class TestProteinDescriptor:
-    def test_build_rc_criterion(self, protein_file):
+    def test_build_rc_criterion(self, protein_file, structures_dir):
         """Test building descriptors with default side chain geometrical
         center distance criterion."""
-        pth = os.path.join(TEST_STRUCTURES_DIR, protein_file)
-        s, = StructureLoader().load_structures(path=pth)
+        pth = os.path.join(structures_dir, protein_file)
+        (s,) = StructureLoader().load_structures(path=pth)
 
         if max(list(map(len, s.chains))) < 10:
             pytest.skip("Structure %s has chains below 10 mers long, " "thus skipping.")

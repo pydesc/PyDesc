@@ -16,7 +16,8 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 from pydesc.warnexcept import *
-import urllib.request as urllib
+from urllib import request
+from urllib.error import HTTPError
 import os.path
 import gzip
 import tarfile
@@ -31,6 +32,7 @@ except ImportError:
 
     warn(Info("No MMCIFParser in Bio.PDB"))
 from pydesc.config import ConfigManager
+from io import StringIO
 
 ConfigManager.new_branch("dbhandler")
 ConfigManager.dbhandler.set_default("cachedir", "./biodb/")
@@ -87,12 +89,13 @@ class DBHandler:
     @validate_id
     def download_file(self, val):
         try:
-            u = urllib.request.urlopen(self.get_file_url(val))
-        except urllib.HTTPError as e:
+            u = request.urlopen(self.get_file_url(val))
+        except HTTPError as e:
             if e.getcode() == 404:
                 raise InvalidID(2)
             raise
-        self.save_stream(u, val)
+        reading = StringIO(u.read().decode("utf-8"))
+        self.save_stream(reading, val)
 
     @validate_id
     def get_from_local_db(self, val):
@@ -139,7 +142,8 @@ class DBHandler:
                 warn(info, 4)
             except NotImplementedError:
                 raise
-            except:
+            except Exception as e:
+                warn(Info("...failed (due to %s: %s)." % (str(type(e)), str(e))))
                 continue
             else:
                 return [self._get_file(val)]
@@ -348,8 +352,8 @@ class BioUnitHandler(DBHandler):
     @validate_id
     def download_file(self, val, unit):
         try:
-            u = urllib.request.urlopen(self.get_file_url(val, unit))
-        except urllib.HTTPError as e:
+            u = request.urlopen(self.get_file_url(val, unit))
+        except HTTPError as e:
             if e.getcode() == 404:
                 raise InvalidID(4)
             raise
