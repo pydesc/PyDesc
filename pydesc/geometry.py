@@ -105,7 +105,7 @@ class TRTMatrix:
         if vec is None:
             vec = numpy.array((x, y, z))
         pre_vector = self.pre_vector + vec
-        rotated_vector = numpy.squeeze(self.rotation_matrix.dot(pre_vector).A)
+        rotated_vector = numpy.squeeze(self.rotation_matrix.dot(pre_vector))
         return rotated_vector + self.post_vector
 
     # pylint: enable=invalid-name
@@ -241,7 +241,7 @@ class Coord:
         coordinates transformation.
         """
         if transformation_matrix is not None:
-            return tuple(transformation_matrix.transform(*self.vector))
+            return tuple(transformation_matrix.transform(vec=self.vector))
         return tuple(self.vector)
 
     def get_unit_vector(self):
