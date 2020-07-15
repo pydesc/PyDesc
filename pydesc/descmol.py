@@ -25,6 +25,10 @@ from pymol import cmd
 from pydesc.structure.files import PDBWriter
 
 
+def _fmt(string):
+    return string.replace(" ", "_").replace("<", "").replace(">", "")
+
+
 def draw_structures(structures):
     """Create representation of given structures in PyMOL.
 
@@ -35,226 +39,76 @@ def draw_structures(structures):
     """
     for structure_index, structure_obj in enumerate(structures):
         pdb_stream = PDBWriter.create_pdb_string(structure_obj, True)
+        name = structure_obj.name
+        state_n = structure_index + 1
         cmd.read_pdbstr(
-            pdb_stream, structure_obj.name, state=structure_index + 1,
+            pdb_stream, name, state=state_n,
         )
+        Registry.register(structure_obj, name, state_n)
 
 
-def color_segments(self, light_color="gray80", dark_color="gray40"):
-    """PyMOL method that colors descriptor segments.
-
-    Arguments:
-    light_color -- string, PyMOL color name for 5-mer segments.
-    dark_color -- string, PyMOL color name for longer segments.
-    """
-    for segment in self.segments:
-        temp_selection = segment.select()
-        temp_selection.select(self.derived_from, name="temporary__pydesc_selection")
-        Registry.delete(temp_selection)
-        if len(segment) == 5:
-            cmd.color(light_color, "temporary__pydesc_selection")
-        else:
-            cmd.color(dark_color, "temporary__pydesc_selection")
-    temp_selection = self.central_element.select()
-    temp_selection.select(self.derived_from, name="temporary__pydesc_selection")
-    Registry.delete(temp_selection)
-    cmd.color("tv_orange", "temporary__pydesc_selection")
-    cmd.delete("temporary__pydesc_selection")
+def draw_contact(structure, ind1, ind2, point="rc", contact_name=None, gap=0.5):
+    name, state_n = Registry.get_structure_or_parent_name(structure)
+    trt = structure.trt_matrix
+    p1 = getattr(structure[ind1], point)
+    p2 = getattr(structure[ind2], point)
+    p1n = _fmt(f"{name}_{ind1}_{point}")
+    p2n = _fmt(f"{name}_{ind2}_{point}")
+    cmd.pseudoatom(p1n, pos=p1.get_coord(trt), state=state_n)
+    cmd.pseudoatom(p2n, pos=p2.get_coord(trt), state=state_n)
+    if contact_name is None:
+        contact_name = p1n + "_" + p2n
+    cmd.distance(_fmt(contact_name), p1n, p2n, gap=gap, label=0, state=state_n)
+    cmd.delete(p1n)
+    cmd.delete(p2n)
 
 
-def create_model(self, name=None):
-    """Creates PyMOL object connected with current structure (adds entry to Registry)"""
-    if name is None:
-        name = (
-            self.derived_from.name
-            + "_"
-            + self.__class__.__name__[:4].lower()
-            + str(Registry.get_next_number())
-        )
-    Registry.add(self, name, 0, structure_flag=True)
-    cmd.read_pdbstr(
-        self.create_pdb_string(enumerate_atoms=True, transformed=True).read(),
-        name,
-        state=1,
-    )  # pylint: disable=protected-access
-    cmd.set_title(name, 0, "PD")
-
-
-def get_pymol_matrix(self):
-    """Returns transformation-rotation-transformation matrix in PyMOL format."""
-    matrix = (
-        [
-            self.rotation_matrix[0][0],
-            self.rotation_matrix[0][1],
-            self.rotation_matrix[0][2],
-            self.translation_vector[0],
-            self.rotation_matrix[1][0],
-            self.rotation_matrix[1][1],
-            self.rotation_matrix[1][2],
-            self.translation_vector[1],
-            self.rotation_matrix[2][0],
-            self.rotation_matrix[2][1],
-            self.rotation_matrix[2][2],
-            self.translation_vector[2],
-        ]
-        + list(self.prerotational_translation_vector)
-        + [1.0]
-    )
-    return matrix
-
-
-def poke_pymol(self, matrix):
-    """Forces PyMOL object to move.
-
-    Argument:
-    matrix -- transformation-rotation-transformation matrix in PyMOL format.
-    """
-    for attached_structure in Registry.objects[self.derived_from].attachment:
-        if cmd.get_title(*Registry.get(attached_structure, "name", "state")) == "PD":
-            cmd.transform_object(Registry.get(attached_structure, "name"), matrix)
-
-
-def select_in_pymol(self, structure_obj, name="sele", distinguish_chains=None):
-    """Creates PyMOL selection related to self."""
-    if distinguish_chains is None:
-        distinguish_chains = (
-            self._distinguish_chains
-        )  # pylint: disable=protected-access
-    get_pdb_ind = (
-        lambda id_: str(id_.ind) + str(id_.icode)
-        if id_.icode is not None
-        else str(id_.ind)
-    )
-    cmd.select(
-        name,
-        "%s and (%s)"
-        % (
-            Registry.get(structure_obj, "name"),
-            " + ".join(
-                [
-                    "(chain " + id_.chain + " and resi " + get_pdb_ind(id_) + ")"
-                    for id_ in self.specify(structure_obj, distinguish_chains).ids
-                ]
-            ),
-        ),
-    )
-    cmd.enable(name)
-    Registry.add(self, name, structure_obj, selection_flag=True)
-
-
-def show(self, point_name, color_segments=True):  # pylint: disable=redefined-outer-name
-    # color_segments is a patch-method, not a function, so it is not covered
-    """Creates PyMOL visualisation of descriptor.
-
-    Argiment:
-    point_name -- name of the atom or pseudoatom to be joined with dashes in pymol.
-    color_segments -- initially set to True, if so - calls descriptors method color_segments.
-    """
-    # CREATING PYMOL OBJECTS
-    for contact in self.contacts:
-        try:
-            obj_name = self.derived_from.name
-        except AttributeError:
-            obj_name = "PyDesc_obj"
-        central_name = "%s_%s_%i_cent" % (
-            obj_name,
-            point_name,
-            self.central_element.central_monomer.ind,
-        )
-        centers_name = "%s_%s_%i" % (
-            obj_name,
-            point_name,
-            self.central_element.central_monomer.ind,
-        )
-        distances_name = "%s_desc_%i_%s" % (
-            obj_name,
-            self.central_element.central_monomer.ind,
-            point_name,
-        )
-        cmd.pseudoatom(
-            central_name,
-            pos=list(
-                getattr(self.central_element.central_monomer, point_name).get_coord(
-                    self.trt_matrix
-                )
-            ),
-        )
-        for i, element in enumerate(contact.elements):
-            if element != self.central_element:
-                try:
-                    cmd.pseudoatom(
-                        centers_name,
-                        pos=getattr(element.central_monomer, point_name).get_coord(
-                            self.trt_matrix
-                        ),
-                    )
-                except AttributeError:
-                    # for mers without proper attribute that are incorporated
-                    pass
-            cmd.pseudoatom(
-                "temp_desc_dist%i" % i,
-                pos=getattr(element.central_monomer, point_name).get_coord(
-                    self.trt_matrix
-                ),
-            )
-        cmd.distance(distances_name, "temp_desc_dist0", "temp_desc_dist1")
-        cmd.delete("temp_desc_dist0")
-        cmd.delete("temp_desc_dist1")
-        cmd.hide("labels", distances_name)
-        cmd.color("tv_orange", distances_name)
-    # CREATING PYDESC OBJECTS
-    for item in [central_name, centers_name]:
-        item_structure = SupportingStructure(item, self.derived_from)
-        Registry.add(item_structure, item)
-        cmd.set_title(item, 0, "PD")
-    temp_selection = self.select()
-    temp_selection.select(self.derived_from, name="temporary__pydesc_selection")
-    Registry.delete(temp_selection)
-    cmd.orient("temporary__pydesc_selection")
-    cmd.delete("temporary__pydesc_selection")
-    if color_segments is True:
-        self.color_segments()
-
-
-def show_contacts(self, point="rc", split_contacts=False, add_name="_cmap"):
-    """Shows distances between all contacted mers.
-
-    Argument:
-    point -- string, name of mers pseudoatom to be merged with distance lines.
-    """
-    # pylint: disable=invalid-name
-    trt = self.substructure.trt_matrix
-    points = []
-    for ind1 in self.contacts:
-        for ind2 in self.contacts[ind1]:
+def draw_contact_maps(contact_maps, split_contacts=False, point="rc"):
+    def mk_map(contacts, map_name=None, gap=0.5):
+        contacts = set([frozenset(i) for i in contacts])
+        for ind1, ind2 in contacts:
             try:
-                p1 = getattr(self.substructure[ind1], point)
-                p2 = getattr(self.substructure[ind2], point)
+                draw_contact(structure, ind1, ind2, point, map_name, gap=gap)
             except AttributeError:
-                print(
-                    (
-                        "Skipping contact between %s and %s due to lack of pseudoatom."
-                        % (self.substructure[ind1].pid, self.substructure[ind1].pid)
-                    )
-                )
-            p1n = fmt(str(self.substructure) + "_" + str(ind1) + "_" + point)
-            p2n = fmt(str(self.substructure) + "_" + str(ind2) + "_" + point)
-            cmd.pseudoatom(p1n, pos=p1.get_coord(trt))
-            cmd.pseudoatom(p2n, pos=p2.get_coord(trt))
-            name = (
-                p1n + "_" + p2n if split_contacts else self.substructure.name + add_name
-            )
-            cmd.distance(fmt(name), p1n, p2n)
-            points.extend([p1n, p2n])
-    if not split_contacts:
-        for i in points:
-            cmd.delete(i)
-    cmd.hide("labels")
-    # pylint: enable=invalid-name
+                msg = "Skipping contact between %s and %s due to lack of pseudoatom."
+                inp = ind1, ind2
+                print(msg % inp)
+                continue
+
+    for contact_map in contact_maps:
+        structure = contact_map.structure
+        name, _ = Registry.get_structure_or_parent_name(structure)
+        contacts_dct = {}
+        for ind_pair, value in contact_map:
+            contacts_dct.setdefault(value, []).append(ind_pair)
+
+        sure_map_name = None if split_contacts else f"{name}_cm"
+        uncertain_map_name = None if split_contacts else f"{name}_pcm"
+        mk_map(contacts_dct.get(1, []), uncertain_map_name, gap=0.75)
+        mk_map(contacts_dct.get(2, []), sure_map_name, gap=0.25)
+
+        cmd.color("red", sure_map_name)
+        cmd.color("orange", uncertain_map_name)
+
+
+class Registry:
+    desc2mol = {}
+
+    @classmethod
+    def register(cls, pydesc_obj, pymol_name, pymol_state):
+        cls.desc2mol[pydesc_obj] = (pymol_name, pymol_state)
+
+    @classmethod
+    def get_name(cls, pydesc_obj):
+        return cls.desc2mol[pydesc_obj]
+
+    @classmethod
+    def get_structure_or_parent_name(cls, pydesc_obj):
+        try:
+            return cls.get_name(pydesc_obj)
+        except KeyError:
+            return cls.get_name(pydesc_obj.derived_from)
 
 
 if __name__ == "pydesc.descmol":
-    cmd.hide("lines")
-    cmd.show("cartoon")
-    cmd.show("sticks")
-    cmd.set("cartoon_side_chain_helper")
+    pass
