@@ -79,11 +79,10 @@ class ContactCriterion(metaclass=ABCMeta):
 
     @abstractmethod
     def __str__(self):
-        return 'contact criterion'
+        return "contact criterion"
 
 
 class NotCriterion(ContactCriterion):
-
     def __str__(self):
         criterion_repr = str(self.criterion)
         return f"not ({criterion_repr})"
@@ -146,14 +145,12 @@ class CombinedContact(ContactCriterion, metaclass=ABCMeta):
 
 
 class ContactsConjunction(CombinedContact):
-
     def _fill_contact_matrix(self, mers1, mers2, matrix):
         contact_map = super()._fill_contact_matrix(mers1, mers2, matrix)
         return numpy.min(contact_map, axis=2)
 
 
 class ContactsAlternative(CombinedContact):
-
     def _fill_contact_matrix(self, mers1, mers2, matrix):
         contact_map = super()._fill_contact_matrix(mers1, mers2, matrix)
         return numpy.max(contact_map, axis=2)
@@ -174,7 +171,6 @@ class ContactsAlternative(CombinedContact):
 
 
 class ContactsExclusiveDisjunction(CombinedContact):
-
     def _fill_contact_matrix(self, mers1, mers2, matrix):
         contact_map = super()._fill_contact_matrix(mers1, mers2, matrix)
         # fields where only one value is sure are 2

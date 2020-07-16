@@ -11,15 +11,11 @@ def get_mer_inds(mers):
 def get_distance_matrix(mers1, mers2, point):
     points1 = numpy.array([getattr(mer, point).vector for mer in mers1])
     points2 = numpy.array([getattr(mer, point).vector for mer in mers2])
-    try:
-        dist_mtx = cdist(points1, points2)
-    except:
-        import pdb; pdb.set_trace()
+    dist_mtx = cdist(points1, points2)
     return dist_mtx
 
 
 class PointsDistanceCriterion(ContactCriterion):
-
     def __str__(self):
         return f"distance between {self.atom_name}"
 
@@ -52,7 +48,6 @@ class PointsDistanceCriterion(ContactCriterion):
 
 
 class DistancesDifferenceCriterion(ContactCriterion):
-
     def __str__(self):
         return f"distance difference between {self.point1} and {self.point2}"
 

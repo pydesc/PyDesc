@@ -152,8 +152,8 @@ class PointsDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
         Returns None if given Monomers do not have appropriate attribute.
         """
         return (
-                getattr(monomer1obj, self.monomer_hallmark)
-                - (getattr(monomer2obj, self.monomer_hallmark))
+            getattr(monomer1obj, self.monomer_hallmark)
+            - (getattr(monomer2obj, self.monomer_hallmark))
         ).calculate_length()
 
     def _is_in_contact(self, monomer1obj, monomer2obj, **kwargs):
@@ -244,11 +244,11 @@ class DifferentPointsDistanceCriterion(ContactCriterion):
     """
 
     def __init__(
-            self,
-            criterion_distance=None,
-            undecidable_range=None,
-            mer1_hallmark=None,
-            mer2_hallmark=None,
+        self,
+        criterion_distance=None,
+        undecidable_range=None,
+        mer1_hallmark=None,
+        mer2_hallmark=None,
     ):
         """Contact criterion constructor.
 
@@ -296,8 +296,8 @@ class DifferentPointsDistanceCriterion(ContactCriterion):
             try:
                 res.add(
                     (
-                            getattr(m1, self.mer1_hallmark)
-                            - (getattr(m2, self.mer2_hallmark))
+                        getattr(m1, self.mer1_hallmark)
+                        - (getattr(m2, self.mer2_hallmark))
                     ).calculate_length()
                 )
             except AttributeError:
@@ -726,9 +726,9 @@ class NIContact(SetDistanceCriterion):
         self.monomer_hallmark = None
         self.monomer_hallmark2 = "rc"
         self.max_rc_dist = (
-                ConfigManager.contacts.ni_contact_distance
-                + ConfigManager.contacts.ni_contact_undecidable_range
-                + 9
+            ConfigManager.contacts.ni_contact_distance
+            + ConfigManager.contacts.ni_contact_undecidable_range
+            + 9
         )
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
@@ -740,8 +740,8 @@ class NIContact(SetDistanceCriterion):
 
     def _calculate_distance(self, *args, **kwargs):
         return (
-                super(NIContact, self)._calculate_distance(*args, **kwargs)
-                - args[1].get_radius()
+            super(NIContact, self)._calculate_distance(*args, **kwargs)
+            - args[1].get_radius()
         )
 
 
@@ -916,9 +916,9 @@ class RcbpDistance(HorizontalBisectorDistanceCriterion):
             ConfigManager.contacts.rcb_pairing_contact_undecidable_range,
         )  # pylint: disable=no-member
         self.max_rc_dist = (
-                ConfigManager.contacts.rcb_pairing_contact_distance
-                + ConfigManager.contacts.rcb_pairing_contact_undecidable_range
-                + 6
+            ConfigManager.contacts.rcb_pairing_contact_distance
+            + ConfigManager.contacts.rcb_pairing_contact_undecidable_range
+            + 6
         )
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
@@ -945,9 +945,9 @@ class RcbsDistance(HorizontalBisectorDistanceCriterion):
             ConfigManager.contacts.rcb_stacking_contact_undecidable_range,
         )  # pylint: disable=no-member
         self.max_rc_dist = (
-                ConfigManager.contacts.rcb_stacking_contact_distance
-                + ConfigManager.contacts.rcb_stacking_contact_undecidable_range
-                + 6
+            ConfigManager.contacts.rcb_stacking_contact_distance
+            + ConfigManager.contacts.rcb_stacking_contact_undecidable_range
+            + 6
         )
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
@@ -1011,14 +1011,14 @@ class VerticalBisectorDistanceCriterion(ContactCriterion, metaclass=ABCMeta):
             getattr(monomer_2_obj, self.monomer_hallmark_point)
         )
         return (
-                (
-                        ort_projection_point1
-                        - getattr(monomer_1_obj, self.monomer_hallmark_point)
-                ).calculate_length()
-                + (
-                        ort_projection_point2
-                        - getattr(monomer_2_obj, self.monomer_hallmark_point)
-                ).calculate_length()
+            (
+                ort_projection_point1
+                - getattr(monomer_1_obj, self.monomer_hallmark_point)
+            ).calculate_length()
+            + (
+                ort_projection_point2
+                - getattr(monomer_2_obj, self.monomer_hallmark_point)
+            ).calculate_length()
         )
         # pylint: enable=no-member
         # monomer_hallmark_x is abstract attr
@@ -1059,9 +1059,9 @@ class RcpDistance(VerticalBisectorDistanceCriterion):
             ConfigManager.contacts.rc_pairing_contact_undecidable_range,
         )  # pylint: disable=no-member
         self.max_rc_dist = (
-                ConfigManager.contacts.rc_pairing_contact_distance
-                + ConfigManager.contacts.rc_pairing_contact_undecidable_range
-                + 16
+            ConfigManager.contacts.rc_pairing_contact_distance
+            + ConfigManager.contacts.rc_pairing_contact_undecidable_range
+            + 16
         )
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):
@@ -1088,9 +1088,9 @@ class RcsDistance(VerticalBisectorDistanceCriterion):
             ConfigManager.contacts.rc_stacking_contact_undecidable_range,
         )
         self.max_rc_dist = (
-                ConfigManager.contacts.rc_stacking_contact_distance
-                + ConfigManager.contacts.rc_stacking_contact_undecidable_range
-                + 16
+            ConfigManager.contacts.rc_stacking_contact_distance
+            + ConfigManager.contacts.rc_stacking_contact_undecidable_range
+            + 16
         )
 
     def _is_in_contact(self, monomer_1_obj, monomer_2_obj, **kwargs):

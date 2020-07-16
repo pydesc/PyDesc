@@ -21,8 +21,9 @@ Classes that deal with contacts among mers present in PyDesc (sub)structures.
 created: 28.04.2014 - , Tymoteusz 'hert' Oleniecki
 """
 
-from pydesc.selection import Everything
 from scipy.sparse import dok_matrix
+
+from pydesc.selection import Everything
 
 
 class ContactMapCalculator:
@@ -40,6 +41,7 @@ class ContactMapCalculator:
         """
         contacts_mtx = self.contact_criterion.calculate_contacts(self.structure)
         contacts_mtx = dok_matrix(contacts_mtx)
+        contacts_mtx.setdiag(0)
 
         return ContactMap(contacts_mtx, self.structure)
 
@@ -121,12 +123,12 @@ class FrequencyContactMap:
     """
 
     def __init__(
-            self,
-            structures,
-            contact_criterion_obj=None,
-            ignore1=True,
-            select1=Everything(),
-            select2=Everything(),
+        self,
+        structures,
+        contact_criterion_obj=None,
+        ignore1=True,
+        select1=Everything(),
+        select2=Everything(),
     ):
         """Initialize ContactMap.
 
