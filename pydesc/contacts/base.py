@@ -28,8 +28,8 @@ from abc import ABCMeta
 from abc import abstractmethod
 
 import numpy
+from scipy.sparse import dok_matrix
 
-from pydesc.warnexcept import WrongMerType
 from pydesc.selection import Everything
 
 
@@ -45,11 +45,11 @@ class ContactCriterion(metaclass=ABCMeta):
         self.selection2 = selection2
 
     def calculate_contacts(self, structure_obj):
-
         mers1 = self.selection1.create_structure(structure_obj)
         mers2 = self.selection2.create_structure(structure_obj)
 
-        contact_map = numpy.zeros((len(mers1), len(mers2)), dtype=numpy.uint8)
+        total_len = len(structure_obj)
+        contact_map = dok_matrix((total_len, total_len), dtype=numpy.uint8)
         contact_map = self._fill_contact_matrix(mers1, mers2, contact_map)
 
         return contact_map
@@ -92,13 +92,13 @@ class NotCriterion(ContactCriterion):
         super().__init__()
         self.set_selections(criterion.selection1, criterion.selection2)
 
-    def _fill_contact_matrix(self, mers1, mers2, matrix):
-        method = self.criterion._fill_contact_matrix
-        method(mers1, mers2, matrix)
-        return (matrix - 1) * -1 + 1  # revert values
+    def calculate_contacts(self, structure_obj):
+        contact_map = self.criterion.calculate_contacts(structure_obj)
+        new = (contact_map.todense().astype(numpy.int8) - 1) * -1 + 1
+        return dok_matrix(new)
 
 
-class CombinedContact(ContactCriterion, metaclass=ABCMeta):
+class CombinedContact(ContactCriterion):
     """Abstract class, criteria obtained via logical operations on contact
     criteria."""
 
@@ -133,52 +133,50 @@ class CombinedContact(ContactCriterion, metaclass=ABCMeta):
         sub_criteria_repr = " and ".join(map(str, self.criteria))
         return f"{self_repr} of criteria based on {sub_criteria_repr}"
 
-    @abstractmethod
-    def _fill_contact_matrix(self, mers1, mers2, matrix):
-        method = self.criteria[0]._fill_contact_matrix
-        matrix = method(mers1, mers2, matrix)
-        for criterion in self.criteria[1:]:
-            method = criterion._fill_contact_matrix
-            new_layer = method(mers1, mers2, matrix)
-            matrix = numpy.stack((matrix, new_layer), axis=2)
-        return matrix
-
 
 class ContactsConjunction(CombinedContact):
-    def _fill_contact_matrix(self, mers1, mers2, matrix):
-        contact_map = super()._fill_contact_matrix(mers1, mers2, matrix)
-        return numpy.min(contact_map, axis=2)
+
+    def __init__(self, *criteria_objs):
+        super().__init__(*criteria_objs)
+        selection1 = criteria_objs[0].selection1
+        selection2 = criteria_objs[0].selection2
+        for criterion_obj in criteria_objs[1:]:
+            selection1 *= criterion_obj.selection1
+            selection2 *= criterion_obj.selection2
+        self.selection1 = selection1
+        self.selection2 = selection2
+
+    def calculate_contacts(self, structure_obj):
+        contact_map = self.criteria[0].calculate_contacts(structure_obj)
+        for criterion in self.criteria[1:]:
+            new_map = criterion.calculate_contacts(structure_obj)
+            contact_map = contact_map.minimum(new_map)
+        return contact_map
 
 
 class ContactsAlternative(CombinedContact):
-    def _fill_contact_matrix(self, mers1, mers2, matrix):
-        contact_map = super()._fill_contact_matrix(mers1, mers2, matrix)
-        return numpy.max(contact_map, axis=2)
 
-    def get_validating_sub_criterion(self, mer_1, mer_2):
-        for contact_criterion in self.criteria:
-            try:
-                return contact_criterion.get_validating_sub_criterion(mer_1, mer_2)
-            except AttributeError:
-                try:
-                    if contact_criterion.is_in_contact(mer_1, mer_2):
-                        return contact_criterion
-                except WrongMerType:
-                    continue
-            except ValueError:
-                continue
-        raise ValueError("Given mers are not in contact.")
+    def calculate_contacts(self, structure_obj):
+        contact_map = self.criteria[0].calculate_contacts(structure_obj)
+        for criterion in self.criteria[1:]:
+            new_map = criterion.calculate_contacts(structure_obj)
+            contact_map = contact_map.maximum(new_map)
+        return contact_map
 
 
 class ContactsExclusiveDisjunction(CombinedContact):
-    def _fill_contact_matrix(self, mers1, mers2, matrix):
-        contact_map = super()._fill_contact_matrix(mers1, mers2, matrix)
-        # fields where only one value is sure are 2
-        twos = numpy.count_nonzero(contact_map == 2, axis=2)
-        result = (twos == 1) * 2
-        # only fields where 2 occurred less than once are taken into account further
-        mask = twos == 0
-        undecided = numpy.max(contact_map == 1, axis=2) * mask
-        result = numpy.stack((result, undecided.astype(bool)), axis=2)
-        # 2 is picked over 1, 1 over 0.
-        return numpy.max(result, axis=2)
+
+    def calculate_contacts(self, structure_obj):
+        new_map = self.criteria[0].calculate_contacts(structure_obj)
+        count_ones = (new_map == 1).astype(numpy.uint8)
+        count_twos = (new_map == 2).astype(numpy.uint8)
+        for criterion in self.criteria[1:]:
+            new_map = criterion.calculate_contacts(structure_obj)
+            count_ones += (new_map == 1).astype(numpy.uint8)
+            count_twos += (new_map == 2).astype(numpy.uint8)
+
+        contact_map = dok_matrix(count_twos.shape, dtype=numpy.uint8)
+        contact_map[(count_twos == 1)] = 2
+        contact_map[count_ones != 0] = 1
+        return contact_map
+        # TODO: is that right?
