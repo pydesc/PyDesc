@@ -359,6 +359,10 @@ class Everything(Selection):
         """Overall selection constructor (extended superclass method)."""
         Selection.__init__(self)
 
+    def __mul__(self, other):
+        """Optimised AND for Everything selections returns other selection."""
+        return other
+
     def specify(self, structure_obj):
         """Returns given structure as instance of user structure.
 
