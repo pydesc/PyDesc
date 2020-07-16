@@ -8,8 +8,8 @@ import pydesc.geometry
 from pydesc.mers import ConfigManager
 from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import UnknownParticleName
-from pydesc.warnexcept import warn
 from pydesc.warnexcept import WrongAtomDistances
+from pydesc.warnexcept import warn
 
 norm = scipy.linalg.get_blas_funcs("nrm2")
 NotSet = object()
@@ -316,11 +316,6 @@ class Mer:
         """Returns indicators of current monomer set in configuration
         manager."""
         return [getattr(self, indicator) for indicator in self.get_config("indicators")]
-
-    @property
-    def pid(self):
-        """Return PDB id as string."""
-        return str(self.get_pdb_id())
 
     @property
     def secondary_structure(self):

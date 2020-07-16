@@ -1,6 +1,7 @@
 import pytest
 
-from pydesc.api.trajectory import freeze_frame, from_frames
+from pydesc.api.trajectory import freeze_frame
+from pydesc.api.trajectory import from_frames
 from pydesc.mers.factories import CopyingFactor
 from pydesc.mers.full_atom import Nucleotide
 from pydesc.mers.full_atom import Residue

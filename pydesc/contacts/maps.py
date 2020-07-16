@@ -106,11 +106,12 @@ class ContactMap:
     def to_string(self, stream_out):
         """Dumps pairs of mers in contacts to a given file-like object in
         CSV format."""
+        converter = self.structure.converter
         with stream_out:
-            for (k1, k2), value in self._contacts:
-                m1 = self.structure[k1]
-                m2 = self.structure[k2]
-                line = "%s\t%s\t%i\n" % (str(m1.pid), str(m2.pid), value)
+            for (ind1, ind2), value in self:
+                pdb_id1 = converter.get_pdb_id(ind1)
+                pdb_id2 = converter.get_pdb_id(ind2)
+                line = f"{pdb_id1}\t{pdb_id2}\t{value}\n"
                 stream_out.write(line)
 
 

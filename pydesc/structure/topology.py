@@ -2,7 +2,6 @@ import math
 import operator
 from abc import ABCMeta
 from abc import abstractmethod
-from io import StringIO
 
 from Bio.PDB import DSSP
 
@@ -12,8 +11,8 @@ from pydesc.config import ConfigManager
 from pydesc.mers.base import Mer
 from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import DiscontinuityError
-from pydesc.warnexcept import warn
 from pydesc.warnexcept import WrongElement
+from pydesc.warnexcept import warn
 
 
 class BackbonedMixIn:
@@ -176,49 +175,6 @@ class AbstractStructure(metaclass=ABCMeta):
         self._hash_monomers = dict(
             (monomer_obj.ind, index) for index, monomer_obj in enumerate(self._mers)
         )
-
-    def create_pdb_string(self, transformed=True):  # TODO: move to separate class
-        """Returns an StringIO pdb-like object.
-
-        Argument:
-        transformed -- initially set to True, if so - creates PyMOL object
-        with respect for all previous movements; otherwise uses coordinates
-        from pdb file.
-        """
-        line_n = 0
-        components = []
-        for monomer_obj in self:
-            for atom in monomer_obj.iter_atoms():
-                pdb_id = monomer_obj.get_pdb_id()
-                if transformed:
-                    coord = atom.get_coord(self.trt_matrix)
-                else:
-                    coord = atom.get_coord()
-                insertion_code = pdb_id.icode or " "
-                values = (
-                    line_n,
-                    atom.name,
-                    monomer_obj.name,
-                    monomer_obj.my_chain,
-                    pdb_id[1],
-                    insertion_code,
-                    coord[0],
-                    coord[1],
-                    coord[2],
-                    atom.occupancy,
-                    atom.b_factor,
-                    monomer_obj.pdb_residue.get_segid(),
-                    atom.element,
-                )
-                components.append(values)
-                line_n += 1
-        pdb_line = (
-            "ATOM  %5i %4s %3s%2s%4i%1s%11.3f" "%8.3f% 8.3f%6.2f %5.2f      %3s%2s"
-        )
-        sorted_components = sorted(components, key=lambda vals: vals[0])
-        components = [pdb_line % v for v in sorted_components]
-        components.append("END")
-        return StringIO("\n".join(components))
 
     def next_mer(self, monomer_obj):
         """Returns next monomer available in current structure for given
