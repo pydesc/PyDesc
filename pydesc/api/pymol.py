@@ -16,20 +16,32 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-PyMOL plugin with classes and functions to visualize PyDesc descriptors.
+Package providing functions for visualization of some PyDesc features in PyMOL.
+
+Usage:
+    - make sure Python used by PyMOL has PyDesc installed (how? see below)
+    - simply import pydesc in PyMOL console and create objects or use PyMOL to
+    execute scripts using pydesc library
+    - import pydesc.api.pymol and use its functions to visualize pydesc objects
+
+How to install PyDesc in PyMOL's Python?
+Either use pip in PyMOL console or build PyMOL (
+https://github.com/schrodinger/pymol-open-source/blob/master) with PREFIX_PATH
+variable set to path storing already install PyDesc.
 
 created: 19.09.2013 - , Tymoteusz 'hert' Oleniecki
 """
 
 from pymol import cmd
 from pydesc.structure.files import PDBWriter
+from pydesc.selection import Everything
 
 
 def _fmt(string):
     return string.replace(" ", "_").replace("<", "").replace(">", "")
 
 
-def draw_structures(structures):
+def draw_structures(structures, split_states=False):
     """Create representation of given structures in PyMOL.
 
     Argument:
@@ -41,10 +53,11 @@ def draw_structures(structures):
         pdb_stream = PDBWriter.create_pdb_string(structure_obj, True)
         name = structure_obj.name
         state_n = structure_index + 1
-        cmd.read_pdbstr(
-            pdb_stream, name, state=state_n,
-        )
+        if split_states:
+            name = f"{name}_{state_n}"
+            state_n = 0
         Registry.register(structure_obj, name, state_n)
+        cmd.read_pdbstr(pdb_stream, name, state=state_n)
 
 
 def draw_contact(structure, ind1, ind2, point="rc", contact_name=None, gap=0.5):
@@ -91,16 +104,41 @@ def draw_contact_maps(contact_maps, split_contacts=False, point="rc"):
         cmd.color("orange", uncertain_map_name)
 
 
+def select(substructure, selection_name="sele"):
+    name, state_n = Registry.get_name(substructure.derived_from)
+    pdb_ids = list(Everything().specify(substructure))
+
+    def _fmt_id(pdb_id):
+        icode = '' if pdb_id.icode is None else pdb_id.icode
+        chain = '' if pdb_id.chain is None else f'chain {pdb_id.chain} and'
+        return f"({chain} resi {pdb_id.ind}{icode})"
+
+    for mer_id in pdb_ids:
+        selection_string = f"{name} and ({_fmt_id(mer_id)})"
+        cmd.select(selection_name, selection_string, merge=1)
+
+
 class Registry:
     desc2mol = {}
 
     @classmethod
     def register(cls, pydesc_obj, pymol_name, pymol_state):
-        cls.desc2mol[pydesc_obj] = (pymol_name, pymol_state)
+        pymol_id = (pymol_name, pymol_state)
+        if pymol_id in cls.desc2mol.values():
+            raise KeyError("Name and stated already in registered.")
+        cls.desc2mol[pydesc_obj] = pymol_id
+
+    @classmethod
+    def remove(cls, pydesc_obj):
+        del cls.desc2mol[pydesc_obj]
 
     @classmethod
     def get_name(cls, pydesc_obj):
-        return cls.desc2mol[pydesc_obj]
+        try:
+            return cls.desc2mol[pydesc_obj]
+        except KeyError:
+            raise KeyError(f"Structure {pydesc_obj} is not registered (was it never "
+                           f"drawn or drawn and removed?).")
 
     @classmethod
     def get_structure_or_parent_name(cls, pydesc_obj):
