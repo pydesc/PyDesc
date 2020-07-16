@@ -7,7 +7,6 @@ from pydesc.dbhandler import PDBHandler
 
 
 class TestPDBHandler:
-
     @pytest.fixture(scope="function", autouse=True)
     def clear_cache(self):
         cache_dir = ConfigManager.dbhandler.cachedir

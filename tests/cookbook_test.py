@@ -1,6 +1,7 @@
 from os import path
 
 import pytest
+import traceback
 
 TEST_PATH = path.dirname(path.abspath(__file__))
 DOC_PATH = path.realpath(path.join(TEST_PATH, "..", "doc"))
@@ -35,7 +36,7 @@ def fill_section_branch(branch_dct, lvl, lines):
             continue
         clvl = line.count("#")
         if clvl <= lvl:
-            return lines[n - 1 :]
+            return lines[n - 1:]
         sub_branch_dct = {"text": []}
         branch_dct[line] = sub_branch_dct
         lines = fill_section_branch(sub_branch_dct, clvl, lines[n:])
@@ -88,12 +89,22 @@ def get_examples():
             yield test_name, ExecutableTest(example)
 
 
+class CookbookTestFail(Exception):
+    pass
+
+
 class ExecutableTest:
     def __init__(self, code):
         self.code = code
 
     def execute(self):
-        exec(self.code)
+        try:
+            exec(self.code)
+        except Exception:
+            e_msg = traceback.format_exc()
+            msg = f"Failed test with code:\n{self.code}\n" \
+                  f"Error:\n{e_msg}"
+            raise CookbookTestFail(msg)
 
 
 @pytest.mark.parametrize("name,test_code", get_examples())

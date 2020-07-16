@@ -42,7 +42,7 @@ def perform_smith_waterman(models_ids):  # pylint: disable=invalid-name
     for ids in models_ids[1:]:
         sw_matrix = build_smith_waterman_matrix(ids, aligned_ids)
         aligned_ids = go_backwards(sw_matrix)
-    return [aligned_ids]
+    return aligned_ids
 
 
 def build_smith_waterman_matrix(ids, aligned_ids):
@@ -246,6 +246,7 @@ class NumberConverterFactory:
 
         if len(models_ids) > 1:
             models_ids = perform_smith_waterman(models_ids)
+            models_ids = [[PDBid(i) for i in models_ids]]
 
         converter = NumberConverter(models_ids[0])
 
