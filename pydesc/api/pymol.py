@@ -38,15 +38,17 @@ from pydesc.selection import Everything
 
 
 def _fmt(string):
+    """Format name in manner safe for PyMOL."""
     return string.replace(" ", "_").replace("<", "").replace(">", "")
 
 
 def draw_structures(structures, split_states=False):
-    """Create representation of given structures in PyMOL.
+    """ Draw given pydesc structure and add it to registry.
 
-    Argument:
-    structures -- list of pydesc structures each of which will be loaded as separate
-    state of new object in PyMOL.
+    Args:
+        structures: list of structure instances.
+        split_states(bool): determines if structures should be loaded as separate
+        objects in PyMOL (True) or as states of the same object (default; False).
 
     """
     for structure_index, structure_obj in enumerate(structures):
@@ -61,7 +63,23 @@ def draw_structures(structures, split_states=False):
 
 
 def draw_contact(structure, ind1, ind2, point="rc", contact_name=None, gap=0.5):
-    name, state_n = Registry.get_structure_or_parent_name(structure)
+    """Draw single contact as unlabeled distance between mers.
+
+    Args:
+        structure: (sub)structure instance. In case of structures -- they have to be
+        already drawn in PyMOL (registered). Same requirement applies to parent
+        structures of substructure.
+        ind1(int): 1st mer ind.
+        ind2(int): 2nd mer ind.
+        point(string): name of atom or pseudoatom present in both mers at ends of
+        contact line to be drawn. Optional.
+        contact_name(string): PyMOL name of distance object to be created. Note that
+        if this object already exists, newly created distance will be merged with
+        existing one.
+        gap(float): length of gaps between lines.
+
+    """
+    name, state_n = Registry.get_structure_or_parent_id(structure)
     trt = structure.trt_matrix
     p1 = getattr(structure[ind1], point)
     p2 = getattr(structure[ind2], point)
@@ -77,6 +95,22 @@ def draw_contact(structure, ind1, ind2, point="rc", contact_name=None, gap=0.5):
 
 
 def draw_contact_maps(contact_maps, split_contacts=False, point="rc"):
+    """Draw given contact maps.
+
+    Draws two contact maps: one for contacts with contact value 2 only (sure contacts),
+    and second one with with contact of value 1 (uncertain contacts). Former is
+    colored red and has less gaps between dashes, while latter is colored orange and
+    has greater gaps.
+
+    Args:
+        contact_maps: list of pydesc contact maps.
+        split_contacts(bool): determines if each contact is to be drawn as separate
+        object. False by default.
+        point(str): name of atom or pseudoatom to start and end contact lines at (
+        "rc" by default).
+
+    """
+
     def mk_map(contacts, map_name=None, gap=0.5):
         contacts = set([frozenset(i) for i in contacts])
         for ind1, ind2 in contacts:
@@ -90,7 +124,7 @@ def draw_contact_maps(contact_maps, split_contacts=False, point="rc"):
 
     for contact_map in contact_maps:
         structure = contact_map.structure
-        name, _ = Registry.get_structure_or_parent_name(structure)
+        name, _ = Registry.get_structure_or_parent_id(structure)
         contacts_dct = {}
         for ind_pair, value in contact_map:
             contacts_dct.setdefault(value, []).append(ind_pair)
@@ -105,12 +139,23 @@ def draw_contact_maps(contact_maps, split_contacts=False, point="rc"):
 
 
 def select(substructure, selection_name="sele"):
-    name, state_n = Registry.get_name(substructure.derived_from)
+    """Create PyMOL selection based on given substructure.
+
+    Note that selections do not have states, so selecting the same set of mers from
+    different states of NMR or trajectories will create selection for all states.
+
+    Args:
+        substructure: substructure derived from drawn (registered) structure.
+        selection_name(str): name of PyMOL selection to be created (optional; "sele"
+        by default).
+
+    """
+    name, state_n = Registry.get_id(substructure.derived_from)
     pdb_ids = list(Everything().specify(substructure))
 
     def _fmt_id(pdb_id):
-        icode = '' if pdb_id.icode is None else pdb_id.icode
-        chain = '' if pdb_id.chain is None else f'chain {pdb_id.chain} and'
+        icode = "" if pdb_id.icode is None else pdb_id.icode
+        chain = "" if pdb_id.chain is None else f"chain {pdb_id.chain} and"
         return f"({chain} resi {pdb_id.ind}{icode})"
 
     for mer_id in pdb_ids:
@@ -119,10 +164,14 @@ def select(substructure, selection_name="sele"):
 
 
 class Registry:
+    """Static class keeping track of drawn structures."""
+
     desc2mol = {}
 
     @classmethod
     def register(cls, pydesc_obj, pymol_name, pymol_state):
+        """Add given pydesc object to registry with given pymol name and state
+        number. That pair forms PyMOL id."""
         pymol_id = (pymol_name, pymol_state)
         if pymol_id in cls.desc2mol.values():
             raise KeyError("Name and stated already in registered.")
@@ -130,23 +179,25 @@ class Registry:
 
     @classmethod
     def remove(cls, pydesc_obj):
+        """Remove given object from registry."""
         del cls.desc2mol[pydesc_obj]
 
     @classmethod
-    def get_name(cls, pydesc_obj):
+    def get_id(cls, pydesc_obj):
+        """Return PyMOL id of given object or raise KeyError."""
         try:
             return cls.desc2mol[pydesc_obj]
         except KeyError:
-            raise KeyError(f"Structure {pydesc_obj} is not registered (was it never "
-                           f"drawn or drawn and removed?).")
+            raise KeyError(
+                f"Structure {pydesc_obj} is not registered (was it never "
+                f"drawn or drawn and removed?)."
+            )
 
     @classmethod
-    def get_structure_or_parent_name(cls, pydesc_obj):
+    def get_structure_or_parent_id(cls, pydesc_obj):
+        """Return id of given object or structure its derived from (or raise
+        KeyError)."""
         try:
-            return cls.get_name(pydesc_obj)
+            return cls.get_id(pydesc_obj)
         except KeyError:
-            return cls.get_name(pydesc_obj.derived_from)
-
-
-if __name__ == "pydesc.descmol":
-    pass
+            return cls.get_id(pydesc_obj.derived_from)
