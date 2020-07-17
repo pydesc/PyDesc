@@ -48,7 +48,7 @@ class ContactCriterion(metaclass=ABCMeta):
         mers1 = self.selection1.create_structure(structure_obj)
         mers2 = self.selection2.create_structure(structure_obj)
 
-        total_len = len(structure_obj)
+        total_len = structure_obj.converter.get_max_ind()
         contact_map = dok_matrix((total_len, total_len), dtype=numpy.uint8)
         contact_map = self._fill_contact_matrix(mers1, mers2, contact_map)
 

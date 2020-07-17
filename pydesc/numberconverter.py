@@ -264,6 +264,11 @@ class NumberConverter:
         """
         self.ind2pdb = ids
         self.pdb2ind = {tuple(v): i for i, v in enumerate(self.ind2pdb)}
+        self.last = len(ids)
+
+    def get_max_ind(self):
+        """Return the greatest stored ind."""
+        return self.last
 
     def get_pdb_id(self, ind):
         """Returns list of PDB-id tuples.

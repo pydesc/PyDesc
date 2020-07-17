@@ -61,7 +61,6 @@ class ContactMap:
         subclass for which contact map is to be created.
         """
         self.structure = structure
-        self.frame = None
         self._contacts = contacts_mtx
 
     def __iter__(self):
