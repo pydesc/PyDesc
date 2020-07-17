@@ -23,6 +23,7 @@ Pre-defined, ready to use criteria are stored in `criteria.py` submodule.
 """
 
 import re
+from copy import deepcopy
 from abc import ABCMeta
 from abc import abstractmethod
 
@@ -51,8 +52,6 @@ class ContactCriterion(metaclass=ABCMeta):
         Args:
             selection1: selection instance. By default Everything selection is set.
             selection2: selection instance. By default Everything selection is set.
-
-        Returns:
 
         """
         self.selection1 = selection1
@@ -192,6 +191,9 @@ class CombinedContact(ContactCriterion):
     """Abstract class, criteria obtained via logical operations on contact
     criteria.
 
+    During initialization all sub criteria are deeply copied, so they should be
+    lightweight.
+
     Args:
         any number of other criteria.
 
@@ -202,8 +204,26 @@ class CombinedContact(ContactCriterion):
         if n_criteria < 2:
             raise AttributeError("Need at least two criteria to combine.")
         self.n_criteria = n_criteria
-        self.criteria = criteria_objs
+        self.criteria = [deepcopy(criterion) for criterion in criteria_objs]
         super().__init__()
+
+    def set_selections(self, selection1, selection2):
+        """Set selections for this complex criterion.
+
+        It also combines those selections with selections of all sub criteria.
+
+        Args:
+            selection1: selection instance. By default Everything selection is set.
+            selection2: selection instance. By default Everything selection is set.
+
+        """
+        super().set_selections(selection1, selection2)
+        for criterion in self.criteria:
+            selection1 = criterion.selection1
+            selection2 = criterion.selection2
+            selection1 *= self.selection1
+            selection2 *= self.selection2
+            criterion.set_selections(selection1, selection2)
 
     def _repr_operation(self):
         """Returns regular expression operation to be used in __repr__ and __str__."""
@@ -228,13 +248,25 @@ class ContactsConjunction(CombinedContact):
 
     def __init__(self, *criteria_objs):
         super().__init__(*criteria_objs)
-        selection1 = criteria_objs[0].selection1
-        selection2 = criteria_objs[0].selection2
-        for criterion_obj in criteria_objs[1:]:
+
+    def set_selections(self, selection1, selection2):
+        """Set selection for this complex selection.
+
+        Since all criteria have to be satisfied, it prepares new selections as
+        intersection of selections of all sub criteria and its own selection, and sets
+        those intersections in sub criteria.
+
+        Args:
+            selection1: selection instance. By default Everything selection is set.
+            selection2: selection instance. By default Everything selection is set.
+
+        """
+        super().set_selections(selection1, selection2)
+        for criterion_obj in self.criteria:
             selection1 *= criterion_obj.selection1
             selection2 *= criterion_obj.selection2
-        self.selection1 = selection1
-        self.selection2 = selection2
+        for criterion in self.criteria:
+            criterion.set_selections(selection1, selection2)
 
     def calculate_contacts(self, structure_obj):
         """Calculate conjunction of stored criteria.
@@ -258,7 +290,13 @@ class ContactsConjunction(CombinedContact):
 
 
 class ContactsAlternative(CombinedContact):
-    """Alternative of contact criteria."""
+    """Alternative of contact criteria.
+
+    It also combines its own selections with selections of each sub criterion. For
+    example setting selections in alternative to limited to two different chains
+    will calculate only contacts between those chains for each sub criterion as well.
+
+    """
 
     def calculate_contacts(self, structure_obj):
         """Calculate alternative of stored criteria.
