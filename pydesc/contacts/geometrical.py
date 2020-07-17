@@ -67,12 +67,12 @@ class DistancesDifferenceCriterion(ContactCriterion):
 
         difference_mtx = dist1_mtx - dist2_mtx
 
-        possible_contacts = difference_mtx <= (self.threshold + self.margin)
+        possible_contacts = difference_mtx >= (self.threshold - self.margin)
         points1_indexes, points2_indexes = numpy.where(possible_contacts)
         inds1, inds2 = mer_inds1[points1_indexes], mer_inds2[points2_indexes]
         matrix[inds1, inds2] = 1
 
-        sure_contacts = difference_mtx <= (self.threshold - self.margin)
+        sure_contacts = difference_mtx >= (self.threshold + self.margin)
         points1_indexes, points2_indexes = numpy.where(sure_contacts)
         inds1, inds2 = mer_inds1[points1_indexes], mer_inds2[points2_indexes]
         matrix[inds1, inds2] = 2

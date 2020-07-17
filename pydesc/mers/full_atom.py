@@ -170,6 +170,7 @@ class Residue(MerChainable):
             c_2_ca = self.atoms["C"] - self.atoms["CA"]
             average_ca_cb_distance = 1.53
             cbx = (n_2_ca + c_2_ca).get_unit_vector() * (average_ca_cb_distance + 1)
+            cbx = self.ca.vector + cbx
         else:
             try:
                 ca = self.atoms["CA"].vector
