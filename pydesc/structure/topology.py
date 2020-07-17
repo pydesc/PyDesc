@@ -68,7 +68,7 @@ class AbstractStructure(metaclass=ABCMeta):
         If given mers contained in two added structures are subsequent mers
         - Segment is returned.
         """
-        if self.derived_from == structure_obj.derived_from:
+        if self.derived_from != structure_obj.derived_from:
             msg = "Only substructures coming from the same source can be added."
             raise ValueError(msg)
         mers = set(list(self) + list(structure_obj))
@@ -575,7 +575,7 @@ class ElementChainable(AbstractElement, Segment):
         if not length % 2 == 1:
             raise ValueError("Length of chainable element should be odd.")
         msg = "Cannot create chainable element for mer %i." % mer.ind
-        for dummy_step in range(length // 2):
+        for _ in range(length // 2):
             start = self._mers[0]
             end = self._mers[-1]
             try:

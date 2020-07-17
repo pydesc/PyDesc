@@ -30,11 +30,9 @@ import scipy.spatial
 import pydesc.mers.full_atom as mers
 from pydesc.config import ConfigManager
 from pydesc.warnexcept import CannotCalculateContact
-from .base import check_type
 from .base import ContactCriterion
 from .base import ContactsAlternative
 from .base import ContactsConjunction
-from .base import for_monomer_type_only
 
 # pylint: disable=no-member
 ConfigManager.new_branch("contacts")
@@ -70,7 +68,6 @@ ConfigManager.contacts.set_default("prc_contact_distance", 7.5)
 ConfigManager.contacts.set_default("prc_contact_undecidable_range", 0.0)
 ConfigManager.contacts.set_default("cacbx_contact_distance", 0.75)
 ConfigManager.contacts.set_default("cacbx_undecidable_range", 0.05)
-
 
 # pylint: enable=no-member
 
