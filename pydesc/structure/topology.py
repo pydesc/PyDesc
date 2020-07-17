@@ -68,7 +68,7 @@ class AbstractStructure(metaclass=ABCMeta):
         If given mers contained in two added structures are subsequent mers
         - Segment is returned.
         """
-        if self.derived_from == structure_obj.derived_from:
+        if self.derived_from != structure_obj.derived_from:
             msg = "Only substructures coming from the same source can be added."
             raise ValueError(msg)
         mers = set(list(self) + list(structure_obj))
