@@ -88,7 +88,8 @@ class ContactMap:
              values are present (1 or 2).
 
         """
-        return list(self._contacts[mer_id].items())
+        contacts = [(ind, value) for (_, ind), value in self._contacts[mer_id].items()]
+        return contacts
 
     def get_contact_value(self, mer_id1, mer_id2):
         """Return value of contact between mers of two given inds.
