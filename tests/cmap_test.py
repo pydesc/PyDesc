@@ -28,6 +28,7 @@ def test_rc_contact_map(structure_file_w_type):
             assert length < 10
 
 
+@pytest.mark.system
 def test_golden_standard_pydesc_criterion_protein(protein_file, cmaps_dir):
     fname = os.path.split(protein_file)[1]
     structure_name = os.path.splitext(fname)[0]
@@ -45,6 +46,7 @@ def test_golden_standard_pydesc_criterion_protein(protein_file, cmaps_dir):
     assert golden_cmap_dict == res
 
 
+@pytest.mark.system
 def test_golden_standard_rc_protein(protein_file, cmaps_dir):
     fname = os.path.split(protein_file)[1]
     structure_name = os.path.splitext(fname)[0]

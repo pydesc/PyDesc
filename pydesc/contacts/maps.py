@@ -24,12 +24,13 @@ created: 28.04.2014 - , Tymoteusz 'hert' Oleniecki
 from scipy.sparse import dok_matrix
 
 from pydesc.selection import Everything
+from pydesc.contacts.criteria import DEFAULT_PROTEIN
 
 
 class ContactMapCalculator:
     """Class responsible for calculating contact maps."""
 
-    def __init__(self, structure_obj, contact_criterion_obj):
+    def __init__(self, structure_obj, contact_criterion_obj=DEFAULT_PROTEIN):
         self.contact_criterion = contact_criterion_obj
         self.structure = structure_obj
 
