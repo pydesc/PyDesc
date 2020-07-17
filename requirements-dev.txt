@@ -1,4 +1,5 @@
 black==19.10b0
+md-toc==7.0.3
 mock==4.0.2
 pep8==1.7.1
 pylint==2.5.0
