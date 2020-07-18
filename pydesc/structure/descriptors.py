@@ -123,14 +123,14 @@ class DescriptorBuilder(metaclass=ABCMeta):
         central_mer = element_obj.central_monomer
         contacts_ = sorted(contact_map.get_mer_contacts(central_mer.ind))
 
-        def create_contact(input_):
+        def create_contact(payload):
             """Returns Contact or None if failed to create one.
 
             Argument:
             input_ -- tuple containing: ind_1, ind_2 -- mers inds, value --
             contact value.
             """
-            ((ind_1, ind_2), value) = input_
+            ind_2, value = payload
             try:
                 element_1 = ElementFactory.build(central_mer, stc)
                 element_2 = ElementFactory.build(stc[ind_2], stc)

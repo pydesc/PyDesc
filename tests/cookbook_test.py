@@ -36,7 +36,7 @@ def fill_section_branch(branch_dct, lvl, lines):
             continue
         clvl = line.count("#")
         if clvl <= lvl:
-            return lines[n - 1:]
+            return lines[n - 1 :]
         sub_branch_dct = {"text": []}
         branch_dct[line] = sub_branch_dct
         lines = fill_section_branch(sub_branch_dct, clvl, lines[n:])
@@ -102,8 +102,7 @@ class ExecutableTest:
             exec(self.code)
         except Exception:
             e_msg = traceback.format_exc()
-            msg = f"Failed test with code:\n{self.code}\n" \
-                  f"Error:\n{e_msg}"
+            msg = f"Failed test with code:\n{self.code}\n" f"Error:\n{e_msg}"
             raise CookbookTestFail(msg)
 
 

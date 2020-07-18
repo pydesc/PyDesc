@@ -15,30 +15,31 @@
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Classes that deal with contacts among mers present in PyDesc (sub)structures.
-
-created: 28.04.2014 - , Tymoteusz 'hert' Oleniecki
-"""
+"""Contact maps and auxiliary classes providing method to create maps."""
 
 from scipy.sparse import dok_matrix
 
-from pydesc.selection import Everything
-from pydesc.contacts.criteria import DEFAULT_PROTEIN
-
 
 class ContactMapCalculator:
-    """Class responsible for calculating contact maps."""
+    """Class responsible for calculating contact maps.
 
-    def __init__(self, structure_obj, contact_criterion_obj=DEFAULT_PROTEIN):
-        self.contact_criterion = contact_criterion_obj
-        self.structure = structure_obj
+    Args:
+        structure: structure instance.
+        contact_criterion: instance of contact criterion.
+
+    """
+
+    def __init__(self, structure, contact_criterion):
+        self.contact_criterion = contact_criterion
+        self.structure = structure
 
     def calculate_contact_map(self):
-        """Return ContactMap for structure set during initialization.
+        """Perform calculation of contact map for structure passed to initialization.
 
-        Contact is a tuple containing first and second Monomer, distance(s)
-        between them and a contact value under the ContactMap criterion.
+        Returns:
+            ContactMap: object storing values of all contacts defined by contact
+            criterion.
+
         """
         contacts_mtx = self.contact_criterion.calculate_contacts(self.structure)
         contacts_mtx = dok_matrix(contacts_mtx)
@@ -48,27 +49,24 @@ class ContactMapCalculator:
 
 
 class ContactMap:
-    """Map of contacts present in a given (sub)structure."""
+    """Map of contacts present in a given (sub)structure.
+
+    Args:
+        contacts_mtx(scipy.sparse.dok_matrix): matrix storing contact values.
+        structure: instance of structure or substructure.
+
+    """
 
     def __init__(self, contacts_mtx, structure):
-        """ContactMap constructor.
-
-        Arguments:
-        contacts_mtx -- sparse dict-like contact matrix representing
-        contacts in biopolymer. 2 indicates contact,
-        1 -- plausible contact.
-        structure -- instance of any pydesc.structure.AbstractStructure
-        subclass for which contact map is to be created.
-        """
         self.structure = structure
         self._contacts = contacts_mtx
 
     def __iter__(self):
-        """Returns iterator that runs over all contacts in contact map."""
+        """Returns iterator that runs over all non-zero contacts in contact map."""
         return iter(list(self._contacts.items()))
 
     def __len__(self):
-        """Return length of self._contacts dok_matrix keys list."""
+        """Return number of non-zero contacts in this contact map."""
         return len(self._contacts)
 
     def __getitem__(self, item):
@@ -78,36 +76,39 @@ class ContactMap:
             return self.get_mer_contacts(item)
 
     def get_mer_contacts(self, mer_id):
-        """Returns list of given monomer contacts.
+        """Get values of non-zero contacts of mer with given ind.
 
-        Contact is a tuple containing given monomer ind, ind of monomer that
-        stays in contacts with it and contact value in three-valued logic.
-        Distance evaluation is based on settings in configuration manager.
+        Args:
+             mer_id(int): mer ind.
 
-        Arguments:
-        mer_id -- monomer instance, PDB_id instance (or tuple containing
-        proper values; see number converter docstring for more information),
-        PyDesc ind or monomer index on a list of structure mers.
+        Returns:
+             : sequence of tuples storing mer inds and contact values. Only non-zero
+             values are present (1 or 2).
+
         """
-        return list(self._contacts[mer_id].items())
+        contacts = [(ind, value) for (_, ind), value in self._contacts[mer_id].items()]
+        return contacts
 
     def get_contact_value(self, mer_id1, mer_id2):
-        """Returns value of contact between two given mers according to
-        three-valued logic.
+        """Return value of contact between mers of two given inds.
 
-        Arguments:
-        mer_id1 -- reference to first monomer in contact which value is to
-        be checked. Reference could be:
-        monomer instance itself, its PyDesc ind, its PDB_id instance (or
-        tuple containing proper values; see number converter docstring for
-        more information) or monomer index on a list of structure mers.
-        mer_id2 -- reference to second monomer corresponding to mer_id1.
+        Args:
+            mer_id1(int): ind of first mer.
+            mer_id2(int): ind of second mer.
+
+        Returns:
+            int: contact values (0, 1 or 2).
+
         """
         return self._contacts[mer_id1, mer_id2]
 
     def to_string(self, stream_out):
-        """Dumps pairs of mers in contacts to a given file-like object in
-        CSV format."""
+        """Dumps pairs of mers in contacts to a given file-like object in CSV format.
+
+        Args:
+          stream_out: file-like object (opened file or StringIO etc.).
+
+        """
         converter = self.structure.converter
         with stream_out:
             for (ind1, ind2), value in self:
@@ -115,75 +116,3 @@ class ContactMap:
                 pdb_id2 = converter.get_pdb_id(ind2)
                 line = f"{pdb_id1}\t{pdb_id2}\t{value}\n"
                 stream_out.write(line)
-
-
-class FrequencyContactMap:
-    """Class representing maps of contact frequencies in trajectories or NMR
-    structures.
-    """
-
-    def __init__(
-        self,
-        structures,
-        contact_criterion_obj=None,
-        ignore1=True,
-        select1=Everything(),
-        select2=Everything(),
-    ):
-        """Initialize ContactMap.
-
-        Arguments:
-        structures -- list of pydesc.structure.AbstractStructure subclass
-        instances representing the same structure.
-        contact_criterion_obj -- instance of
-        pydesc.contacts.ContactCriterion determining how to calculate
-        contacts. Initially set to None.
-        If so, contact for residues is based on ca-cbx criterion,
-        and contact for nucleotides is based on ion contact or ring center
-        contact.
-        ignore1 -- bool; determines if contact value 1 is to be treated as
-        0 (True) or 2 (False).
-        select1, select2 -- pydesc.selection.Selection subclass instances to be
-        used in contact map calculation against each other.
-        By default Everything selection is used.
-        """
-        self.contact_criterion = contact_criterion_obj
-        self.selA = select1
-        self.selB = select2
-        self.stcA = select1.create_structure(structures[0])
-        self.stcB = select2.create_structure(structures[0])
-        self.contacts = None
-        self.structures = structures
-        self.ignore = ignore1
-
-    def __iter__(self):
-        return iter(
-            [
-                (list(self.stcA)[i].ind, list(self.stcB)[j].ind, v)
-                for i, j, v in list(self.contacts.items())
-            ]
-        )
-
-    @property
-    def frames(self):
-        """Returns number of trajectory frames."""
-        return len(self.structures)
-
-    # TODO: create FCM calculator and transfer this there
-    def calculate_frequencies(self):
-        def get_value(val):
-            """Returns value depended on self.ignore."""
-            if self.ignore:
-                return int(val == 2)
-            return int(bool(val))
-
-        for stc in self.structures:
-            cmap_calculator = ContactMapCalculator(
-                stc, self.contact_criterion, self.selA, self.selB
-            )
-            cmap = cmap_calculator.calculate_contact_map()
-            new_mtx = cmap_calculator.get_as_sparse_mtx(get_value)
-            try:
-                self.contacts += new_mtx
-            except TypeError:
-                self.contacts = new_mtx

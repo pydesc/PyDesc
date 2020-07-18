@@ -1,7 +1,12 @@
-"""
-Classes that deal with contacts among mers present in PyDesc (sub)structures.
+"""Module storing all sort of objects responsible for contact maps calculation.
 
-created: 28.04.2014 - , Tymoteusz 'hert' Oleniecki
+Submodules:
+    base: base for contact criteria and auxiliary classes like combined criteria.
+    geometrical: contact criteria based on some geometrical features of mers.
+    maps: contact and frequency maps and classes related with their calculations.
+
+    criteria: ready-to-use criteria.
+
 """
 
 from pydesc.contacts.base import *
