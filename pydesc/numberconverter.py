@@ -252,7 +252,9 @@ class NumberConverterFactory:
             mers = [mer for mer in mers if not self._is_solvent(mer.get_resname())]
             models_ids.append([id_factory(mer) for mer in mers])
 
-        if len(models_ids) > 1:
+        # check if pdb ids coming from different models are the same
+        different_sets = len(set(map(frozenset, models_ids)))
+        if different_sets > 1:
             models_ids = perform_smith_waterman(models_ids)
             models_ids = [[PDBid(i) for i in models_ids]]
 
