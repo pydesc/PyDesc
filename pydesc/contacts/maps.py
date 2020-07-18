@@ -19,8 +19,6 @@
 
 from scipy.sparse import dok_matrix
 
-from pydesc.contacts.criteria import get_rc_distance_criterion
-
 
 class ContactMapCalculator:
     """Class responsible for calculating contact maps.
@@ -31,9 +29,7 @@ class ContactMapCalculator:
 
     """
 
-    def __init__(self, structure, contact_criterion=None):
-        if contact_criterion is None:
-            contact_criterion = get_rc_distance_criterion()
+    def __init__(self, structure, contact_criterion):
         self.contact_criterion = contact_criterion
         self.structure = structure
 

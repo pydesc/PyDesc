@@ -2,7 +2,7 @@ import os.path
 
 import pytest
 
-from pydesc.contacts.criteria import get_rc_distance_criterion
+from pydesc.api.criteria import get_rc_distance_criterion
 from pydesc.contacts.maps import ContactMapCalculator
 from pydesc.structure import StructureLoader
 from pydesc.structure.descriptors import DescriptorBuilderDriver
