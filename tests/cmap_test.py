@@ -18,8 +18,7 @@ def test_rc_contact_map(structure_file_w_type):
 
     for structure in structures:
         cm_calc = ContactMapCalculator(
-            structure=structure,
-            contact_criterion=get_rc_distance_criterion()
+            structure=structure, contact_criterion=get_rc_distance_criterion()
         )
         cm = cm_calc.calculate_contact_map()
         assert len(cm) > 0, "No contacts in structure %s" % str(structure)
@@ -43,7 +42,7 @@ def test_golden_standard_pydesc_criterion_protein(protein_file, cmaps_dir):
     cm = cm_calc.calculate_contact_map()
     res = {frozenset(k): v for k, v in list(cm._contacts.items())}
 
-    gly_inds = [i.ind for i in structure if i.name == 'GLY']
+    gly_inds = [i.ind for i in structure if i.name == "GLY"]
     res_no_gly = {k: v for k, v in res.items() if not any(j in gly_inds for j in k)}
     expected = {k: v for k, v in expected.items() if not any(j in gly_inds for j in k)}
 
@@ -62,8 +61,7 @@ def test_golden_standard_rc_protein(protein_file, cmaps_dir):
     structure = sl.load_structures(path=protein_file)[0]
 
     cm_calc = ContactMapCalculator(
-        structure=structure,
-        contact_criterion=get_rc_distance_criterion(),
+        structure=structure, contact_criterion=get_rc_distance_criterion(),
     )
     cm = cm_calc.calculate_contact_map()
 

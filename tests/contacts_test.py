@@ -6,8 +6,12 @@ from unittest.mock import MagicMock
 from scipy.sparse import dok_matrix
 
 from pydesc.contacts.geometrical import PointsDistanceCriterion
-from pydesc.contacts.base import ContactsAlternative, ContactsConjunction, \
-    ContactsExclusiveDisjunction, NotCriterion
+from pydesc.contacts.base import (
+    ContactsAlternative,
+    ContactsConjunction,
+    ContactsExclusiveDisjunction,
+    NotCriterion,
+)
 from pydesc.structure import StructureLoader
 
 
@@ -15,7 +19,7 @@ from pydesc.structure import StructureLoader
 def structure(structures_dir):
     sl = StructureLoader()
     path_str = os.path.join(structures_dir, "rna_only", "1KIS.pdb")
-    stc, = sl.load_structures(path=path_str)
+    (stc,) = sl.load_structures(path=path_str)
     return stc
 
 
@@ -58,11 +62,7 @@ def test_alternative(mocked_criteria):
 
     res = crit.calculate_contacts(structure)
 
-    expected_result = numpy.array(
-        [2, 2, 2,
-         2, 2, 1,
-         2, 1, 2]
-    ).reshape((3, 3))
+    expected_result = numpy.array([2, 2, 2, 2, 2, 1, 2, 1, 2]).reshape((3, 3))
 
     assert (res.toarray() == expected_result).all()
 
@@ -73,11 +73,7 @@ def test_conjunction(mocked_criteria):
 
     res = crit.calculate_contacts(structure)
 
-    expected_result = numpy.array(
-        [2, 1, 0,
-         0, 1, 0,
-         0, 0, 0]
-    ).reshape((3, 3))
+    expected_result = numpy.array([2, 1, 0, 0, 1, 0, 0, 0, 0]).reshape((3, 3))
 
     assert (res.toarray() == expected_result).all()
 
@@ -88,11 +84,7 @@ def test_exclusive_disjunction(mocked_criteria):
 
     res = crit.calculate_contacts(structure)
 
-    expected_result = numpy.array(
-        [0, 1, 2,
-         1, 1, 1,
-         2, 1, 2]
-    ).reshape((3, 3))
+    expected_result = numpy.array([0, 1, 2, 1, 1, 1, 2, 1, 2]).reshape((3, 3))
 
     assert (res.toarray() == expected_result).all()
 
