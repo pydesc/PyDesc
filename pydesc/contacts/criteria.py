@@ -23,17 +23,38 @@ from pydesc.contacts.geometrical import PointsDistanceCriterion
 from pydesc.mers.full_atom import Residue
 from pydesc.selection import MerSubclasses
 
-RESIDUE_SELECTION = MerSubclasses(Residue)
 
-CA_DISTANCE = PointsDistanceCriterion("ca", 6.0, 0.5)
-CA_DISTANCE.set_selections(RESIDUE_SELECTION, RESIDUE_SELECTION)
-CBX_DISTANCE = PointsDistanceCriterion("cbx", 6.5, 0.5)
-CBX_DISTANCE.set_selections(RESIDUE_SELECTION, RESIDUE_SELECTION)
-RC_DISTANCE = PointsDistanceCriterion("rc", 7.5, 0.5)
+def _get_residue_selection():
+    return MerSubclasses(Residue)
 
-CA_CBX_DISTANCE_DIFFERENCE = DistancesDifferenceCriterion("ca", "cbx", 0.75, 0.05)
-CA_CBX_DISTANCE_DIFFERENCE.set_selections(RESIDUE_SELECTION, RESIDUE_SELECTION)
 
-DEFAULT_PROTEIN = ContactsAlternative(
-    CA_DISTANCE, ContactsConjunction(CBX_DISTANCE, CA_CBX_DISTANCE_DIFFERENCE)
-)
+def get_ca_distance_criterion():
+    ca_distance = PointsDistanceCriterion("ca", 6.0, 0.5)
+    ca_distance.set_selection(_get_residue_selection())
+    return ca_distance
+
+
+def get_cbx_distance_criterion():
+    cbx_distance = PointsDistanceCriterion("cbx", 6.5, 0.5)
+    cbx_distance.set_selection(_get_residue_selection())
+    return cbx_distance
+
+
+def get_rc_distance_criterion():
+    return PointsDistanceCriterion("rc", 7.5, 0.5)
+
+
+def get_ca_cbx_vectors_difference_criterion():
+    ca_cbx_vectors_difference = DistancesDifferenceCriterion("ca", "cbx", 0.75, 0.05)
+    ca_cbx_vectors_difference.set_selection(_get_residue_selection())
+    return ca_cbx_vectors_difference
+
+
+def get_default_protein_criterion():
+    ca_distance = get_ca_distance_criterion()
+    cbx_distance = get_cbx_distance_criterion()
+    ca_cbx_vector_criterion = get_ca_cbx_vectors_difference_criterion()
+    criterion = ContactsAlternative(
+        ca_distance, ContactsConjunction(cbx_distance, ca_cbx_vector_criterion)
+    )
+    return criterion

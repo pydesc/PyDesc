@@ -4,8 +4,8 @@ import pickle
 import pytest
 
 from pydesc.config import ConfigManager
-from pydesc.contacts.criteria import DEFAULT_PROTEIN
-from pydesc.contacts.criteria import RC_DISTANCE
+from pydesc.contacts.criteria import get_default_protein_criterion
+from pydesc.contacts.criteria import get_rc_distance_criterion
 from pydesc.contacts.maps import ContactMapCalculator
 from pydesc.structure import StructureLoader
 
@@ -18,8 +18,8 @@ def test_rc_contact_map(structure_file_w_type):
 
     for structure in structures:
         cm_calc = ContactMapCalculator(
-            structure_obj=structure,
-            contact_criterion_obj=RC_DISTANCE
+            structure=structure,
+            contact_criterion=get_rc_distance_criterion()
         )
         cm = cm_calc.calculate_contact_map()
         assert len(cm) > 0, "No contacts in structure %s" % str(structure)
@@ -39,7 +39,7 @@ def test_golden_standard_pydesc_criterion_protein(protein_file, cmaps_dir):
     sl = StructureLoader()
     structure = sl.load_structures(path=protein_file)[0]
 
-    cm_calc = ContactMapCalculator(structure, DEFAULT_PROTEIN)
+    cm_calc = ContactMapCalculator(structure, get_default_protein_criterion())
     cm = cm_calc.calculate_contact_map()
     res = {frozenset(k): v for k, v in list(cm._contacts.items())}
 
@@ -62,8 +62,8 @@ def test_golden_standard_rc_protein(protein_file, cmaps_dir):
     structure = sl.load_structures(path=protein_file)[0]
 
     cm_calc = ContactMapCalculator(
-        structure_obj=structure,
-        contact_criterion_obj=RC_DISTANCE,
+        structure=structure,
+        contact_criterion=get_rc_distance_criterion(),
     )
     cm = cm_calc.calculate_contact_map()
 
@@ -77,7 +77,7 @@ def test_1no5_default_criteria_cmap():
     sl = StructureLoader()
     (structure,) = sl.load_structures("1no5")
 
-    cmc = ContactMapCalculator(structure, DEFAULT_PROTEIN)
+    cmc = ContactMapCalculator(structure, get_default_protein_criterion())
     cmap = cmc.calculate_contact_map()
 
     assert len(cmap) > 30

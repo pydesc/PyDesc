@@ -19,21 +19,23 @@
 
 from scipy.sparse import dok_matrix
 
-from pydesc.contacts.criteria import DEFAULT_PROTEIN
+from pydesc.contacts.criteria import get_rc_distance_criterion
 
 
 class ContactMapCalculator:
     """Class responsible for calculating contact maps.
 
     Args:
-        structure_obj: structure instance.
-        contact_criterion_obj: instance of contact criterion.
+        structure: structure instance.
+        contact_criterion: instance of contact criterion.
 
     """
 
-    def __init__(self, structure_obj, contact_criterion_obj=DEFAULT_PROTEIN):
-        self.contact_criterion = contact_criterion_obj
-        self.structure = structure_obj
+    def __init__(self, structure, contact_criterion=None):
+        if contact_criterion is None:
+            contact_criterion = get_rc_distance_criterion()
+        self.contact_criterion = contact_criterion
+        self.structure = structure
 
     def calculate_contact_map(self):
         """Perform calculation of contact map for structure passed to initialization.

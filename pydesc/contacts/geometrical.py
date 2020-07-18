@@ -57,16 +57,13 @@ class PointsDistanceCriterion(ContactCriterion):
     """
 
     def __str__(self):
-        return f"distance between {self.atom_name}"
+        return f"distance between {self.atom_name}s"
 
     def __init__(self, atom_name, threshold, margin):
         super().__init__()
         self.atom_name = atom_name
         self.threshold = threshold
         self.margin = margin
-
-    def _get_vector(self, mer):
-        return getattr(mer, self.atom_name).vector
 
     def _fill_contact_matrix(self, mers1, mers2, matrix):
         mer_inds1 = get_mer_inds(mers1)
