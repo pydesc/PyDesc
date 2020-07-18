@@ -142,6 +142,54 @@ def draw_contact_maps(contact_maps, structures=None, split_contacts=False, point
         cmd.color("orange", uncertain_map_name)
 
 
+def draw_pseudoatoms(structure, pseudoatom_name, anchor_name=None, split_objects=False):
+    """Draw pseudoatoms of choice.
+
+    Mers not having given pseudoatom are skipped.
+
+    Args:
+        structure: (sub)structure for which pseudoatoms should be drawn.
+        pseudoatom_name(str): name of pseudoatom to be drawn.
+        anchor_name(str): optional; name of (pseudoatom) to be an anchor. If anchor
+        name is given there will be drawn additional dash starting at anchor and
+        ending at pseudoatom.
+        split_objects(bool): False by default. If so, all created pseudoatoms are
+        single pymol object, otherwise each gets different name.
+
+    """
+    name, state = Registry.get_structure_or_parent_id(structure)
+    obj_name = f"{name}_{pseudoatom_name}"
+    for mer in structure:
+        pdb_id = structure.derived_from.converter.get_pdb_id(mer.ind)
+        pdb_str = pdb_id.format()
+        chain = pdb_id.chain
+        if split_objects:
+            obj_name = f"{name}_{pdb_id}_{pseudoatom_name}"
+        try:
+            vector = tuple(getattr(mer, pseudoatom_name).vector)
+        except AttributeError:
+            continue
+        pseudoatom_dct = {"state": state, "resi": pdb_str, "chain": chain}
+        psd_name = f"PSD{state}"
+        cmd.pseudoatom(obj_name, pos=vector, name=psd_name, **pseudoatom_dct)
+        if anchor_name is not None:
+            try:
+                vector = tuple(getattr(mer, anchor_name).vector)
+            except AttributeError:
+                continue
+            anc_name = f"ANC{state}"
+            cmd.pseudoatom(obj_name, pos=vector, name=anc_name, **pseudoatom_dct)
+            pseudoatom_selection = (
+                f"{obj_name} and resi {pdb_str} and name {psd_name} "
+                f"and chain {chain}"
+            )
+            anchor_selection = (
+                f"{obj_name} and resi {pdb_str} and name {anc_name} "
+                f"and chain {chain}"
+            )
+            cmd.bond(pseudoatom_selection, anchor_selection)
+
+
 def select(substructure, selection_name="sele"):
     """Create PyMOL selection based on given substructure.
 
