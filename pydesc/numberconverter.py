@@ -155,6 +155,14 @@ class PDBid(tuple):
         icode = "" if self.icode is None else self.icode
         return (chain + str(self.ind) + icode).strip()
 
+    def format(self, chain=False):
+        """Get id as string with or without chain."""
+        icode = self.icode or ""
+        string = f"{self.ind:d}{icode}"
+        if chain:
+            return f"{self.chain}:{string}"
+        return string
+
     @property
     def chain(self):
         """Chain ID"""
