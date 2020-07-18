@@ -94,7 +94,7 @@ def draw_contact(structure, ind1, ind2, point="rc", contact_name=None, gap=0.5):
     cmd.delete(p2n)
 
 
-def draw_contact_maps(contact_maps, split_contacts=False, point="rc"):
+def draw_contact_maps(contact_maps, structures=None, split_contacts=False, point="rc"):
     """Draw given contact maps.
 
     Draws two contact maps: one for contacts with contact value 2 only (sure contacts),
@@ -104,6 +104,7 @@ def draw_contact_maps(contact_maps, split_contacts=False, point="rc"):
 
     Args:
         contact_maps: list of pydesc contact maps.
+        structures: (optional) list of structures corresponding to contact maps.
         split_contacts(bool): determines if each contact is to be drawn as separate
         object. False by default.
         point(str): name of atom or pseudoatom to start and end contact lines at (
@@ -122,8 +123,11 @@ def draw_contact_maps(contact_maps, split_contacts=False, point="rc"):
                 print(msg % inp)
                 continue
 
-    for contact_map in contact_maps:
-        structure = contact_map.structure
+    for i, contact_map in enumerate(contact_maps):
+        if structures is None:
+            structure = contact_map.structure
+        else:
+            structure = structures[i]
         name, _ = Registry.get_structure_or_parent_id(structure)
         contacts_dct = {}
         for ind_pair, value in contact_map:
