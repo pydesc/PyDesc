@@ -57,6 +57,15 @@ class ContactCriterion(metaclass=ABCMeta):
         self.selection1 = selection1
         self.selection2 = selection2
 
+    def set_selection(self, selection):
+        """Set single selection determining for which mers contacts will be
+        calculated.
+
+        Calls set_selection with *selection* argument twice.
+
+        """
+        self.set_selections(selection, selection)
+
     def calculate_contacts(self, structure_obj):
         """Calculate all contacts in given structure.
         
