@@ -1,17 +1,15 @@
 import os.path
-import pytest
-import numpy
 from unittest.mock import MagicMock
 
+import numpy
+import pytest
 from scipy.sparse import dok_matrix
 
+from pydesc.contacts.base import ContactsAlternative
+from pydesc.contacts.base import ContactsConjunction
+from pydesc.contacts.base import ContactsExclusiveDisjunction
+from pydesc.contacts.base import NotCriterion
 from pydesc.contacts.geometrical import PointsDistanceCriterion
-from pydesc.contacts.base import (
-    ContactsAlternative,
-    ContactsConjunction,
-    ContactsExclusiveDisjunction,
-    NotCriterion,
-)
 from pydesc.structure import StructureLoader
 
 
@@ -29,14 +27,16 @@ def mocked_criteria():
     crit2 = MagicMock()
     crit3 = MagicMock()
     for crit in crit1, crit2, crit3:
-        crit.calculate_contacts.return_value = dok_matrix((3, 3), dtype=numpy.uint8)
-    crit1.calculate_contacts.return_value[:, 0] = 2
-    crit1.calculate_contacts.return_value[:, 1] = 1
-    crit2.calculate_contacts.return_value[0, :] = 2
-    crit2.calculate_contacts.return_value[1, :] = 1
-    crit3.calculate_contacts.return_value.setdiag(2)
-    crit3.calculate_contacts.return_value[0, 1] = 1
-    crit3.calculate_contacts.return_value[1, 2] = 1
+        crit.calculate_inter_contacts.return_value = dok_matrix(
+            (3, 3), dtype=numpy.uint8
+        )
+    crit1.calculate_inter_contacts.return_value[:, 0] = 2
+    crit1.calculate_inter_contacts.return_value[:, 1] = 1
+    crit2.calculate_inter_contacts.return_value[0, :] = 2
+    crit2.calculate_inter_contacts.return_value[1, :] = 1
+    crit3.calculate_inter_contacts.return_value.setdiag(2)
+    crit3.calculate_inter_contacts.return_value[0, 1] = 1
+    crit3.calculate_inter_contacts.return_value[1, 2] = 1
 
     return crit1, crit2, crit3
 
@@ -91,15 +91,12 @@ def test_exclusive_disjunction(mocked_criteria):
 
 def test_not(mocked_criteria):
     structure = MagicMock()
+    structure.derived_from.converter.get_max_ind.return_value = 3
     crit = mocked_criteria[0]
     not_crit = NotCriterion(crit)
 
     res = not_crit.calculate_contacts(structure)
 
-    tmp_res = crit.calculate_contacts(structure)
-    expected_res = dok_matrix((3, 3))
-    expected_res[tmp_res == 2] = 0
-    expected_res[tmp_res == 1] = 1
-    expected_res[tmp_res == 0] = 2
+    expected_res = numpy.array([0, 1, 2, 0, 1, 2, 0, 1, 2]).reshape((3, 3))
 
-    assert (res.toarray() == expected_res.toarray()).all()
+    assert (res.toarray() == expected_res).all()

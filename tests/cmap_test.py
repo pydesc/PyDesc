@@ -3,9 +3,9 @@ import pickle
 
 import pytest
 
-from pydesc.config import ConfigManager
 from pydesc.api.criteria import get_default_protein_criterion
 from pydesc.api.criteria import get_rc_distance_criterion
+from pydesc.config import ConfigManager
 from pydesc.contacts.maps import ContactMapCalculator
 from pydesc.structure import StructureLoader
 

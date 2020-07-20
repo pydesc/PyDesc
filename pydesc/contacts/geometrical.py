@@ -59,6 +59,9 @@ class PointsDistanceCriterion(ContactCriterion):
     def __str__(self):
         return f"distance between {self.atom_name}s"
 
+    def __repr__(self):
+        return f"<PointsDistanceCriterion based on {self.atom_name} distances>"
+
     def __init__(self, atom_name, threshold, margin):
         super().__init__()
         self.atom_name = atom_name
@@ -105,6 +108,12 @@ class DistancesDifferenceCriterion(ContactCriterion):
 
     def __str__(self):
         return f"distance difference between {self.point1} and {self.point2}"
+
+    def __repr__(self):
+        return (
+            f"<DistanceDifferenceCriterion based on difference between "
+            f"distances of {self.point1}s and {self.point2}s>"
+        )
 
     def __init__(self, point1, point2, threshold, margin):
         super().__init__()

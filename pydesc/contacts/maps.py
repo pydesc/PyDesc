@@ -29,9 +29,10 @@ class ContactMapCalculator:
 
     """
 
-    def __init__(self, structure, contact_criterion):
+    def __init__(self, structure, contact_criterion, selections=(None, None)):
         self.contact_criterion = contact_criterion
         self.structure = structure
+        self.selection1, self.selection2 = selections
 
     def calculate_contact_map(self):
         """Perform calculation of contact map for structure passed to initialization.
@@ -41,7 +42,14 @@ class ContactMapCalculator:
             criterion.
 
         """
-        contacts_mtx = self.contact_criterion.calculate_contacts(self.structure)
+        if self.selection1 is not None:
+            structure1 = self.selection1.create_structure(self.structure)
+            structure2 = self.selection2.create_structure(self.structure)
+            contacts_mtx = self.contact_criterion.calculate_inter_contacts(
+                structure1, structure2
+            )
+        else:
+            contacts_mtx = self.contact_criterion.calculate_contacts(self.structure)
         contacts_mtx = dok_matrix(contacts_mtx)
         contacts_mtx.setdiag(0)
 
