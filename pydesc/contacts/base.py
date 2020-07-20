@@ -23,9 +23,6 @@ Pre-defined, ready to use criteria are stored in `criteria.py` submodule.
 """
 
 import re
-from copy import deepcopy
-from abc import ABCMeta
-from abc import abstractmethod
 
 import numpy
 from scipy.sparse import dok_matrix
@@ -33,12 +30,13 @@ from scipy.sparse import dok_matrix
 from pydesc.selection import Everything
 
 
-class ContactCriterion(metaclass=ABCMeta):
+class ContactCriterion:
     """Abstract criterion, base for all other criteria."""
 
     def __init__(self):
         self.selection1 = Everything()
         self.selection2 = Everything()
+        self.asymmetric = False
 
     def set_selections(self, selection1, selection2):
         """Set selections determining for which mers contacts will be calculated.
@@ -56,6 +54,7 @@ class ContactCriterion(metaclass=ABCMeta):
         """
         self.selection1 = selection1
         self.selection2 = selection2
+        self.asymmetric = True
 
     def set_selection(self, selection):
         """Set single selection determining for which mers contacts will be
@@ -65,6 +64,7 @@ class ContactCriterion(metaclass=ABCMeta):
 
         """
         self.set_selections(selection, selection)
+        self.asymmetric = False
 
     def calculate_contacts(self, structure_obj):
         """Calculate all contacts in given structure.
@@ -92,6 +92,34 @@ class ContactCriterion(metaclass=ABCMeta):
         total_len = structure_obj.derived_from.converter.get_max_ind()
         contact_map = dok_matrix((total_len, total_len), dtype=numpy.uint8)
         contact_map = self._fill_contact_matrix(mers1, mers2, contact_map)
+
+        return contact_map
+
+    def calculate_inter_contacts(self, structure1, structure2):
+        """
+
+        Args:
+            structure1:
+            structure2:
+
+        Returns:
+
+        """
+        mers1 = self.selection1.create_structure(structure1)
+        mers2 = self.selection2.create_structure(structure2)
+
+        if structure1.derived_from is not structure2.derived_from:
+            raise ValueError("Both given sub structures have to be part of the same "
+                             "structure")
+        total_len = structure1.derived_from.converter.get_max_ind()
+        contact_map = dok_matrix((total_len, total_len), dtype=numpy.uint8)
+        contact_map = self._fill_contact_matrix(mers1, mers2, contact_map)
+
+        if self.asymmetric:
+            mers1 = self.selection1.create_structure(structure2)
+            mers2 = self.selection2.create_structure(structure1)
+
+            contact_map = self._fill_contact_matrix(mers1, mers2, contact_map)
 
         return contact_map
 
@@ -154,7 +182,6 @@ class ContactCriterion(metaclass=ABCMeta):
         criterion"""
         return ContactsExclusiveDisjunction(self, other)
 
-    @abstractmethod
     def __str__(self):
         return "contact criterion"
 
@@ -176,35 +203,19 @@ class NotCriterion(ContactCriterion):
         super().__init__()
         self.set_selections(criterion.selection1, criterion.selection2)
 
-    def calculate_contacts(self, structure_obj):
-        """Calculate contacts and return value matrix.
-
-        Overwrites superclass method.
-        Calculates contacts using criterion to negate and returns negative (in
-        three-value logic) matrix.
-
-        Args:
-            structure_obj: structure instance.
-
-        Returns:
-            scipy.sparse.dok_matrix: matrix of contact values in given structure.
-
-        """
-        contact_map = self.criterion.calculate_contacts(structure_obj)
-        new = (contact_map.todense().astype(numpy.int8) - 1) * -1 + 1
-        return dok_matrix(new)
-        # TODO: there should be better way than changing to dense
+    def _fill_contact_matrix(self, mers1, mers2, matrix):
+        matrix[:, :] = 2
+        contact_map = self.criterion.calculate_inter_contacts(mers1, mers2)
+        matrix = dok_matrix(matrix + (-1 * contact_map), dtype=numpy.uint8)
+        return matrix
 
 
 class CombinedContact(ContactCriterion):
     """Abstract class, criteria obtained via logical operations on contact
     criteria.
 
-    During initialization all sub criteria are deeply copied, so they should be
-    lightweight.
-
     Args:
-        any number of other criteria.
+        : any number of other criteria.
 
     """
 
@@ -213,26 +224,8 @@ class CombinedContact(ContactCriterion):
         if n_criteria < 2:
             raise AttributeError("Need at least two criteria to combine.")
         self.n_criteria = n_criteria
-        self.criteria = [deepcopy(criterion) for criterion in criteria_objs]
+        self.criteria = criteria_objs
         super().__init__()
-
-    def set_selections(self, selection1, selection2):
-        """Set selections for this complex criterion.
-
-        It also combines those selections with selections of all sub criteria.
-
-        Args:
-            selection1: selection instance. By default Everything selection is set.
-            selection2: selection instance. By default Everything selection is set.
-
-        """
-        super().set_selections(selection1, selection2)
-        for criterion in self.criteria:
-            selection1 = criterion.selection1
-            selection2 = criterion.selection2
-            selection1 *= self.selection1
-            selection2 *= self.selection2
-            criterion.set_selections(selection1, selection2)
 
     def _repr_operation(self):
         """Returns regular expression operation to be used in __repr__ and __str__."""
@@ -243,8 +236,7 @@ class CombinedContact(ContactCriterion):
 
     def __repr__(self):
         self_repr = self._repr_operation().capitalize()
-        sub_criteria_repr = " and ".join(map(str, self.criteria))
-        return f"<{self_repr} of criteria based on {sub_criteria_repr}>"
+        return f"<{self_repr} of {self.n_criteria} contact criteria>"
 
     def __str__(self):
         self_repr = self._repr_operation()
@@ -258,72 +250,21 @@ class ContactsConjunction(CombinedContact):
     def __init__(self, *criteria_objs):
         super().__init__(*criteria_objs)
 
-    def set_selections(self, selection1, selection2):
-        """Set selection for this complex selection.
-
-        Since all criteria have to be satisfied, it prepares new selections as
-        intersection of selections of all sub criteria and its own selection, and sets
-        those intersections in sub criteria.
-
-        Args:
-            selection1: selection instance. By default Everything selection is set.
-            selection2: selection instance. By default Everything selection is set.
-
-        """
-        super().set_selections(selection1, selection2)
-        for criterion_obj in self.criteria:
-            selection1 *= criterion_obj.selection1
-            selection2 *= criterion_obj.selection2
-        for criterion in self.criteria:
-            criterion.set_selections(selection1, selection2)
-
-    def calculate_contacts(self, structure_obj):
-        """Calculate conjunction of stored criteria.
-
-        Value of 2 meant that all criteria were surely satisfied, while value of 0
-        means that at least one criterion was not satisfied. 1 indicates that at
-        least one criterion was uncertainly satisfied, while rest was surely satisfied.
-
-        Args:
-            structure_obj: structure instance.
-
-        Returns:
-            scipy.sparse: matrix of contact values for given structure.
-
-        """
-        contact_map = self.criteria[0].calculate_contacts(structure_obj)
+    def _fill_contact_matrix(self, mers1, mers2, matrix):
+        contact_map = self.criteria[0].calculate_inter_contacts(mers1, mers2)
         for criterion in self.criteria[1:]:
-            new_map = criterion.calculate_contacts(structure_obj)
+            new_map = criterion.calculate_inter_contacts(mers1, mers2)
             contact_map = contact_map.minimum(new_map)
         return contact_map
 
 
 class ContactsAlternative(CombinedContact):
-    """Alternative of contact criteria.
+    """Alternative of contact criteria."""
 
-    It also combines its own selections with selections of each sub criterion. For
-    example setting selections in alternative to limited to two different chains
-    will calculate only contacts between those chains for each sub criterion as well.
-
-    """
-
-    def calculate_contacts(self, structure_obj):
-        """Calculate alternative of stored criteria.
-
-        Value of 2 means that at least one of given criteria was surely satisfied,
-        while 0 means that none of them was. 1 indicates that at least one criterion
-        was uncertainly satisfied, while rest was not satisfied.
-
-        Args:
-            structure_obj: structure instance.
-
-        Returns:
-            scipy.sparse: matrix of contact values for given structure.
-
-        """
-        contact_map = self.criteria[0].calculate_contacts(structure_obj)
+    def _fill_contact_matrix(self, mers1, mers2, matrix):
+        contact_map = self.criteria[0].calculate_inter_contacts(mers1, mers2)
         for criterion in self.criteria[1:]:
-            new_map = criterion.calculate_contacts(structure_obj)
+            new_map = criterion.calculate_inter_contacts(mers1, mers2)
             contact_map = contact_map.maximum(new_map)
         return contact_map
 
@@ -331,23 +272,12 @@ class ContactsAlternative(CombinedContact):
 class ContactsExclusiveDisjunction(CombinedContact):
     """Exclusive disjunction (xor) of contact criteria."""
 
-    def calculate_contacts(self, structure_obj):
-        """Calculate xor of stored criteria.
-
-        2 means that exactly one criterion was satisfied.
-
-        Args:
-            structure_obj: structure instance.
-
-        Returns:
-            scipy.sparse: matrix of contact values for given structure.
-
-        """
-        new_map = self.criteria[0].calculate_contacts(structure_obj)
+    def _fill_contact_matrix(self, mers1, mers2, matrix):
+        new_map = self.criteria[0].calculate_inter_contacts(mers1, mers2)
         count_ones = (new_map == 1).astype(numpy.uint8)
         count_twos = (new_map == 2).astype(numpy.uint8)
         for criterion in self.criteria[1:]:
-            new_map = criterion.calculate_contacts(structure_obj)
+            new_map = criterion.calculate_inter_contacts(mers1, mers2)
             count_ones += (new_map == 1).astype(numpy.uint8)
             count_twos += (new_map == 2).astype(numpy.uint8)
 
