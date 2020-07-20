@@ -109,8 +109,9 @@ class ContactCriterion:
         mers2 = self.selection2.create_structure(structure2)
 
         if structure1.derived_from is not structure2.derived_from:
-            raise ValueError("Both given sub structures have to be part of the same "
-                             "structure")
+            raise ValueError(
+                "Both given sub structures have to be part of the same " "structure"
+            )
         total_len = structure1.derived_from.converter.get_max_ind()
         contact_map = dok_matrix((total_len, total_len), dtype=numpy.uint8)
         contact_map = self._fill_contact_matrix(mers1, mers2, contact_map)

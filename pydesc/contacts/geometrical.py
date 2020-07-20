@@ -110,8 +110,10 @@ class DistancesDifferenceCriterion(ContactCriterion):
         return f"distance difference between {self.point1} and {self.point2}"
 
     def __repr__(self):
-        return f"<DistanceDifferenceCriterion based on difference between " \
-               f"distances of {self.point1}s and {self.point2}s>"
+        return (
+            f"<DistanceDifferenceCriterion based on difference between "
+            f"distances of {self.point1}s and {self.point2}s>"
+        )
 
     def __init__(self, point1, point2, threshold, margin):
         super().__init__()

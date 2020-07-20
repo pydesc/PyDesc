@@ -27,8 +27,9 @@ def mocked_criteria():
     crit2 = MagicMock()
     crit3 = MagicMock()
     for crit in crit1, crit2, crit3:
-        crit.calculate_inter_contacts.return_value = dok_matrix((3, 3),
-                                                                dtype=numpy.uint8)
+        crit.calculate_inter_contacts.return_value = dok_matrix(
+            (3, 3), dtype=numpy.uint8
+        )
     crit1.calculate_inter_contacts.return_value[:, 0] = 2
     crit1.calculate_inter_contacts.return_value[:, 1] = 1
     crit2.calculate_inter_contacts.return_value[0, :] = 2

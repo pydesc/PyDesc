@@ -46,7 +46,8 @@ class ContactMapCalculator:
             structure1 = self.selection1.create_structure(self.structure)
             structure2 = self.selection2.create_structure(self.structure)
             contacts_mtx = self.contact_criterion.calculate_inter_contacts(
-                structure1, structure2)
+                structure1, structure2
+            )
         else:
             contacts_mtx = self.contact_criterion.calculate_contacts(self.structure)
         contacts_mtx = dok_matrix(contacts_mtx)
