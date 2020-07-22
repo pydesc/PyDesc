@@ -2,7 +2,7 @@ import numpy
 import scipy.linalg
 
 import pydesc.geometry
-from pydesc.chemistry.base import Mer
+from pydesc.chemistry.base import AtomSet
 from pydesc.chemistry.base import MerChainable
 from pydesc.chemistry.base import MerOther
 from pydesc.chemistry.base import Pseudoatom
@@ -11,7 +11,7 @@ from pydesc.chemistry.base import register_pseudoatom
 from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import NoConfiguration
 from pydesc.warnexcept import warn
-from pydesc.warnexcept import WrongMerType
+from pydesc.warnexcept import WrongAtomSetType
 
 norm = scipy.linalg.get_blas_funcs("nrm2")
 
@@ -176,9 +176,8 @@ class Residue(MerChainable):
                 ca = self.atoms["CA"].vector
                 cb = self.atoms["CB"].vector
             except KeyError:
-                raise IncompleteParticle(
-                    "Mer lacks CA or CB, cannot calculate residue's cbx."
-                )
+                msg = "AtomSet lacks CA or CB, cannot calculate cbx."
+                raise IncompleteParticle(msg)
             vec = cb - ca
             nrm = norm(vec)
             vec = vec * ((nrm + 1) / nrm)
@@ -302,7 +301,7 @@ class Ion(MerOther):
         """
         super(Ion, self).__init__(ind, name, chain, atoms)
         if len(self.atoms) != 1:
-            raise WrongMerType(
+            raise WrongAtomSetType(
                 "Failed to create Ion, given BioPython residue consists of "
                 "to many atoms."
             )
@@ -333,4 +332,4 @@ class Ligand(MerOther):
         super(Ligand, self).__init__(ind, name, chain, atoms)
 
 
-Mer.reset_config_cache()
+AtomSet.reset_config_cache()

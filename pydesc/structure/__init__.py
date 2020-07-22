@@ -12,8 +12,8 @@ import pydesc.dbhandler
 import pydesc.geometry
 from pydesc import warnexcept
 from pydesc.config import ConfigManager
-from pydesc.chemistry.factories import BioPythonMerFactory
-from pydesc.chemistry.factories import MDTrajMerFactory
+from pydesc.chemistry.factories import BioPythonAtomSetFactory
+from pydesc.chemistry.factories import MDTrajAtomSetFactory
 from pydesc.numberconverter import NumberConverterFactory
 from pydesc.structure.topology import Chain
 from pydesc.structure.topology import Structure
@@ -37,7 +37,7 @@ class StructureLoader:
         self,
         handler=pydesc.dbhandler.MetaHandler(),
         parser=pydesc.dbhandler.MetaParser(QUIET=True),
-        mer_factory=BioPythonMerFactory(),
+        mer_factory=BioPythonAtomSetFactory(),
     ):
         """Structure loader constructor.
 
@@ -187,7 +187,7 @@ class TrajectoryLoader:
         atoms. If None is given (default) -- assumes factory able to copy MDTraj mer
         factory."""
         if mer_proxy_factory is None:
-            mer_proxy_factory = MDTrajMerFactory()
+            mer_proxy_factory = MDTrajAtomSetFactory()
         self.mer_factory = mer_proxy_factory
 
     def load_trajectory(self, trajectory_path, structure_obj):

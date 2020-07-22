@@ -8,7 +8,7 @@ from Bio.PDB import DSSP
 import pydesc.dbhandler
 import pydesc.geometry
 from pydesc.config import ConfigManager
-from pydesc.chemistry.base import Mer
+from pydesc.chemistry.base import AtomSet
 from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import DiscontinuityError
 from pydesc.warnexcept import WrongElement
@@ -115,7 +115,7 @@ class AbstractStructure(metaclass=ABCMeta):
                 # if given parameter already is a PDB_id or a corresponding
                 # tuple instance
                 param = self.derived_from.converter.get_ind(param)
-            if isinstance(param, Mer):
+            if isinstance(param, AtomSet):
                 return self._mers.index(param)
             try:
                 # if parameter is an integer - it is probably monomer ind

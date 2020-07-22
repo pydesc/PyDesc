@@ -145,7 +145,7 @@ def draw_contact_maps(contact_maps, structures=None, split_contacts=False, point
 def draw_pseudoatoms(structure, pseudoatom_name, anchor_name=None, split_objects=False):
     """Draw pseudoatoms of choice.
 
-    Mers not having given pseudoatom are skipped.
+    AtomSets subclasses instances not having given pseudoatom are skipped.
 
     Args:
         structure: (sub)structure for which pseudoatoms should be drawn.

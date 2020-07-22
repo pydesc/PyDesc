@@ -21,11 +21,11 @@ from pydesc.contacts.base import ContactsConjunction
 from pydesc.contacts.geometrical import DistancesDifferenceCriterion
 from pydesc.contacts.geometrical import PointsDistanceCriterion
 from pydesc.chemistry.full_atom import Residue
-from pydesc.selection import MerSubclasses
+from pydesc.selection import AtomSetSubclass
 
 
 def _get_residue_selection():
-    return MerSubclasses(Residue)
+    return AtomSetSubclass(Residue)
 
 
 def get_ca_distance_criterion(threshold=6.0, margin=0.5):

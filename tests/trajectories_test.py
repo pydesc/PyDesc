@@ -5,7 +5,7 @@ from pydesc.api.trajectory import from_frames
 from pydesc.chemistry.factories import CopyingFactor
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
-from pydesc.selection import MerSubclasses
+from pydesc.selection import AtomSetSubclass
 from pydesc.selection import Selector
 from pydesc.selection import Set
 from pydesc.structure import StructureLoader
@@ -116,7 +116,7 @@ class TestTrajectory:
     def test_selection(self, ext, stc):
         trajectory = self.load_traj(ext, stc)
         subclass = type(trajectory[0])
-        selection = MerSubclasses(subclass)
+        selection = AtomSetSubclass(subclass)
         new_stc = selection.create_structure(trajectory)
         assert len(new_stc) > 0
         assert trajectory[0] in new_stc

@@ -26,8 +26,8 @@ from abc import ABCMeta
 from abc import abstractmethod
 from functools import reduce
 
-from pydesc.chemistry.base import Mer
-from pydesc.chemistry.factories import WrongMerType
+from pydesc.chemistry.base import AtomSet
+from pydesc.chemistry.factories import WrongAtomSetType
 from pydesc.structure.topology import PartialStructure
 from pydesc.structure.topology import Segment
 
@@ -238,7 +238,7 @@ class Range(Selection):
         return Segment(structure_obj, start_mer, end_mer)
 
 
-class MerAttr(Selection, metaclass=ABCMeta):
+class AtomSetAttr(Selection, metaclass=ABCMeta):
     """Class of selections based on different mer attributes."""
 
     def __init__(self, value):
@@ -263,11 +263,11 @@ class MerAttr(Selection, metaclass=ABCMeta):
         )
 
 
-class ChainSelection(MerAttr):
+class ChainSelection(AtomSetAttr):
     """Selection of all mers signed with given chain character."""
 
     def __init__(self, chain_name):
-        MerAttr.__init__(self, chain_name)
+        AtomSetAttr.__init__(self, chain_name)
 
     def __repr__(self):
         return "<Selection: chain %s>" % str(self.value)
@@ -277,11 +277,11 @@ class ChainSelection(MerAttr):
         return "chain"
 
 
-class MerName(MerAttr):
+class AtomSetName(AtomSetAttr):
     """Selection of all mers with given name."""
 
     def __init__(self, chain_name):
-        MerAttr.__init__(self, chain_name)
+        AtomSetAttr.__init__(self, chain_name)
 
     @property
     def attr_name(self):
@@ -291,16 +291,13 @@ class MerName(MerAttr):
         return "<Selection: mers called %s>" % self.value.lstrip()
 
 
-class MerExactType(MerAttr):
-    """Select mers of given type (without subclasses).
-
-    Compare to MerSubclasses.
-    """
+class AtomSetExactType(AtomSetAttr):
+    """Select mers of given type (without subclasses)."""
 
     def __init__(self, cls):
-        if not issubclass(cls, Mer):
-            raise WrongMerType("Given class has to be subclass of Mer.")
-        MerAttr.__init__(self, cls)
+        if not issubclass(cls, AtomSet):
+            raise WrongAtomSetType("Given class has to be subclass of AtomSet.")
+        AtomSetAttr.__init__(self, cls)
 
     @property
     def attr_name(self):
@@ -310,7 +307,7 @@ class MerExactType(MerAttr):
         return "<Selection of mer exact type: %s>" % self.value.__name__
 
 
-class MerSubclasses(Selection):
+class AtomSetSubclass(Selection):
     """Selection of mers of given type."""
 
     def __init__(self, monomer_subclass):

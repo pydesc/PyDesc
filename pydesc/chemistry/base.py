@@ -146,13 +146,16 @@ class Pseudoatom(pydesc.geometry.Coord):
         super().__init__(x, y, z, numpy_vec)
 
 
-class Mer:
-    """Abstract class, representation of mers and particles present in
-    molecular structures.
+class AtomSet:
+    """Abstract class, representation of mers and particles present in molecular
+    structures.
 
-    Subclasses:
-    MonomerChainable -- residues and nucleotides.
-    MonomerOther -- ligands or their type: ions.
+    Args:
+        ind(int): id of set of atoms.
+        name(str): name of set of mers.
+        chain(str): name of chain this set of mers belongs to.
+        atoms(dict): map of atoms names (str) to Atom instances.
+
     """
 
     @classmethod
@@ -193,12 +196,12 @@ class Mer:
             cls_name = cls.__name__.lower()
 
             branch = ConfigManager.mers  # pylint: disable=no-member
-            if cls_name != "mer":
+            if cls_name != "atomset":
                 branch = getattr(branch, cls_name)
 
             res = getattr(branch, prop_name)
         except AttributeError:
-            if issubclass(cls.__base__, Mer):
+            if issubclass(cls.__base__, AtomSet):
                 res = cls.__base__.get_config(prop_name)
             else:
                 raise
@@ -206,27 +209,6 @@ class Mer:
         return res
 
     def __init__(self, ind, name, chain, atoms):
-        """Initialize Mer.
-
-        Arguments:
-        name -- str; mers name.
-        chain -- str; chain name.
-        atoms -- dict; dict of str names of atoms as keys and Atom instances
-        as values.
-
-        Sets attributes:
-        name -- mer or ligand name, up to three letters, according to PDB file.
-        chain -- character of the chain that the mers belong to, according
-        to PDB file.
-        atoms - dict of atoms building current monomer represented by Atom
-        instances.
-        ind -- PyDesc integer.
-        pseudoatoms -- dict of Pseudoatoms.
-        dynamic_properties -- dict of other geometrical properties like
-        planes for cyclic chemical compounds.
-        _ss -- secondary structure sign.
-        """
-
         self.name = name
         self.chain = chain
         self.ind = ind
@@ -343,7 +325,7 @@ class Mer:
         return temp[self._ss]
 
 
-class MerChainable(Mer):
+class MerChainable(AtomSet):
     """Abstract class, representation of residue or nucleotide.
 
     Subclasses:
@@ -361,7 +343,7 @@ class MerChainable(Mer):
 
         Extends superclass method.
         """
-        Mer.__init__(self, ind, name, chain, atoms)
+        AtomSet.__init__(self, ind, name, chain, atoms)
 
         try:
             if self.get_config("check_distances"):
@@ -458,7 +440,7 @@ class MerChainable(Mer):
         return Pseudoatom(numpy_vec=vector, name="rc")
 
 
-class MerOther(Mer):
+class MerOther(AtomSet):
     """Abstract class, representation for ligands."""
 
     @staticmethod
@@ -477,7 +459,7 @@ class MerOther(Mer):
 
         Extends superclass method.
         """
-        Mer.__init__(self, ind, name, chain, atoms)
+        AtomSet.__init__(self, ind, name, chain, atoms)
 
     @register_pseudoatom
     def rc(self):

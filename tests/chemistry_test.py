@@ -3,7 +3,7 @@ import os.path
 import Bio.PDB
 import pytest
 
-from pydesc.chemistry.factories import BioPythonMerFactory
+from pydesc.chemistry.factories import BioPythonAtomSetFactory
 from pydesc.chemistry.full_atom import Ion
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
@@ -17,7 +17,7 @@ class TestMonomerFactory:
     ):
         root, fname = os.path.split(structure_file_w_pure_type)
         dummy, type_ = os.path.split(root)
-        factory = BioPythonMerFactory()
+        factory = BioPythonAtomSetFactory()
         pth = os.path.join(structures_dir, structure_file_w_pure_type)
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(fname, pth)
 
@@ -44,7 +44,7 @@ class TestMonomerFactory:
         assert success_rate <= type_threshold, msg
 
     def test_create_residue_from_pdb_res(self, structures_dir):
-        factory = BioPythonMerFactory()
+        factory = BioPythonAtomSetFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
             "5MPV.pdb", os.path.join(structures_dir, "prots_only", "5MPV.pdb")
         )
@@ -73,10 +73,10 @@ class TestMonomerFactory:
         assert res.previous_mer is prev
 
 
-class MerTest:
+class AtomSetTest:
     @staticmethod
     def iter_structure(file_, class_, test_structures_dir):
-        factory = BioPythonMerFactory()
+        factory = BioPythonAtomSetFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
             "test", os.path.join(test_structures_dir, file_)
         )
@@ -92,7 +92,7 @@ class MerTest:
         return to_return
 
 
-class TestResidue(MerTest):
+class TestResidue(AtomSetTest):
     def test_calculate_cbx(self, protein_file, structures_dir):
         checked = 0
         for result in self.iter_structure(protein_file, Residue, structures_dir):
@@ -111,7 +111,7 @@ class TestResidue(MerTest):
         assert checked != 0
 
 
-class TestNucleotide(MerTest):
+class TestNucleotide(AtomSetTest):
     def test_calculate_features(self, nuclei_file, structures_dir):
         checked = 0
         for result in self.iter_structure(nuclei_file, Nucleotide, structures_dir):

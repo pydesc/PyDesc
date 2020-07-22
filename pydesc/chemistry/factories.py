@@ -6,7 +6,7 @@ import numpy
 from pydesc.config import ConfigManager
 from pydesc.chemistry.base import Atom
 from pydesc.chemistry.base import AtomProxy
-from pydesc.chemistry.base import Mer
+from pydesc.chemistry.base import AtomSet
 from pydesc.chemistry.full_atom import Ion
 from pydesc.chemistry.full_atom import Ligand
 from pydesc.chemistry.full_atom import Nucleotide
@@ -15,14 +15,14 @@ from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import WarnManager
 from pydesc.warnexcept import WrongAtomDistances
-from pydesc.warnexcept import WrongMerType
+from pydesc.warnexcept import WrongAtomSetType
 
 
-class MerFactory(metaclass=ABCMeta):
-    """Abstract factory class for Mer subclass instances."""
+class AtomSetFactory(metaclass=ABCMeta):
+    """Abstract factory class for AtomSet subclass instances."""
 
     def __init__(self, classes=None):
-        """Mer factory initializer.
+        """AtomSet factory initializer.
 
         Argument:
         classes -- list of classes to be used.
@@ -64,7 +64,7 @@ class MerFactory(metaclass=ABCMeta):
                 with warnings_(monomer_type):
                     new_mer = self._create_mer_of_type(monomer_type, base_data)
                     mers[monomer_type] = new_mer
-            except (IncompleteParticle, WrongAtomDistances, WrongMerType):
+            except (IncompleteParticle, WrongAtomDistances, WrongAtomSetType):
                 pass
 
         return mers, warnings_
@@ -86,7 +86,7 @@ class MerFactory(metaclass=ABCMeta):
         return base.ind, base.name, base.chain, base.atoms
 
 
-class BioPythonMerFactory(MerFactory):
+class BioPythonAtomSetFactory(AtomSetFactory):
     """Mer factory producing basic mers read from pdb files."""
 
     def create(
@@ -116,14 +116,14 @@ class BioPythonMerFactory(MerFactory):
             ind = None
 
         if base is None:
-            base = Mer(ind, *self.unpack_pdb_residue(pdb_residue, name))
+            base = AtomSet(ind, *self.unpack_pdb_residue(pdb_residue, name))
 
         mers, warnings_ = self._create_possible_monomers(base, warnings_, self.classes)
         if warn_in_place:
             for class_ in self.classes:
                 warnings_.raise_all(class_)
 
-        mers[Mer] = base
+        mers[AtomSet] = base
         return mers, warnings_
 
     def unpack_pdb_residue(self, pdb_residue, name=None):
@@ -160,8 +160,8 @@ class BioPythonMerFactory(MerFactory):
         return pdb_residue.get_resname().strip()
 
 
-class MDTrajMerFactory(MerFactory):
-    """Mer factory responsible for creating mers consisting of AtomProxy objects."""
+class MDTrajAtomSetFactory(AtomSetFactory):
+    """AtomSet factory responsible for creating mers consisting of AtomProxy objects."""
 
     def create(self, mer, trajectory):
         """Create mer linked with given pydesc Trajectory instance."""
@@ -175,8 +175,8 @@ class MDTrajMerFactory(MerFactory):
         return proxy_mer
 
 
-class CopyingFactor(MerFactory):
-    """Mer factory creating new mers from already existing ones."""
+class CopyingFactor(AtomSetFactory):
+    """AtomSet factory creating new mers from already existing ones."""
 
     def create(self, mer):
         """Return copy of given mer.
