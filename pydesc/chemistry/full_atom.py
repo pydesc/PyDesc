@@ -4,7 +4,7 @@ import scipy.linalg
 import pydesc.geometry
 from pydesc.chemistry.base import AtomSet
 from pydesc.chemistry.base import Mer
-from pydesc.chemistry.base import MerOther
+from pydesc.chemistry.base import Ligand
 from pydesc.chemistry.base import Pseudoatom
 from pydesc.chemistry.base import register_dynamic_feature
 from pydesc.chemistry.base import register_pseudoatom
@@ -287,7 +287,7 @@ class Nucleotide(Mer):
         return Pseudoatom(numpy_vec=nx, name="nx")
 
 
-class MonoatomicIon(MerOther):
+class MonoatomicIon(Ligand):
     """Representation of an monoatomic ion ligand."""
 
     def __init__(self, ind, name, chain, atoms):
@@ -306,7 +306,7 @@ class MonoatomicIon(MerOther):
             return 2.5
 
 
-class Compound(MerOther):
+class Compound(Ligand):
     """Representation of any chemical compound beside biopolymers."""
 
     def __init__(self, ind, name, chain, atoms):

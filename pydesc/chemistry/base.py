@@ -440,7 +440,7 @@ class Mer(AtomSet):
         return Pseudoatom(numpy_vec=vector, name="rc")
 
 
-class MerOther(AtomSet):
+class Ligand(AtomSet):
     """Abstract class, representation for ligands."""
 
     @staticmethod
@@ -449,16 +449,6 @@ class MerOther(AtomSet):
         return False
 
     def __init__(self, ind, name, chain, atoms):
-        """Monomer Other constructor.
-
-        Arguments:
-        ind -- mers index.
-        name -- mers name.
-        chain -- mers chain name (str).
-        atoms -- dict mapping atoms names to Atom instances.
-
-        Extends superclass method.
-        """
         AtomSet.__init__(self, ind, name, chain, atoms)
 
     @register_pseudoatom
