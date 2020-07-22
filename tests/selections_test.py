@@ -9,7 +9,7 @@ from pydesc.chemistry.base import Mer
 from pydesc.chemistry.factories import CopyingFactor
 from pydesc.chemistry.factories import WrongAtomSetType
 from pydesc.chemistry.full_atom import Ion
-from pydesc.chemistry.full_atom import Ligand
+from pydesc.chemistry.full_atom import Compound
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
 from pydesc.structure import StructureLoader
@@ -283,7 +283,7 @@ class TestAtomSetExactTypeSelection:
             assert get_id(mer.ind) in nucleotides_set.ids
 
     def test_specify_ligand(self, stc_2dlc):
-        ligand_selection = selection.AtomSetExactType(Ligand)
+        ligand_selection = selection.AtomSetExactType(Compound)
         ligands_set = ligand_selection.specify(stc_2dlc)
         assert len(tuple(ligands_set)) > 0
 

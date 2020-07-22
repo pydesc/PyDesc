@@ -316,20 +316,11 @@ class Ion(MerOther):
             return 2.5
 
 
-class Ligand(MerOther):
-    """Representation of any ligand except ions."""
+class Compound(MerOther):
+    """Representation of any chemical compound beside biopolymers."""
 
     def __init__(self, ind, name, chain, atoms):
-        """Ligand constructor.
-
-        Sets basic attributes.
-
-        Arguments:
-        pdb_residue -- Bio.PDB.Residue instance representing ligands other
-        than ions.
-        structure_obj -- instance of parental PyDesc structure.
-        """
-        super(Ligand, self).__init__(ind, name, chain, atoms)
+        super(Compound, self).__init__(ind, name, chain, atoms)
 
 
 AtomSet.reset_config_cache()
