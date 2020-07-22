@@ -272,8 +272,8 @@ class Nucleotide(Mer):
 
     @register_pseudoatom
     def nx(self):
-        """Adds pseudoatom representing extended by 1.4A vector along
-        glycosidic bond."""
+        """Adds pseudoatom representing extended by 1.4A vector along glycosidic
+        bond."""
         at1 = self.atoms["C1'"]
         try:
             at2 = self.N9
@@ -287,24 +287,14 @@ class Nucleotide(Mer):
         return Pseudoatom(numpy_vec=nx, name="nx")
 
 
-class Ion(MerOther):
-    """Representation of an ion ligand."""
+class MonoatomicIon(MerOther):
+    """Representation of an monoatomic ion ligand."""
 
     def __init__(self, ind, name, chain, atoms):
-        """Ion constructor.
-
-        Sets basic attributes.
-
-        Arguments:
-        pdb_residue -- Bio.PDB.Residue instance representing ion.
-        structure_obj -- instance of parental PyDesc structure.
-        """
-        super(Ion, self).__init__(ind, name, chain, atoms)
+        super(MonoatomicIon, self).__init__(ind, name, chain, atoms)
         if len(self.atoms) != 1:
-            raise WrongAtomSetType(
-                "Failed to create Ion, given BioPython residue consists of "
-                "to many atoms."
-            )
+            msg = "Multiple atoms passed to initialization."
+            raise WrongAtomSetType(msg)
 
     def get_radius(self):
         """Return ion radius."""

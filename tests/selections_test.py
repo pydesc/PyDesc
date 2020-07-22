@@ -8,7 +8,7 @@ from pydesc.config import ConfigManager
 from pydesc.chemistry.base import Mer
 from pydesc.chemistry.factories import CopyingFactor
 from pydesc.chemistry.factories import WrongAtomSetType
-from pydesc.chemistry.full_atom import Ion
+from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Compound
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
@@ -288,7 +288,7 @@ class TestAtomSetExactTypeSelection:
         assert len(tuple(ligands_set)) > 0
 
     def test_specify_ion(self, stc_2dlc):
-        ion_selection = selection.AtomSetExactType(Ion)
+        ion_selection = selection.AtomSetExactType(MonoatomicIon)
         ions_set = ion_selection.specify(stc_2dlc)
         assert len(tuple(ions_set)) > 0
 

@@ -7,7 +7,7 @@ from pydesc.config import ConfigManager
 from pydesc.chemistry.base import Atom
 from pydesc.chemistry.base import AtomProxy
 from pydesc.chemistry.base import AtomSet
-from pydesc.chemistry.full_atom import Ion
+from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Compound
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
@@ -30,7 +30,7 @@ class AtomSetFactory(metaclass=ABCMeta):
         This class tries to build mers classes from given.
         """
         if classes is None:
-            classes = [Residue, Nucleotide, Ion, Compound]
+            classes = [Residue, Nucleotide, MonoatomicIon, Compound]
         self.classes = classes
 
     @abstractmethod

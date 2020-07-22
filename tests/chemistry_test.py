@@ -4,11 +4,11 @@ import Bio.PDB
 import pytest
 
 from pydesc.chemistry.factories import BioPythonAtomSetFactory
-from pydesc.chemistry.full_atom import Ion
+from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
 
-TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, Ion: 0.0}
+TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, MonoatomicIon: 0.0}
 
 
 class TestMonomerFactory:

@@ -3,7 +3,7 @@ import os.path
 import pytest
 
 from pydesc.config import ConfigManager
-from pydesc.chemistry.full_atom import Ion
+from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
 
@@ -51,7 +51,7 @@ PURE_TYPES_2_MERS_DICT = {
     "rna_only_nmr": Nucleotide,
     "prots_only": Residue,
     "prots_only_nmr": Residue,
-    "PorCA_only": Ion,
+    "PorCA_only": MonoatomicIon,
 }
 
 DIR_DICT = {v: k for k, v in list(PURE_TYPES_2_MERS_DICT.items())}
