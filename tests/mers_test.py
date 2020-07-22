@@ -3,10 +3,10 @@ import os.path
 import Bio.PDB
 import pytest
 
-from pydesc.mers.factories import BioPythonMerFactory
-from pydesc.mers.full_atom import Ion
-from pydesc.mers.full_atom import Nucleotide
-from pydesc.mers.full_atom import Residue
+from pydesc.chemistry.factories import BioPythonMerFactory
+from pydesc.chemistry.full_atom import Ion
+from pydesc.chemistry.full_atom import Nucleotide
+from pydesc.chemistry.full_atom import Residue
 
 TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, Ion: 0.0}
 

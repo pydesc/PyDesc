@@ -19,7 +19,7 @@
 import mdtraj
 import numpy
 
-from pydesc.mers.factories import CopyingFactor
+from pydesc.chemistry.factories import CopyingFactor
 from pydesc.selection import Everything
 from pydesc.selection import Selector
 from pydesc.structure.topology import Chain

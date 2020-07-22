@@ -12,8 +12,8 @@ import pydesc.dbhandler
 import pydesc.geometry
 from pydesc import warnexcept
 from pydesc.config import ConfigManager
-from pydesc.mers.factories import BioPythonMerFactory
-from pydesc.mers.factories import MDTrajMerFactory
+from pydesc.chemistry.factories import BioPythonMerFactory
+from pydesc.chemistry.factories import MDTrajMerFactory
 from pydesc.numberconverter import NumberConverterFactory
 from pydesc.structure.topology import Chain
 from pydesc.structure.topology import Structure

@@ -3,9 +3,9 @@ import os.path
 import pytest
 
 from pydesc.config import ConfigManager
-from pydesc.mers.full_atom import Ion
-from pydesc.mers.full_atom import Nucleotide
-from pydesc.mers.full_atom import Residue
+from pydesc.chemistry.full_atom import Ion
+from pydesc.chemistry.full_atom import Nucleotide
+from pydesc.chemistry.full_atom import Residue
 
 ConfigManager.warnings.class_filters.UnknownParticleName = "ignore"
 ConfigManager.warnings.class_filters.Info = "ignore"

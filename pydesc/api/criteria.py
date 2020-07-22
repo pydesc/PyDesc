@@ -20,7 +20,7 @@ from pydesc.contacts.base import ContactsAlternative
 from pydesc.contacts.base import ContactsConjunction
 from pydesc.contacts.geometrical import DistancesDifferenceCriterion
 from pydesc.contacts.geometrical import PointsDistanceCriterion
-from pydesc.mers.full_atom import Residue
+from pydesc.chemistry.full_atom import Residue
 from pydesc.selection import MerSubclasses
 
 

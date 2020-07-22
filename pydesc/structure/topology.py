@@ -8,7 +8,7 @@ from Bio.PDB import DSSP
 import pydesc.dbhandler
 import pydesc.geometry
 from pydesc.config import ConfigManager
-from pydesc.mers.base import Mer
+from pydesc.chemistry.base import Mer
 from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import DiscontinuityError
 from pydesc.warnexcept import WrongElement

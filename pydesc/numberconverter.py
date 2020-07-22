@@ -25,7 +25,7 @@ import re
 
 import numpy as np
 
-from pydesc.mers import ConfigManager
+from pydesc.chemistry import ConfigManager
 from pydesc.warnexcept import UnknownPDBid
 
 

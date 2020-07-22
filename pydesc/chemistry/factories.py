@@ -4,13 +4,13 @@ from abc import abstractmethod
 import numpy
 
 from pydesc.config import ConfigManager
-from pydesc.mers.base import Atom
-from pydesc.mers.base import AtomProxy
-from pydesc.mers.base import Mer
-from pydesc.mers.full_atom import Ion
-from pydesc.mers.full_atom import Ligand
-from pydesc.mers.full_atom import Nucleotide
-from pydesc.mers.full_atom import Residue
+from pydesc.chemistry.base import Atom
+from pydesc.chemistry.base import AtomProxy
+from pydesc.chemistry.base import Mer
+from pydesc.chemistry.full_atom import Ion
+from pydesc.chemistry.full_atom import Ligand
+from pydesc.chemistry.full_atom import Nucleotide
+from pydesc.chemistry.full_atom import Residue
 from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import WarnManager

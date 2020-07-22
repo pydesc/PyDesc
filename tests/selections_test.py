@@ -5,13 +5,13 @@ import pytest
 
 from pydesc import selection
 from pydesc.config import ConfigManager
-from pydesc.mers.base import MerChainable
-from pydesc.mers.factories import CopyingFactor
-from pydesc.mers.factories import WrongMerType
-from pydesc.mers.full_atom import Ion
-from pydesc.mers.full_atom import Ligand
-from pydesc.mers.full_atom import Nucleotide
-from pydesc.mers.full_atom import Residue
+from pydesc.chemistry.base import MerChainable
+from pydesc.chemistry.factories import CopyingFactor
+from pydesc.chemistry.factories import WrongMerType
+from pydesc.chemistry.full_atom import Ion
+from pydesc.chemistry.full_atom import Ligand
+from pydesc.chemistry.full_atom import Nucleotide
+from pydesc.chemistry.full_atom import Residue
 from pydesc.structure import StructureLoader
 from pydesc.structure.topology import AbstractStructure
 from pydesc.structure.topology import PartialStructure

@@ -5,7 +5,7 @@ import scipy.linalg
 
 import pydesc.geometry
 import pydesc.geometry
-from pydesc.mers import ConfigManager
+from pydesc.chemistry import ConfigManager
 from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import UnknownParticleName
 from pydesc.warnexcept import WrongAtomDistances

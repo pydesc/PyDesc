@@ -26,8 +26,8 @@ from abc import ABCMeta
 from abc import abstractmethod
 from functools import reduce
 
-from pydesc.mers.base import Mer
-from pydesc.mers.factories import WrongMerType
+from pydesc.chemistry.base import Mer
+from pydesc.chemistry.factories import WrongMerType
 from pydesc.structure.topology import PartialStructure
 from pydesc.structure.topology import Segment
 

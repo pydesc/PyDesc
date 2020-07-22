@@ -2,12 +2,12 @@ import numpy
 import scipy.linalg
 
 import pydesc.geometry
-from pydesc.mers.base import Mer
-from pydesc.mers.base import MerChainable
-from pydesc.mers.base import MerOther
-from pydesc.mers.base import Pseudoatom
-from pydesc.mers.base import register_dynamic_feature
-from pydesc.mers.base import register_pseudoatom
+from pydesc.chemistry.base import Mer
+from pydesc.chemistry.base import MerChainable
+from pydesc.chemistry.base import MerOther
+from pydesc.chemistry.base import Pseudoatom
+from pydesc.chemistry.base import register_dynamic_feature
+from pydesc.chemistry.base import register_pseudoatom
 from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import NoConfiguration
 from pydesc.warnexcept import warn
