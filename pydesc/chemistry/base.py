@@ -1,3 +1,22 @@
+# Copyright 2019 Tymoteusz Oleniecki
+#
+# This file is part of PyDesc.
+#
+# PyDesc is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# PyDesc is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Base classes for mers, ligands and generic group of atoms."""
+
 from functools import wraps
 
 import numpy
@@ -195,7 +214,7 @@ class AtomSet:
         try:
             cls_name = cls.__name__.lower()
 
-            branch = ConfigManager.mers  # pylint: disable=no-member
+            branch = ConfigManager.chemistry  # pylint: disable=no-member
             if cls_name != "atomset":
                 branch = getattr(branch, cls_name)
 
@@ -403,7 +422,7 @@ class Mer(AtomSet):
         next_atom = monomer.atoms[bb_atoms[0]]
         try:
             distance = (last_atom - next_atom).calculate_length()
-            return distance <= ConfigManager.mers.monomer_acceptable_distance
+            return distance <= ConfigManager.chemistry.mer_acceptable_distance
         except UnboundLocalError:
             return False
 

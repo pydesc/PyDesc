@@ -15,26 +15,22 @@
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
-"""
-Classes that represents mers present in representations of (sub)structures.
-
-created: 11.07.2013 - 31.07.2013, Tymoteusz 'hert' Oleniecki
-"""
+"""Classes representing building blocks of structures: mer and compounds."""
 
 from pydesc.config import ConfigManager
 
 # pylint: disable=no-member
-ConfigManager.new_branch("mers")
-ConfigManager.mers.set_default("monomer_acceptable_distance", 2.0)
-ConfigManager.mers.set_default("solvent", ["HOH"])
-ConfigManager.mers.new_branch("nucleotide")
-ConfigManager.mers.new_branch("residue")
-ConfigManager.mers.new_branch("monomerchainable")
-ConfigManager.mers.new_branch("ion")
-ConfigManager.mers.new_branch("ligand")
-ConfigManager.mers.set_default("backbone_atoms", ())
-ConfigManager.mers.monomerchainable.set_default("check_distances", False)
-ConfigManager.mers.residue.set_default(
+ConfigManager.new_branch("chemistry")
+ConfigManager.chemistry.set_default("mer_acceptable_distance", 2.0)
+ConfigManager.chemistry.set_default("solvent", ["HOH"])
+ConfigManager.chemistry.new_branch("nucleotide")
+ConfigManager.chemistry.new_branch("residue")
+ConfigManager.chemistry.new_branch("mer")
+ConfigManager.chemistry.new_branch("monoatomicion")
+ConfigManager.chemistry.new_branch("compound")
+ConfigManager.chemistry.set_default("backbone_atoms", ())
+ConfigManager.chemistry.mer.set_default("check_distances", False)
+ConfigManager.chemistry.residue.set_default(
     "code",
     {
         "ILE": "I",
@@ -61,7 +57,7 @@ ConfigManager.mers.residue.set_default(
         "TYR": "Y",
     },
 )
-ConfigManager.mers.residue.set_default(
+ConfigManager.chemistry.residue.set_default(
     "additional_code",
     {
         "DNP": "A",
@@ -210,14 +206,14 @@ ConfigManager.mers.residue.set_default(
         "HIP": "H",
     },
 )
-ConfigManager.mers.residue.set_default("backbone_atoms", ("N", "CA", "C"))
-ConfigManager.mers.residue.set_default("check_distances", False)
-ConfigManager.mers.residue.set_default(
+ConfigManager.chemistry.residue.set_default("backbone_atoms", ("N", "CA", "C"))
+ConfigManager.chemistry.residue.set_default("check_distances", False)
+ConfigManager.chemistry.residue.set_default(
     "crucial_atom_distances", (("C", "CA", 1.35, 1.71), ("CA", "N", 1.35, 1.75))
 )
-ConfigManager.mers.residue.set_default("indicators", ("CA", "cbx"))
-ConfigManager.mers.residue.set_default("adjusted_segment_length", 18.0)
-ConfigManager.mers.nucleotide.set_default(
+ConfigManager.chemistry.residue.set_default("indicators", ("CA", "cbx"))
+ConfigManager.chemistry.residue.set_default("adjusted_segment_length", 18.0)
+ConfigManager.chemistry.nucleotide.set_default(
     "code",
     {
         "G": "G",
@@ -230,14 +226,14 @@ ConfigManager.mers.nucleotide.set_default(
         "DC": "C",
     },
 )
-ConfigManager.mers.nucleotide.set_default(
+ConfigManager.chemistry.nucleotide.set_default(
     "backbone_atoms", ("P", "O5'", "C5'", "C4'", "C3'", "O3'")
 )
-ConfigManager.mers.nucleotide.set_default(
+ConfigManager.chemistry.nucleotide.set_default(
     "ring_atoms", ("N1", "C2", "N3", "C4", "C5", "C6", "N7", "C8", "N9")
 )
-ConfigManager.mers.nucleotide.set_default("check_distances", False)
-ConfigManager.mers.nucleotide.set_default(
+ConfigManager.chemistry.nucleotide.set_default("check_distances", False)
+ConfigManager.chemistry.nucleotide.set_default(
     "crucial_atom_distances",
     (
         ("P", "O5'", 1.54, 1.66),
@@ -247,10 +243,12 @@ ConfigManager.mers.nucleotide.set_default(
         ("C3'", "O3'", 1.37, 1.49),
     ),
 )
-ConfigManager.mers.nucleotide.set_default("indicators", ("C3'", "P", "ring_center"))
-ConfigManager.mers.set_default("moving_average", 3)
-ConfigManager.mers.ion.set_default("indicators", ("rc",))
-ConfigManager.mers.ion.set_default(
+ConfigManager.chemistry.nucleotide.set_default(
+    "indicators", ("C3'", "P", "ring_center")
+)
+ConfigManager.chemistry.set_default("moving_average", 3)
+ConfigManager.chemistry.monoatomicion.set_default("indicators", ("rc",))
+ConfigManager.chemistry.monoatomicion.set_default(
     "radii",
     {
         "BE": 0.59,
@@ -349,7 +347,7 @@ ConfigManager.mers.ion.set_default(
     },
 )
 
-ConfigManager.mers.ligand.set_default("indicators", ("rc",))
+ConfigManager.chemistry.compound.set_default("indicators", ("rc",))
 ConfigManager.new_branch("structure_mon")
 ConfigManager.structure_mon.set_default(
     "simple_secondary_structure_code",

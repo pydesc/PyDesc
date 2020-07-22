@@ -214,7 +214,7 @@ class NumberConverterFactory:
 
     def __init__(self):
         """Initialize reading solvent from configuration."""
-        self.solvent_names = ConfigManager.mers.solvent
+        self.solvent_names = ConfigManager.chemistry.solvent
 
     def _is_solvent(self, name):
         """Check if given name is in solvent names list."""

@@ -1,3 +1,22 @@
+# Copyright 2019 Tymoteusz Oleniecki
+#
+# This file is part of PyDesc.
+#
+# PyDesc is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# PyDesc is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
+
+"""Auxiliary classes responsible for creation of different AtomSet subclasses."""
+
 from abc import ABCMeta
 from abc import abstractmethod
 
@@ -102,7 +121,7 @@ class BioPythonAtomSetFactory(AtomSetFactory):
         Returns dict of created classes and WarnManager ready to raise warnings.
         """
         name = self.get_pdb_residue_name(pdb_residue)
-        if name in ConfigManager.mers.solvent:
+        if name in ConfigManager.chemistry.solvent:
             return None, None
 
         if warnings_ is None:
