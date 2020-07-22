@@ -3,7 +3,7 @@ import scipy.linalg
 
 import pydesc.geometry
 from pydesc.chemistry.base import AtomSet
-from pydesc.chemistry.base import MerChainable
+from pydesc.chemistry.base import Mer
 from pydesc.chemistry.base import MerOther
 from pydesc.chemistry.base import Pseudoatom
 from pydesc.chemistry.base import register_dynamic_feature
@@ -16,7 +16,7 @@ from pydesc.warnexcept import WrongAtomSetType
 norm = scipy.linalg.get_blas_funcs("nrm2")
 
 
-class Residue(MerChainable):
+class Residue(Mer):
     """Representation of a residue."""
 
     @staticmethod
@@ -191,7 +191,7 @@ class Residue(MerChainable):
         return super().rc
 
 
-class Nucleotide(MerChainable):
+class Nucleotide(Mer):
     """Representation of a nucleotide."""
 
     def __init__(self, ind, name, chain, atoms):

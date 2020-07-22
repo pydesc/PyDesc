@@ -5,7 +5,7 @@ import pytest
 
 from pydesc import selection
 from pydesc.config import ConfigManager
-from pydesc.chemistry.base import MerChainable
+from pydesc.chemistry.base import Mer
 from pydesc.chemistry.factories import CopyingFactor
 from pydesc.chemistry.factories import WrongAtomSetType
 from pydesc.chemistry.full_atom import Ion
@@ -176,7 +176,7 @@ class TestRangeSelection:
     def test_create_segment(self, structure):
         chainable = True
         for mer in tuple(structure)[0:6]:
-            if not isinstance(mer, MerChainable):
+            if not isinstance(mer, Mer):
                 chainable = False
         range_selection, start, end = self.create_6_mer_range(structure)
         if chainable:

@@ -325,7 +325,7 @@ class AtomSet:
         return temp[self._ss]
 
 
-class MerChainable(AtomSet):
+class Mer(AtomSet):
     """Abstract class, representation of residue or nucleotide.
 
     Subclasses:
