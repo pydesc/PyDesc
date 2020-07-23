@@ -80,6 +80,16 @@ def structure_file_w_type_short(request):
     return request.param
 
 
+@pytest.fixture(scope='session')
+def mixed_structures_path():
+    return os.path.join(TEST_STRUCTURES_DIR, "mixed")
+
+
+@pytest.fixture(scope="session")
+def ligands_structures_path():
+    return os.path.join(TEST_STRUCTURES_DIR, "ligands")
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--all-structures",
