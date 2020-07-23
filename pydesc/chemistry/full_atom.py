@@ -36,18 +36,32 @@ norm = scipy.linalg.get_blas_funcs("nrm2")
 
 
 class Residue(Mer):
-    """Representation of a residue."""
+    """Representation of a residue.
+
+    Implicit checks are done during initialization. See settings in branch
+    "ConfigManager.chemistry.residue".
+
+    Args:
+        ind: residue id in pydesc structure.
+        name: residue name.
+        chain: residue chain name.
+        atoms(dict): map of names to Atom instances.
+
+    """
 
     @staticmethod
     def calculate_angles_static(structure_obj):
-        """Calculates all torsion angles of residues in given structure.
+        """Calculate torsion angles of residues in given structure.
 
-        Argument:
-        structure_obj -- instance of AbstractStructure subclass.
+        Only subclasses of Residue are taken into account.
 
-        Fills 'angles' property in all residues in given (sub)structure.
-        Calculates them using numpy, much faster than non-static Residue
-        method.
+        Sets "angles" property in residues.
+        Purpose of this method is to speed up calculation of angles -- its faster
+        than calling property in every residue.
+
+        Args:
+            structure_obj: sequence of AtomSet instances.
+
         """
         residues = [mer for mer in structure_obj if isinstance(mer, Residue)]
         nres = len(residues)
@@ -63,7 +77,7 @@ class Residue(Mer):
         pc[1:] = c[:-1]
         nn[:-1] = n[1:]
 
-        no_prev = numpy.fromiter((r.previous_mer is None for r in residues), dtype=bool)
+        no_prev = numpy.fromiter((r.prev_mer is None for r in residues), dtype=bool)
         no_next = numpy.fromiter((r.next_mer is None for r in residues), dtype=bool)
 
         pc[no_prev] = n[no_prev]
@@ -97,40 +111,16 @@ class Residue(Mer):
             angs.append(t1)
 
         for res, (psi, phi) in zip(residues, list(zip(*angs))):
-            res.dynamic_properties["angles"] = (psi, phi)
+            res.dynamic_features["angles"] = (psi, phi)
 
     def __init__(self, ind, name, chain, atoms):
-        """Residue initializer.
-
-        Arguments:
-        ind -- mers index.
-        name -- mers name.
-        chain -- mers chain name (str).
-        atoms -- dict mapping atoms names to Atom instances.
-
-        Raises Warning if a given pdb_residue does not contain proper atoms
-        or if its atoms occur in wrong distances.
-        Extended MonomerChainable method.
-        See also config file docstring.
-
-        Config parameters in branch ConfigManager.mers.residue:
-        min_c_ca_dist
-        max_c_ca_dist
-        min_ca_n_dist
-        max_ca_n_dist
-        min_c_o_dist
-        max_c_o_dist
-        old_cbx_calculation -- True or False
-        """
         super().__init__(ind, name, chain, atoms)
 
     @register_pseudoatom
     def backbone_average(self):
-        """Calculates coordinates of average ca pseudoatom and adds it to
-        current residue pseudoatoms.
+        """Pseudoatom; moving average CA.
 
-        Average ca is calculated as moving average for configurable number
-        of residues around current residue.
+        Moving average frame is configurable (see ConfigManager).
         """
         steps = self.get_config("moving_average")
         if not steps % 2 == 1:
@@ -141,7 +131,7 @@ class Residue(Mer):
         try:
             for _ in range(steps // 2):
                 next_mer = next_mer.next_mer
-                last_mer = last_mer.previous_mer
+                last_mer = last_mer.prev_mer
                 average_ca += next_mer.ca.vector + last_mer.ca.vector
                 cnt += 2
         except AttributeError:
@@ -153,10 +143,10 @@ class Residue(Mer):
 
     @register_dynamic_feature
     def angles(self):
-        """Calculates torsion angles of residue and fills 'angles' property."""
+        """Torsion angles psi and phi."""
         ang_psi, ang_phi = 0.0, 0.0
 
-        prm = self.previous_mer
+        prm = self.prev_mer
         nxm = self.next_mer
 
         atoms = [self.atoms["N"], self.atoms["CA"], self.atoms["C"]]
@@ -171,19 +161,17 @@ class Residue(Mer):
             pl1 = pydesc.geometry.Plane.build(*(atoms[1:] + [nxm.atoms["N"]]))
             ang_psi = pl1.dihedral_angle(pl2)
 
+        # TODO: sign is sometimes wrong -- check why
         return ang_psi, ang_phi
 
     @property
     def ca(self):
-        """Property that returns current residue alpha carbon Atom object."""
+        """Carbon alpha."""
         return self.atoms["CA"]
 
     @register_pseudoatom
     def cbx(self):
-        """Adds Pseudoatom containing coordinates of the point that lies 1A
-        farther from carbon alpha, than does carbon beta; or carbon alpha
-        coordinates for GLY.
-        """
+        """Pseudoatom; CA->CB vector extended by 1A (fixed for GLY)."""
         if self.name == "GLY":
             n_2_ca = self.atoms["N"] - self.atoms["CA"]
             c_2_ca = self.atoms["C"] - self.atoms["CA"]
@@ -204,40 +192,22 @@ class Residue(Mer):
 
         return Pseudoatom(numpy_vec=cbx, name="cbx")
 
-    @register_pseudoatom
-    def rc(self):
-        """Return pseudoatom storing side chain geometric center."""
-        return super().rc
-
 
 class Nucleotide(Mer):
-    """Representation of a nucleotide."""
+    """Representation of a nucleotide.
+
+    Implicit checks are done during initialization. See settings in branch
+    "ConfigManager.chemistry.nucleotide".
+
+    Args:
+        ind: residue id in pydesc structure.
+        name: residue name.
+        chain: residue chain name.
+        atoms(dict): map of names to Atom instances.
+
+    """
 
     def __init__(self, ind, name, chain, atoms):
-        """Nucleotide constructor.
-
-        Arguments:
-        pdb_residue -- BioPython Bio.PDB.Residue instance based on which
-        Nucleotide is being created.
-        structure -- the Structure instance to which Nucleotide belongs.
-
-        Raises Warning if given pdb_residue does not contain proper atoms or if
-        its atoms occur in wrong distances.
-        Extended MonomerChainable method.
-        See also config file docstring.
-
-        Config parameters in branch ConfigManager.mers.nucleotide:
-        min_o5'_p_dist
-        max_o5'_p_dist
-        min_c5'_o5'_dist
-        max_c5'_o5'_dist
-        min_c4'_c5'_dist
-        max_c4'_c5'_dist
-        min_c3'_c4'_dist
-        max_c3'_c4'_dist
-        min_c3'_o3'_dist
-        max_c3'_o3'_dist
-        """
         super().__init__(ind, name, chain, atoms)
 
         rats = self.get_config("ring_atoms")
@@ -253,8 +223,8 @@ class Nucleotide(Mer):
         }
 
     def calculate_proximate_ring_center(self):
-        """Adds pseudoatom representing center of the base ring being closer to
-        glycosidic bond."""
+        """Calculate and return pseudoatom representing center of the base ring being
+        closer to glycosidic bond."""
         vec = numpy.array([0.0, 0.0, 0.0])
         for at in ("C4", "C5", "N7", "C8", "N9"):
             vec += self.atoms[at].vector
@@ -263,25 +233,24 @@ class Nucleotide(Mer):
 
     @register_pseudoatom
     def prc(self):
-        """Get ring center of base ring closest to sugar."""
+        """Pseudoatom; center of base ring closest to sugar."""
         try:
             return self.calculate_proximate_ring_center()
         except KeyError:
             return self.ring_center
 
-    @register_dynamic_feature
+    @register_pseudoatom
     def ring_center(self):
-        """Adds pseudoatom representing base ring center."""
+        """Pseudoatom; (larger) base ring center."""
         try:
             vec = (self.ring_atoms["N1"].vector + self.ring_atoms["C4"].vector) * 0.5
         except KeyError:
-            raise IncompleteParticle("Lacking N1 or C4, unable to create Nucleotide.")
+            raise IncompleteParticle("Lacking N1 or C4, cannot calculate ring center.")
         return Pseudoatom(numpy_vec=vec, name="ring_center")
 
     @register_dynamic_feature
     def ring_plane(self):
-        """Adds pydesc.geometry.Plane object representing base to current
-        nucleotide pseudoatom dictionary."""
+        """Dynamic feature; base plane."""
         at1, at2, at3 = (
             self.ring_atoms["C2"],
             self.ring_atoms["C4"],
@@ -291,8 +260,7 @@ class Nucleotide(Mer):
 
     @register_pseudoatom
     def nx(self):
-        """Adds pseudoatom representing extended by 1.4A vector along glycosidic
-        bond."""
+        """Pseudoatom; vector along glycosidic bond extended by 1.4A ."""
         at1 = self.atoms["C1'"]
         try:
             at2 = self.N9
