@@ -192,6 +192,14 @@ class Residue(Mer):
 
         return Pseudoatom(numpy_vec=cbx, name="cbx")
 
+    def get_adjusted_length(self):
+        """Get distance between backbone_average pseudoatoms of this and
+        the next mer or None if distance cannot be computed."""
+        try:
+            return abs(self.backbone_average - self.next_mer.backbone_average)
+        except AttributeError:
+            return None
+
 
 class Nucleotide(Mer):
     """Representation of a nucleotide.

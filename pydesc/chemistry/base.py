@@ -401,14 +401,6 @@ class Mer(AtomSet):
             ]
         )
 
-    def adjusted_length(self):
-        """Get distance between backbone_average pseudoatoms of this and
-        the next mer or None if distance cannot be computed."""
-        try:
-            return abs(self.backbone_average - self.next_mer.backbone_average)
-        except AttributeError:
-            return None
-
     @register_pseudoatom
     def rc(self):
         """Geometrical center of side chain (non-backbone atoms)."""
