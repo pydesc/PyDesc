@@ -269,51 +269,15 @@ class AtomSet:
     @register_pseudoatom
     def rc(self):
         """Geometrical center of AtomSet."""
-        # TODO: seems to be not generic for this class
-        non_backbone_coordinates = [a.vector for a in self.iter_nbb_atoms()]
+        coordinates = [a.vector for a in self]
 
-        if non_backbone_coordinates:
-            vector = numpy.average(non_backbone_coordinates, 0)
-        else:
-            try:
-                vector = self.ca.vector
-            except AttributeError:
-                vector = self.atoms["P  "].vector
+        vector = numpy.average(coordinates, 0)
         return Pseudoatom(numpy_vec=vector, name="rc")
-
-    @property
-    def seq(self):
-        try:
-            code = self.get_config("code")
-        except KeyError:
-            warn(UnknownParticleName(self))
-            return "?"
-        try:
-            return code[self.name]
-        except KeyError:
-            pass
-        code = self.get_config("additional_code")
-        return code[self.name]
 
     @property
     def representation(self):
         """Return PyDesc representation as list of atoms."""
         return [getattr(self, indicator) for indicator in self.get_config("indicators")]
-
-    @property
-    def secondary_structure(self):
-        return self._ss
-
-    @property
-    def simple_secondary_structure(self):
-        """Secondary structure in simple 3-letter code.
-
-        H -- helix
-        E -- extended strand
-        C -- coil
-        """
-        temp = ConfigManager.structure_mon.simple_secondary_structure_code
-        return temp[self._ss]
 
 
 class Mer(AtomSet):
@@ -401,6 +365,20 @@ class Mer(AtomSet):
             ]
         )
 
+    @property
+    def seq(self):
+        try:
+            code = self.get_config("code")
+        except KeyError:
+            warn(UnknownParticleName(self))
+            return "?"
+        try:
+            return code[self.name]
+        except KeyError:
+            pass
+        code = self.get_config("additional_code")
+        return code[self.name]
+
     @register_pseudoatom
     def rc(self):
         """Geometrical center of side chain (non-backbone atoms)."""
@@ -414,11 +392,3 @@ class Ligand(AtomSet):
 
     def __init__(self, ind, name, chain, atoms):
         AtomSet.__init__(self, ind, name, chain, atoms)
-
-    @register_pseudoatom
-    def rc(self):
-        """Geometrical center of chemical individual."""
-        coordinates = [a.vector for a in self]
-
-        vector = numpy.average(coordinates, 0)
-        return Pseudoatom(numpy_vec=vector, name="rc")

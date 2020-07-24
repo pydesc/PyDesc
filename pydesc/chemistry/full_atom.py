@@ -22,15 +22,16 @@ import scipy.linalg
 
 import pydesc.geometry
 from pydesc.chemistry.base import AtomSet
-from pydesc.chemistry.base import Mer
 from pydesc.chemistry.base import Ligand
+from pydesc.chemistry.base import Mer
 from pydesc.chemistry.base import Pseudoatom
 from pydesc.chemistry.base import register_dynamic_feature
 from pydesc.chemistry.base import register_pseudoatom
+from pydesc.config import ConfigManager
 from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import NoConfiguration
-from pydesc.warnexcept import warn
 from pydesc.warnexcept import WrongAtomSetType
+from pydesc.warnexcept import warn
 
 norm = scipy.linalg.get_blas_funcs("nrm2")
 
@@ -200,6 +201,17 @@ class Residue(Mer):
             return abs(self.backbone_average - self.next_mer.backbone_average)
         except AttributeError:
             return None
+
+    @property
+    def simple_secondary_structure(self):
+        """Secondary structure in simple 3-letter code.
+
+        H -- helix
+        E -- extended strand
+        C -- coil
+        """
+        temp = ConfigManager.structure_mon.simple_secondary_structure_code
+        return temp[self._ss]
 
 
 class Nucleotide(Mer):
