@@ -106,7 +106,7 @@ class Residue(Mer):
             sign = numpy.sign(numpy.einsum("ij,ij->i", direction, cpr))
 
             t2 = numpy.arctan2(sin, cos) * sign
-            t1 = numpy.nan_to_num(t2)
+            t1 = numpy.nan_to_num(t2).astype(float)
 
             angs.append(t1)
 
@@ -154,14 +154,15 @@ class Residue(Mer):
         pl2 = pydesc.geometry.Plane.build(*atoms)
 
         if prm is not None:
+            direction = (self.atoms["CA"] - self.atoms["C"]).vector
             pl3 = pydesc.geometry.Plane.build(*([prm.atoms["C"]] + atoms[:2]))
-            ang_phi = pl2.dihedral_angle(pl3)
+            ang_phi = pl2.dihedral_angle(pl3, direction)
 
         if nxm is not None:
+            direction = (self.atoms["N"] - self.atoms["CA"]).vector
             pl1 = pydesc.geometry.Plane.build(*(atoms[1:] + [nxm.atoms["N"]]))
-            ang_psi = pl1.dihedral_angle(pl2)
+            ang_psi = pl1.dihedral_angle(pl2, direction)
 
-        # TODO: sign is sometimes wrong -- check why
         return ang_psi, ang_phi
 
     @property

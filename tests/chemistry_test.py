@@ -14,7 +14,7 @@ TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, MonoatomicIon: 0.0}
 
 class TestAtomSetFactory:
     def test_default_mer_factory_create_from_pdb_res(
-            self, structure_file_w_pure_type, structures_dir, pure_types_2_mers
+        self, structure_file_w_pure_type, structures_dir, pure_types_2_mers
     ):
         root, fname = os.path.split(structure_file_w_pure_type)
         dummy, type_ = os.path.split(root)
@@ -69,7 +69,7 @@ class TestAtomSetFactory:
         assert res.backbone_average
         assert res.ca
 
-        assert [round(i, 2) for i in res.angles] == [0.62, 1.30]
+        assert res.angles == pytest.approx((-0.62, -1.30), abs=0.01)
         assert res.next_mer is next
         assert res.prev_mer is prev
 
@@ -122,12 +122,11 @@ class TestResidue(AtomSetTest):
     def test_rc(self, protein_file, structures_dir):
         for result in self.iter_structure(protein_file, Residue, structures_dir):
             rc_atom = result.rc
-            del result.pseudoatoms['rc']
+            del result.pseudoatoms["rc"]
             assert tuple(rc_atom) == tuple(result.rc)
             for atom in result:
                 assert (result.rc - atom).calculate_length() < 8
 
-    @pytest.mark.xfail
     def test_angles(self, protein_file, structures_dir):
         mers = self.iter_structure(protein_file, Residue, structures_dir)
         for m1, m2 in zip(mers, mers[1:]):
@@ -136,12 +135,13 @@ class TestResidue(AtomSetTest):
                 m2.prev_mer = m1
         Residue.calculate_angles_static(mers)
         for mer in mers:
-            assert 'angles' in mer.dynamic_features
-            angs = mer.dynamic_features['angles']
-            del mer.dynamic_features['angles']
-            psi, phi = angs
-            assert (psi, phi) == mer.angles
-            # TODO: add approx as soon as property works
+            assert "angles" in mer.dynamic_features
+            angs = mer.dynamic_features["angles"]
+            del mer.dynamic_features["angles"]
+            psi1, phi1 = angs
+            psi2, phi2 = mer.angles
+            assert pytest.approx(psi1) == psi2
+            assert pytest.approx(phi1) == phi2
 
     def test_bb_average(self, protein_file, structures_dir):
         mers = self.iter_structure(protein_file, Residue, structures_dir)

@@ -80,7 +80,7 @@ def structure_file_w_type_short(request):
     return request.param
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def mixed_structures_path():
     return os.path.join(TEST_STRUCTURES_DIR, "mixed")
 
