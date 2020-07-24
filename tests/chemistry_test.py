@@ -1,15 +1,57 @@
 import os.path
 
 import Bio.PDB
+import numpy
 import pytest
 
+from pydesc.chemistry.base import Atom
+from pydesc.chemistry.base import AtomSet
+from pydesc.chemistry.base import Ligand
+from pydesc.chemistry.base import Mer
 from pydesc.chemistry.base import Pseudoatom
+from pydesc.chemistry.base import register_dynamic_feature
+from pydesc.chemistry.base import register_pseudoatom
 from pydesc.chemistry.factories import BioPythonAtomSetFactory
 from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
 
 TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, MonoatomicIon: 0.0}
+
+
+@pytest.mark.parametrize(
+    "superclass, expected_is_chainable",
+    ((Mer, True), (AtomSet, False), (Ligand, False),),
+)
+def test_mer_subclass(superclass, expected_is_chainable):
+    class Subclass(superclass):
+        def __init__(self, ind, name, chain, atoms):
+            super().__init__(ind, name, chain, atoms)
+
+        def is_new(self):
+            return True
+
+        @register_pseudoatom
+        def my_pa(self):
+            return Pseudoatom(0, 0, 0)
+
+        @register_dynamic_feature
+        def my_df(self):
+            return 42, 3.14
+
+    atoms = {
+        "A": Atom(numpy.array([1.0, 1.0, 1.0]), "A"),
+        "B": Atom(numpy.array([0.0, 0.0, 0.0]), "B"),
+    }
+    mer = Subclass(42, "42", "C", atoms)
+
+    numpy.testing.assert_array_equal(mer.rc.vector, (0.5, 0.5, 0.5))
+    assert mer.is_new()
+    assert mer.is_chainable() == expected_is_chainable
+    assert not mer.dynamic_features
+    assert mer.my_df == (42, 3.14)
+    assert "my_df" in mer.dynamic_features
+    assert isinstance(mer.my_pa, Pseudoatom)
 
 
 class TestAtomSetFactory:
