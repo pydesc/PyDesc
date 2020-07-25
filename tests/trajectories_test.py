@@ -60,18 +60,18 @@ class TestTrajectory:
         else:
             pytest.xfail()
             return
-        coords1 = mer.CA.vector
+        coords1 = mer.atoms["CA"].vector
         pseudo_coords1 = mer.cbx
 
         trajectory.set_frame(1)
 
         pseudo_coords2 = mer.cbx
-        coords2 = mer.CA.vector
+        coords2 = mer.atoms["CA"].vector
         assert "cbx" in mer.pseudoatoms
 
         trajectory.set_frame(0)
 
-        coords3 = mer.CA.vector
+        coords3 = mer.atoms["CA"].vector
 
         assert tuple(coords1) != tuple(coords2)
         assert tuple(coords1) == tuple(coords3)
@@ -86,18 +86,18 @@ class TestTrajectory:
         else:
             pytest.xfail()
             return
-        coords1 = mer.P.vector
+        coords1 = mer.atoms["P"].vector
         pseudo_coords1 = mer.prc
 
         trajectory.set_frame(1)
 
         pseudo_coords2 = mer.prc
-        coords2 = mer.P.vector
+        coords2 = mer.atoms["P"].vector
         assert "prc" in mer.pseudoatoms
 
         trajectory.set_frame(0)
 
-        coords3 = mer.P.vector
+        coords3 = mer.atoms["P"].vector
 
         assert tuple(coords1) != tuple(coords2)
         assert tuple(coords1) == tuple(coords3)

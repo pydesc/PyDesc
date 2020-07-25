@@ -281,9 +281,9 @@ class Nucleotide(Mer):
         """Pseudoatom; vector along glycosidic bond extended by 1.4A ."""
         at1 = self.atoms["C1'"]
         try:
-            at2 = self.N9
-        except AttributeError:
-            at2 = self.N1
+            at2 = self.atoms["N9"]
+        except KeyError:
+            at2 = self.atoms["N1"]
         vec = (at2 - at1).vector
         nrm = norm(vec)
         nvec = vec * ((nrm + 1.4) / nrm)

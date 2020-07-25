@@ -147,16 +147,16 @@ class TestResidue(AtomSetTest):
         checked = 0
         for result in self.iter_structure(protein_file, Residue, structures_dir):
             if result.name == "GLY":
-                distance = (result.cbx - result.CA).calculate_length()
+                distance = (result.cbx - result.atoms["CA"]).calculate_length()
                 assert distance < 5
                 continue
             assert result.cbx
             del result.pseudoatoms["cbx"]
             assert result.cbx
-            length = (result.CB - result.cbx).calculate_length()
+            length = (result.atoms["CB"] - result.cbx).calculate_length()
             assert round(length, 2) == 1.0
-            unit_a_bx = (result.cbx - result.CA).get_unit_vector()
-            unit_a_b = (result.CB - result.CA).get_unit_vector()
+            unit_a_bx = (result.cbx - result.atoms["CA"]).get_unit_vector()
+            unit_a_b = (result.atoms["CB"] - result.atoms["CA"]).get_unit_vector()
             dot_prod = unit_a_b.dot(unit_a_bx)
             assert pytest.approx(dot_prod) == 1.0
             checked += 1

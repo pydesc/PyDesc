@@ -248,15 +248,6 @@ class AtomSet:
         """Return iterator over atoms (not pseudoatoms)."""
         return iter(self.atoms.values())
 
-    def __getattr__(self, name):
-        name = name.lstrip()
-        try:
-            return self.atoms[name]
-        except KeyError:
-            repr_ = self.ind or id(self)
-            class_name = type(self).__name__
-            raise AttributeError(f"{class_name} {repr_} has no attribute {name}.")
-
     def has_bond(self, atoms_set):
         """Return False. Meant to be overwritten."""
         return False
