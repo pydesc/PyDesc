@@ -11,9 +11,9 @@ import mdtraj
 import pydesc.dbhandler
 import pydesc.geometry
 from pydesc import warnexcept
-from pydesc.config import ConfigManager
 from pydesc.chemistry.factories import BioPythonAtomSetFactory
 from pydesc.chemistry.factories import MDTrajAtomSetFactory
+from pydesc.config import ConfigManager
 from pydesc.numberconverter import NumberConverterFactory
 from pydesc.structure.topology import Chain
 from pydesc.structure.topology import Structure
@@ -31,22 +31,26 @@ ConfigManager.structure.set_default("dssp_path", "dssp")
 
 
 class StructureLoader:
-    """Loads structures from the databases using a given designation."""
+    """Loads structures from the databases using a given designation.
+
+    Args:
+        handler: object with "get_file(code: str)" method able to deliver a file-like
+            object.
+        parser: file parser returning BioPython's structures.
+        atom_set_factory: factory able to produce AtomSet instances from BioPython
+            residues.
+
+    """
 
     def __init__(
         self,
         handler=pydesc.dbhandler.MetaHandler(),
         parser=pydesc.dbhandler.MetaParser(QUIET=True),
-        mer_factory=BioPythonAtomSetFactory(),
+        atom_set_factory=BioPythonAtomSetFactory(),
     ):
-        """Structure loader constructor.
-
-        Argument:
-        handler -- an instance of handler.
-        """  # TODO fix docstring
         self.handler = handler
         self.parser = parser
-        self.mer_factory = mer_factory
+        self.atom_set_factory = atom_set_factory
 
     def _get_files_and_path(self, code, path):
         """Return path and list of open handlers to pdb files to be read.
@@ -112,10 +116,10 @@ class StructureLoader:
             raise ValueError("Got empty dict.")
 
         mers = []
-        hits = dict((klass, 0) for klass in self.mer_factory.chainable)
+        hits = dict((klass, 0) for klass in self.atom_set_factory.chainable)
 
         for pdb_residue in pdb_chain:
-            mer_dct, warns = self.mer_factory.create(
+            mer_dct, warns = self.atom_set_factory.create(
                 pdb_residue=pdb_residue, structure_obj=structure, warn_in_place=False
             )
             if mer_dct is None:
@@ -126,7 +130,7 @@ class StructureLoader:
                 hits[mer_class] += int(mer_class in mer_dct)
 
         winner = max(hits, key=lambda hit: hits[hit])
-        others = self.mer_factory.other
+        others = self.atom_set_factory.other
         chain_mers = []
         for mer_dct, warns in mers:
             accepted_mer = pick_mer(mer_dct, winner, others)
