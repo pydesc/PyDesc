@@ -113,7 +113,7 @@ class StructureLoader:
                         return dct[key]
                     except KeyError:
                         continue
-            raise ValueError("Got empty dict.")
+            raise ValueError("Impossible to load some sets of atoms.")
 
         mers = []
         hits = dict((klass, 0) for klass in self.atom_set_factory.chainable)
