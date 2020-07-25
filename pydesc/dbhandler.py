@@ -131,19 +131,20 @@ class DBHandler:
         """
         mode = self.mode if mode is None else mode
         dct = {
-            3: (self.assert_val, Info("local copy access to %s" % val)),
-            2: (self.get_from_local_db, Info("picking %s file from local db" % val)),
-            1: (self.download_file, Info("downloading copy of %s" % val)),
+            3: (self.assert_val, Info(f"Accessing cache to load {val}...")),
+            2: (self.get_from_local_db, Info(f"Accessing local db to load {val}...")),
+            1: (self.download_file, Info("Downloading {val} to cache...")),
         }
         for i in mode:
             try:
                 mth, info = dct[i]
-                mth(val)
                 warn(info, 4)
+                mth(val)
+                warn(Info("Done."), 4)
             except NotImplementedError:
                 raise
             except Exception as e:
-                warn(Info("...failed (due to %s: %s)." % (str(type(e)), str(e))))
+                warn(Info(f"Failed (due to {type(e).__name__}: {e})."))
                 continue
             else:
                 return [self._get_file(val)]
