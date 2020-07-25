@@ -36,6 +36,67 @@ from pydesc.warnexcept import warn
 norm = scipy.linalg.get_blas_funcs("nrm2")
 
 
+def calculate_residues_angles_vectorized(residues):
+    """Calculate torsion angles for given residues.
+
+    Sets "angles" property in residues.
+    Purpose of this method is to speed up calculation of angles -- its faster
+    than calling property in every residue.
+
+    Args:
+        residues: sequence of Residue instances.
+
+    """
+    n_res = len(residues)
+    if n_res == 0:
+        return
+    n, ca, c = numpy.transpose(
+        numpy.array([[a.vector for a in r.iter_bb_atoms()] for r in residues]),
+        (1, 0, 2),
+    )[[0, 1, 2]]
+    pc = numpy.empty((n_res, 3), dtype=numpy.float32)
+    nn = numpy.empty((n_res, 3), dtype=numpy.float32)
+
+    pc[1:] = c[:-1]
+    nn[:-1] = n[1:]
+
+    no_prev = numpy.fromiter((r.prev_mer is None for r in residues), dtype=bool)
+    no_next = numpy.fromiter((r.next_mer is None for r in residues), dtype=bool)
+
+    pc[no_prev] = n[no_prev]
+    nn[no_next] = c[no_next]
+
+    cca = c - ca
+    cnn = c - nn
+    nca = n - ca
+    npc = n - pc
+
+    pl1 = numpy.cross(cca, cnn)  # vectors perpendicular to plane 1
+    pl2 = numpy.cross(nca, cca)  # vectors perpendicular to plane 2
+    pl3 = numpy.cross(npc, nca)  # vectors perpendicular to plane 3
+
+    with numpy.errstate(divide="ignore", invalid="ignore"):
+        pl1, pl2, pl3 = (
+            pl / numpy.sqrt(numpy.einsum("ij,ij->i", pl, pl)).reshape(-1, 1)
+            for pl in (pl1, pl2, pl3)
+        )
+
+    angs = []
+    for planes, direction in (((pl1, pl2), -cca), ((pl2, pl3), nca)):
+        cos = numpy.einsum("ij,ij->i", *planes)
+        cpr = numpy.cross(*planes)
+        sin = numpy.sqrt(numpy.einsum("ij,ij->i", cpr, cpr))
+        sign = numpy.sign(numpy.einsum("ij,ij->i", direction, cpr))
+
+        t2 = numpy.arctan2(sin, cos) * sign
+        t1 = numpy.nan_to_num(t2).astype(float)
+
+        angs.append(t1)
+
+    for res, (psi, phi) in zip(residues, list(zip(*angs))):
+        res.dynamic_features["angles"] = (psi, phi)
+
+
 class Residue(Mer):
     """Representation of a residue.
 
@@ -49,70 +110,6 @@ class Residue(Mer):
         atoms(dict): map of names to Atom instances.
 
     """
-
-    @staticmethod
-    def calculate_angles_static(structure_obj):
-        """Calculate torsion angles of residues in given structure.
-
-        Only subclasses of Residue are taken into account.
-
-        Sets "angles" property in residues.
-        Purpose of this method is to speed up calculation of angles -- its faster
-        than calling property in every residue.
-
-        Args:
-            structure_obj: sequence of AtomSet instances.
-
-        """
-        residues = [mer for mer in structure_obj if isinstance(mer, Residue)]
-        nres = len(residues)
-        if nres == 0:
-            return
-        n, ca, c = numpy.transpose(
-            numpy.array([[a.vector for a in r.iter_bb_atoms()] for r in residues]),
-            (1, 0, 2),
-        )[[0, 1, 2]]
-        pc = numpy.empty((nres, 3), dtype=numpy.float32)
-        nn = numpy.empty((nres, 3), dtype=numpy.float32)
-
-        pc[1:] = c[:-1]
-        nn[:-1] = n[1:]
-
-        no_prev = numpy.fromiter((r.prev_mer is None for r in residues), dtype=bool)
-        no_next = numpy.fromiter((r.next_mer is None for r in residues), dtype=bool)
-
-        pc[no_prev] = n[no_prev]
-        nn[no_next] = c[no_next]
-
-        cca = c - ca
-        cnn = c - nn
-        nca = n - ca
-        npc = n - pc
-
-        pl1 = numpy.cross(cca, cnn)  # vectors perpendicular to plane 1
-        pl2 = numpy.cross(nca, cca)  # vectors perpendicular to plane 2
-        pl3 = numpy.cross(npc, nca)  # vectors perpendicular to plane 3
-
-        with numpy.errstate(divide="ignore", invalid="ignore"):
-            pl1, pl2, pl3 = (
-                pl / numpy.sqrt(numpy.einsum("ij,ij->i", pl, pl)).reshape(-1, 1)
-                for pl in (pl1, pl2, pl3)
-            )
-
-        angs = []
-        for planes, direction in (((pl1, pl2), -cca), ((pl2, pl3), nca)):
-            cos = numpy.einsum("ij,ij->i", *planes)
-            cpr = numpy.cross(*planes)
-            sin = numpy.sqrt(numpy.einsum("ij,ij->i", cpr, cpr))
-            sign = numpy.sign(numpy.einsum("ij,ij->i", direction, cpr))
-
-            t2 = numpy.arctan2(sin, cos) * sign
-            t1 = numpy.nan_to_num(t2).astype(float)
-
-            angs.append(t1)
-
-        for res, (psi, phi) in zip(residues, list(zip(*angs))):
-            res.dynamic_features["angles"] = (psi, phi)
 
     def __init__(self, ind, name, chain, atoms):
         super().__init__(ind, name, chain, atoms)

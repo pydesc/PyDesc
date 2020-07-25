@@ -15,6 +15,7 @@ from pydesc.chemistry.factories import BioPythonAtomSetFactory
 from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
+from pydesc.chemistry.full_atom import calculate_residues_angles_vectorized
 
 TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, MonoatomicIon: 0.0}
 
@@ -175,7 +176,8 @@ class TestResidue(AtomSetTest):
             if m1.has_bond(m2):
                 m1.next_mer = m2
                 m2.prev_mer = m1
-        Residue.calculate_angles_static(mers)
+
+        calculate_residues_angles_vectorized(mers)
         for mer in mers:
             assert "angles" in mer.dynamic_features
             angs = mer.dynamic_features["angles"]
