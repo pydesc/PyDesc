@@ -46,7 +46,7 @@ def test_mer_subclass(superclass, expected_is_chainable):
     }
     mer = Subclass(42, "42", "C", atoms)
 
-    numpy.testing.assert_array_equal(mer.rc.vector, (0.5, 0.5, 0.5))
+    numpy.testing.assert_array_equal(mer.gc.vector, (0.5, 0.5, 0.5))
     assert mer.is_new()
     assert mer.is_chainable() == expected_is_chainable
     assert not mer.dynamic_features
