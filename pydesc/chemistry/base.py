@@ -258,11 +258,11 @@ class AtomSet:
         self.pseudoatoms = {}
 
     @register_pseudoatom
-    def rc(self):
+    def gc(self):
         """Geometrical center of AtomSet."""
         coordinates = [a.vector for a in self]
-
-        vector = numpy.average(coordinates, 0)
+        with numpy.errstate(invalid="raise", divide="raise"):
+            vector = numpy.average(coordinates, 0)
         return Pseudoatom(numpy_vec=vector, name="rc")
 
     @property
@@ -328,7 +328,6 @@ class Mer(AtomSet):
             bool: True if *atoms_set* is next to *self*.
 
         """
-        # TODO: should depend on class-dependedn setting (if on any)
         if type(atoms_set) != type(self):
             return False
         bb_atoms = self.get_config("backbone_atoms")
@@ -336,7 +335,8 @@ class Mer(AtomSet):
         next_atom = atoms_set.atoms[bb_atoms[0]]
         try:
             distance = (last_atom - next_atom).calculate_length()
-            return distance <= ConfigManager.chemistry.mer_acceptable_distance
+            threshold = self.get_config("bb_bond_threshold")
+            return distance <= threshold
         except UnboundLocalError:
             return False
 
@@ -369,13 +369,6 @@ class Mer(AtomSet):
             pass
         code = self.get_config("additional_code")
         return code[self.name]
-
-    @register_pseudoatom
-    def rc(self):
-        """Geometrical center of side chain (non-backbone atoms)."""
-        non_backbone_coordinates = [a.vector for a in self.iter_nbb_atoms()]
-        vector = numpy.average(non_backbone_coordinates, 0)
-        return Pseudoatom(numpy_vec=vector, name="rc")
 
 
 class Ligand(AtomSet):

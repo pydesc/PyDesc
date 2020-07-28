@@ -4,6 +4,7 @@ import pickle
 import pytest
 
 from pydesc.api.criteria import get_default_protein_criterion
+from pydesc.api.criteria import get_gc_distance_criterion
 from pydesc.api.criteria import get_rc_distance_criterion
 from pydesc.config import ConfigManager
 from pydesc.contacts.maps import ContactMapCalculator
@@ -12,18 +13,18 @@ from pydesc.structure import StructureLoader
 ConfigManager.warnings.set("quiet", True)
 
 
-def test_rc_contact_map(structure_file_w_type):
+def test_gc_contact_map(structure_file_w_type):
     sl = StructureLoader()
     structures = sl.load_structures(path=structure_file_w_type)
 
     for structure in structures:
         cm_calc = ContactMapCalculator(
-            structure=structure, contact_criterion=get_rc_distance_criterion()
+            structure=structure, contact_criterion=get_gc_distance_criterion()
         )
         cm = cm_calc.calculate_contact_map()
         assert len(cm) > 0, "No contacts in structure %s" % str(structure)
         for (k1, k2), v in cm:
-            length = (structure[k1].rc - structure[k2].rc).calculate_length()
+            length = (structure[k1].gc - structure[k2].gc).calculate_length()
             assert length < 10
 
 

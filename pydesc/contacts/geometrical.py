@@ -20,6 +20,7 @@ import numpy
 from scipy.spatial.distance import cdist
 
 from pydesc.contacts.base import ContactCriterion
+from pydesc.warnexcept import warn, Info
 
 
 def get_inds(atom_sets):
@@ -49,6 +50,9 @@ def get_distance_matrix(atom_sets1, atom_sets2, point):
         point(str): name of point to measure distance from (e.g. 'rc'), atom or
             pseudoatom.
 
+    Raises:
+        TypeError: when given atom sets are empty.
+
     Returns:
         : matrix of shape (len(atom_sets1), len(atom_sets2)) storing distances between
         appropriate (pseudo)atoms.
@@ -56,7 +60,12 @@ def get_distance_matrix(atom_sets1, atom_sets2, point):
     """
     points1 = numpy.array([getattr(atom_set, point).vector for atom_set in atom_sets1])
     points2 = numpy.array([getattr(atom_set, point).vector for atom_set in atom_sets2])
-    dist_mtx = cdist(points1, points2)
+    try:
+        dist_mtx = cdist(points1, points2)
+    except ValueError:
+        # meaning arrays are empty
+        msg = "Empty atom sets given."
+        raise TypeError(msg)
     return dist_mtx
 
 
@@ -91,7 +100,16 @@ class PointsDistanceCriterion(ContactCriterion):
         structure_ids1 = get_inds(atom_sets1)
         structure_ids2 = get_inds(atom_sets2)
 
-        dist_mtx = get_distance_matrix(atom_sets1, atom_sets2, self.atom_name)
+        try:
+            dist_mtx = get_distance_matrix(atom_sets1, atom_sets2, self.atom_name)
+        except TypeError:
+            msg = (
+                f"Criterion '{str(self)}' does not apply to any part of given "
+                f"structure. Maybe this criterion is inappropriate for the kind of "
+                f"representation of given structure?"
+            )
+            warn(Info(msg))
+            return matrix
 
         possible_contacts = dist_mtx <= (self.threshold + self.margin)
         points1_indexes, points2_indexes = numpy.where(possible_contacts)
@@ -145,8 +163,17 @@ class DistancesDifferenceCriterion(ContactCriterion):
         structure_ids1 = get_inds(atom_sets1)
         structure_ids2 = get_inds(atom_sets2)
 
-        dist1_mtx = get_distance_matrix(atom_sets1, atom_sets2, self.point1)
-        dist2_mtx = get_distance_matrix(atom_sets1, atom_sets2, self.point2)
+        try:
+            dist1_mtx = get_distance_matrix(atom_sets1, atom_sets2, self.point1)
+            dist2_mtx = get_distance_matrix(atom_sets1, atom_sets2, self.point2)
+        except TypeError:
+            msg = (
+                f"Criterion '{str(self)}' does not apply to any part of given "
+                f"structure. Maybe this criterion is inappropriate for the kind of "
+                f"representation of given structure?"
+            )
+            warn(Info(msg))
+            return matrix
 
         difference_mtx = dist1_mtx - dist2_mtx
 

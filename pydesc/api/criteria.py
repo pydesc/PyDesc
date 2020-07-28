@@ -16,11 +16,12 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 """Set of pre-defined ready-to-use contact criteria."""
 
+from pydesc.chemistry.full_atom import FullAtomMer
+from pydesc.chemistry.full_atom import Residue
 from pydesc.contacts.base import ContactsAlternative
 from pydesc.contacts.base import ContactsConjunction
 from pydesc.contacts.geometrical import DistancesDifferenceCriterion
 from pydesc.contacts.geometrical import PointsDistanceCriterion
-from pydesc.chemistry.full_atom import Residue
 from pydesc.selection import AtomSetSubclass
 
 
@@ -63,7 +64,10 @@ def get_cbx_distance_criterion(threshold=6.5, margin=0.5):
 
 
 def get_rc_distance_criterion(threshold=7.5, margin=0.5):
-    """Get default geometrical center distance criterion.
+    """Get geometrical center of side chain distance criterion.
+
+    Applies to Mers in full-atom representation only. That can be changed with
+    'set_selection' method. Requires AtomSet subclasses having 'rc' pseudoatom.
 
     Args:
         threshold: approximate distance at which mers geometrical centers are no longer
@@ -74,7 +78,24 @@ def get_rc_distance_criterion(threshold=7.5, margin=0.5):
         : contact criterion.
 
     """
-    return PointsDistanceCriterion("rc", threshold, margin)
+    rc_distance = PointsDistanceCriterion("rc", threshold, margin)
+    rc_distance.set_selection(AtomSetSubclass(FullAtomMer))
+    return rc_distance
+
+
+def get_gc_distance_criterion(threshold=8.5, margin=0.5):
+    """Get default geometrical center distance criterion.
+
+    Args:
+        threshold: approximate distance at which geometrical centers of sets of
+            atoms are no longer considered in contact. 8.5 by default.
+        margin: margin of tolerance. 0.5 by default.
+
+    Returns:
+        : contact criterion.
+
+    """
+    return PointsDistanceCriterion("gc", threshold, margin)
 
 
 def get_ca_cbx_vectors_difference_criterion(threshold=0.75, margin=0.05):
