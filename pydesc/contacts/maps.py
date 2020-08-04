@@ -17,7 +17,21 @@
 
 """Contact maps and auxiliary classes providing method to create maps."""
 
+from functools import wraps
+
 from scipy.sparse import dok_matrix
+
+
+def same_structure_only(method):
+    @wraps(method)
+    def method_wrapper(self, other, *args, **kwargs):
+        if self.structure.derived_from != other.structure.derived_from:
+            msg = "Sum of maps of contacts calculated for different structures is not" \
+                  " supported."
+            raise ValueError(msg)
+        return method(self, other, *args, **kwargs)
+
+    return method_wrapper
 
 
 class ContactMapCalculator:
@@ -82,6 +96,42 @@ class ContactMap:
             return self.get_contact_value(*item)
         except TypeError:
             return self.get_atom_set_contacts(item)
+
+    def get_dok_matrix(self):
+        """Return contacts as scipy dok matrix."""
+        return self._contacts
+
+    @same_structure_only
+    def combine(self, other):
+        """Return new contact map storing higher contact values from two maps.
+
+        Args:
+            other(ContactMap): contact map to combine with.
+
+        Returns:
+            ContactMap: map of maximal values of two maps.
+
+        """
+        matrix = other.get_dok_matrix().maximum(self.get_dok_matrix())
+        return ContactMap(matrix, self.structure)
+
+    @same_structure_only
+    def get_relative_compliment_map(self, other):
+        """Return relative compliment of other in self (self / other; contacts from
+        self not occurring in other).
+
+        Args:
+            other(ContactMap): contact map to combine with.
+
+        Returns:
+            ContactMap: map storing only relative compliment of other in self.
+
+        """
+        matrix = self.get_dok_matrix().copy()
+        other_matrix = other.get_dok_matrix()
+        matrix[other_matrix == 2] = 0
+        matrix[(other_matrix == 1).toarray() & (matrix != 0).toarray()] = 1
+        return ContactMap(matrix, self.structure)
 
     def get_atom_set_contacts(self, ind):
         """Get values of non-zero contacts of single atom set.
