@@ -81,37 +81,38 @@ class ContactMap:
         try:
             return self.get_contact_value(*item)
         except TypeError:
-            return self.get_mer_contacts(item)
+            return self.get_atom_set_contacts(item)
 
-    def get_mer_contacts(self, mer_id):
-        """Get values of non-zero contacts of mer with given ind.
+    def get_atom_set_contacts(self, ind):
+        """Get values of non-zero contacts of single atom set.
 
         Args:
-             mer_id(int): mer ind.
+             ind(int): atom set ind.
 
         Returns:
-             : sequence of tuples storing mer inds and contact values. Only non-zero
+             : sequence of tuples storing inds and contact values. Only non-zero
              values are present (1 or 2).
 
         """
-        contacts = [(ind, value) for (_, ind), value in self._contacts[mer_id].items()]
+        contacts = [(ind, value) for (_, ind), value in self._contacts[ind].items()]
         return contacts
 
-    def get_contact_value(self, mer_id1, mer_id2):
-        """Return value of contact between mers of two given inds.
+    def get_contact_value(self, ind1, ind2):
+        """Return value of contact between atom sets of two given inds.
 
         Args:
-            mer_id1(int): ind of first mer.
-            mer_id2(int): ind of second mer.
+            ind1(int): ind of first atom set.
+            ind2(int): ind of second atom set.
 
         Returns:
             int: contact values (0, 1 or 2).
 
         """
-        return self._contacts[mer_id1, mer_id2]
+        return self._contacts[ind1, ind2]
 
     def to_string(self, stream_out):
-        """Dumps pairs of mers in contacts to a given file-like object in CSV format.
+        """Dumps pairs of atom sets in contacts to a given file-like object in CSV
+        format.
 
         Args:
           stream_out: file-like object (opened file or StringIO etc.).

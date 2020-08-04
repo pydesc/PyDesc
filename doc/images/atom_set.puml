@@ -1,0 +1,38 @@
+@startuml
+
+hide empty members
+
+package chemistry {
+abstract class AtomSet{
+}
+
+abstract class Mer{
+}
+
+abstract Class Ligand{
+}
+
+class Residue{
+}
+
+class Nucleotide{
+}
+
+class MonoatomicIon{
+}
+
+class Compound{
+}
+
+AtomSet <|-- Mer
+AtomSet <|-- Ligand
+
+Mer <|-- Residue
+Mer <|-- Nucleotide
+
+Ligand <|-- MonoatomicIon
+Ligand <|-- Compound
+
+}
+
+@enduml

@@ -2,10 +2,10 @@ import pytest
 
 from pydesc.api.trajectory import freeze_frame
 from pydesc.api.trajectory import from_frames
-from pydesc.mers.factories import CopyingFactor
-from pydesc.mers.full_atom import Nucleotide
-from pydesc.mers.full_atom import Residue
-from pydesc.selection import MerSubclasses
+from pydesc.chemistry.factories import CopyingFactor
+from pydesc.chemistry.full_atom import Nucleotide
+from pydesc.chemistry.full_atom import Residue
+from pydesc.selection import AtomSetSubclass
 from pydesc.selection import Selector
 from pydesc.selection import Set
 from pydesc.structure import StructureLoader
@@ -60,18 +60,18 @@ class TestTrajectory:
         else:
             pytest.xfail()
             return
-        coords1 = mer.CA.vector
+        coords1 = mer.atoms["CA"].vector
         pseudo_coords1 = mer.cbx
 
         trajectory.set_frame(1)
 
         pseudo_coords2 = mer.cbx
-        coords2 = mer.CA.vector
+        coords2 = mer.atoms["CA"].vector
         assert "cbx" in mer.pseudoatoms
 
         trajectory.set_frame(0)
 
-        coords3 = mer.CA.vector
+        coords3 = mer.atoms["CA"].vector
 
         assert tuple(coords1) != tuple(coords2)
         assert tuple(coords1) == tuple(coords3)
@@ -86,18 +86,18 @@ class TestTrajectory:
         else:
             pytest.xfail()
             return
-        coords1 = mer.P.vector
+        coords1 = mer.atoms["P"].vector
         pseudo_coords1 = mer.prc
 
         trajectory.set_frame(1)
 
         pseudo_coords2 = mer.prc
-        coords2 = mer.P.vector
+        coords2 = mer.atoms["P"].vector
         assert "prc" in mer.pseudoatoms
 
         trajectory.set_frame(0)
 
-        coords3 = mer.P.vector
+        coords3 = mer.atoms["P"].vector
 
         assert tuple(coords1) != tuple(coords2)
         assert tuple(coords1) == tuple(coords3)
@@ -116,7 +116,7 @@ class TestTrajectory:
     def test_selection(self, ext, stc):
         trajectory = self.load_traj(ext, stc)
         subclass = type(trajectory[0])
-        selection = MerSubclasses(subclass)
+        selection = AtomSetSubclass(subclass)
         new_stc = selection.create_structure(trajectory)
         assert len(new_stc) > 0
         assert trajectory[0] in new_stc

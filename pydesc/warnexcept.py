@@ -243,7 +243,7 @@ class WrongElement(Exception):
     pass
 
 
-class WrongMerType(Exception):
+class WrongAtomSetType(Exception):
     """Class of warnings. Warning against wrong type of mers given for
     contact calculation under specific criteria. Printed by default.
     """

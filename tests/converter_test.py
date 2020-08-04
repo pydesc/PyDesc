@@ -68,8 +68,8 @@ class TestConverter:
 
     @pytest.mark.system
     def test_solvent(self, structures_dir):
-        old_solvent_setting = list(config.ConfigManager.mers.solvent)
-        config.ConfigManager.mers.solvent = []
+        old_solvent_setting = list(config.ConfigManager.chemistry.solvent)
+        config.ConfigManager.chemistry.solvent = []
 
         structure_name = "5MPV.pdb"
         file_path = os.path.join(structures_dir, "prots_only", structure_name)
@@ -88,7 +88,7 @@ class TestConverter:
                     ic = id_[3][2]
                     pdb_id = (id_[2], id_[3][1], ic if ic != " " else None)
                     assert pdb_id in nc.pdb2ind
-        config.ConfigManager.mers.solvent = old_solvent_setting
+        config.ConfigManager.chemistry.solvent = old_solvent_setting
         # TODO: this is exactly why implicit config is a bad idea.
         #   can we get rid of this?
 

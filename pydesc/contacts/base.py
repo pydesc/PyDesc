@@ -39,13 +39,14 @@ class ContactCriterion:
         self.asymmetric = False
 
     def set_selections(self, selection1, selection2):
-        """Set selections determining for which mers contacts will be calculated.
+        """Set selections determining for which sets of atoms contacts will be
+        calculated.
         
         E.g. for criteria that only make sense for residues, but does not for
         nucleotides, one would like to add selections picking residues only.
         
-        Note that this allows to define contacts between different types of mers,
-        e.g. between nucleotides and residues.
+        Note that this allows to define contacts between different types of mers and
+        ligands, e.g. between nucleotides and residues or residues and other compounds.
 
         Args:
             selection1: selection instance. By default Everything selection is set.
@@ -57,7 +58,7 @@ class ContactCriterion:
         self.asymmetric = True
 
     def set_selection(self, selection):
-        """Set single selection determining for which mers contacts will be
+        """Set single selection determining for which sets of atoms contacts will be
         calculated.
 
         Calls set_selection with *selection* argument twice.
@@ -70,9 +71,9 @@ class ContactCriterion:
         """Calculate all contacts in given structure.
         
         Contacts are usually sparse, so this method by default returns scipy dok
-        matrix. Note that shape of returned matrix takes into account all mers from
-        structure given structure was derived from. Size of returned matrix depends
-        on number of inds recognised in structure's converter.
+        matrix. Note that shape of returned matrix takes into account all sets of atoms
+        from structure given structure was derived from. Size of returned matrix depends
+        on number of inds recognised by structure's converter.
         
         In subclasses in most cases it should be sufficient to leave that method
         untouched and overwrite _fill_contact_matrix instead.
@@ -82,50 +83,55 @@ class ContactCriterion:
 
         Returns:
             scipy.sparse.dok_matrix: square matrix filled with contact values. Each
-            row and column corresponds with mer ind, so for substructures returned
-            matrix will have probably greater dimension than expected.
+            row and column corresponds with AtomSet ind, so for all substructures
+            derived from the same structure matrix will have the same dimensions.
 
         """
-        mers1 = self.selection1.create_structure(structure_obj)
-        mers2 = self.selection2.create_structure(structure_obj)
+        atom_sets1 = self.selection1.create_structure(structure_obj)
+        atom_sets2 = self.selection2.create_structure(structure_obj)
 
         total_len = structure_obj.derived_from.converter.get_max_ind()
         contact_map = dok_matrix((total_len, total_len), dtype=numpy.uint8)
-        contact_map = self._fill_contact_matrix(mers1, mers2, contact_map)
+        contact_map = self._fill_contact_matrix(atom_sets1, atom_sets2, contact_map)
 
         return contact_map
 
     def calculate_inter_contacts(self, structure1, structure2):
-        """
+        """Like calculate_contacts, but calculates contacts between two substructures
+        coming from single structure.
 
         Args:
-            structure1:
-            structure2:
+            structure1: 1st substructure.
+            structure2: 2nd substructure.
 
         Returns:
+            scipy.sparse.dok_matrix: square matrix filled with contact values. Each
+            row and column corresponds with AtomSet ind, so for all substructures
+            derived from the same structure matrix will have the same dimensions.
 
         """
-        mers1 = self.selection1.create_structure(structure1)
-        mers2 = self.selection2.create_structure(structure2)
+        atom_sets1 = self.selection1.create_structure(structure1)
+        atom_sets2 = self.selection2.create_structure(structure2)
 
         if structure1.derived_from is not structure2.derived_from:
             raise ValueError(
-                "Both given sub structures have to be part of the same " "structure"
+                "Both given sub structures have to be part of the same structure"
             )
         total_len = structure1.derived_from.converter.get_max_ind()
         contact_map = dok_matrix((total_len, total_len), dtype=numpy.uint8)
-        contact_map = self._fill_contact_matrix(mers1, mers2, contact_map)
+        contact_map = self._fill_contact_matrix(atom_sets1, atom_sets2, contact_map)
 
         if self.asymmetric:
-            mers1 = self.selection1.create_structure(structure2)
-            mers2 = self.selection2.create_structure(structure1)
+            atom_sets1 = self.selection1.create_structure(structure2)
+            atom_sets2 = self.selection2.create_structure(structure1)
 
-            contact_map = self._fill_contact_matrix(mers1, mers2, contact_map)
+            contact_map = self._fill_contact_matrix(atom_sets1, atom_sets2, contact_map)
 
         return contact_map
 
-    def _fill_contact_matrix(self, mers1, mers2, matrix):
-        """Fill given contact matrix for given two sets of mers.
+    def _fill_contact_matrix(self, atom_sets1, atom_sets2, matrix):
+        """Fill given contact matrix for given two sets of AtomSets subclasses
+        instances.
         
         Meant to be overwritten in subclasses. ContactCriterion gives rather
         suboptimal, generic implementation, which requires implementation of
@@ -134,34 +140,34 @@ class ContactCriterion:
         _calculate_contact.
         
         This method suppose to fill given matrix with values so that element i,
-        j store value of contact between i-th mer from mers1 and j-th mer from mers2,
-        where i and j are corresponding mers inds (values of ind attribute).
+        j store value of contact between i-th AtomSet from atom_sets1 and j-th AtomSet
+        from atom_sets2, where i and j are corresponding inds (values of ind attribute).
 
         Args:
-            mers1: sequence of mers.
-            mers2: other sequence of mers (possibly the same).
+            atom_sets1: sequence of AtomSet instances.
+            atom_sets2: other sequence of AtomSet instances (possibly the same).
             matrix: matrix of appropriate shape to be filled with calculated values.
 
         Returns:
             given matrix, filled with calculated values.
 
         """
-        for mer1 in mers1:
-            for mer2 in mers2:
-                value = self._calculate_contact(mer1, mer2)
-                matrix[mer1.ind, mer2.ind] = value
+        for as1 in atom_sets1:
+            for as2 in atom_sets2:
+                value = self._calculate_contact(as1, as2)
+                matrix[as1.ind, as2.ind] = value
         return matrix
 
-    def _calculate_contact(self, mer1, mer2):
-        """Calculate value of single contact between given mers.
+    def _calculate_contact(self, atom_set1, atom_set2):
+        """Calculate value of single contact between given AtomSet instances.
         
         Meant to be overwritten in subclasses that do not have optimal vectorised
         implementation (in which case they overwrite _fill_contact_matrix method).
         For all others -- raise NotImplemented error.
 
         Args:
-            mer1: first mer instance.
-            mer2: second mer instance.
+            atom_set1: 1st AtomSet instance.
+            atom_set2: 2nd AtomSet instance.
 
         Returns:
             int: contact value (0 if there is no contact, 1 for uncertain contact
@@ -204,9 +210,9 @@ class NotCriterion(ContactCriterion):
         super().__init__()
         self.set_selections(criterion.selection1, criterion.selection2)
 
-    def _fill_contact_matrix(self, mers1, mers2, matrix):
+    def _fill_contact_matrix(self, atom_sets1, atom_sets2, matrix):
         matrix[:, :] = 2
-        contact_map = self.criterion.calculate_inter_contacts(mers1, mers2)
+        contact_map = self.criterion.calculate_inter_contacts(atom_sets1, atom_sets2)
         matrix = dok_matrix(matrix + (-1 * contact_map), dtype=numpy.uint8)
         return matrix
 
@@ -251,10 +257,10 @@ class ContactsConjunction(CombinedContact):
     def __init__(self, *criteria_objs):
         super().__init__(*criteria_objs)
 
-    def _fill_contact_matrix(self, mers1, mers2, matrix):
-        contact_map = self.criteria[0].calculate_inter_contacts(mers1, mers2)
+    def _fill_contact_matrix(self, atom_sets1, atom_sets2, matrix):
+        contact_map = self.criteria[0].calculate_inter_contacts(atom_sets1, atom_sets2)
         for criterion in self.criteria[1:]:
-            new_map = criterion.calculate_inter_contacts(mers1, mers2)
+            new_map = criterion.calculate_inter_contacts(atom_sets1, atom_sets2)
             contact_map = contact_map.minimum(new_map)
         return contact_map
 
@@ -262,10 +268,10 @@ class ContactsConjunction(CombinedContact):
 class ContactsAlternative(CombinedContact):
     """Alternative of contact criteria."""
 
-    def _fill_contact_matrix(self, mers1, mers2, matrix):
-        contact_map = self.criteria[0].calculate_inter_contacts(mers1, mers2)
+    def _fill_contact_matrix(self, atom_sets1, atom_sets2, matrix):
+        contact_map = self.criteria[0].calculate_inter_contacts(atom_sets1, atom_sets2)
         for criterion in self.criteria[1:]:
-            new_map = criterion.calculate_inter_contacts(mers1, mers2)
+            new_map = criterion.calculate_inter_contacts(atom_sets1, atom_sets2)
             contact_map = contact_map.maximum(new_map)
         return contact_map
 
@@ -273,12 +279,12 @@ class ContactsAlternative(CombinedContact):
 class ContactsExclusiveDisjunction(CombinedContact):
     """Exclusive disjunction (xor) of contact criteria."""
 
-    def _fill_contact_matrix(self, mers1, mers2, matrix):
-        new_map = self.criteria[0].calculate_inter_contacts(mers1, mers2)
+    def _fill_contact_matrix(self, atom_sets1, atom_sets2, matrix):
+        new_map = self.criteria[0].calculate_inter_contacts(atom_sets1, atom_sets2)
         count_ones = (new_map == 1).astype(numpy.uint8)
         count_twos = (new_map == 2).astype(numpy.uint8)
         for criterion in self.criteria[1:]:
-            new_map = criterion.calculate_inter_contacts(mers1, mers2)
+            new_map = criterion.calculate_inter_contacts(atom_sets1, atom_sets2)
             count_ones += (new_map == 1).astype(numpy.uint8)
             count_twos += (new_map == 2).astype(numpy.uint8)
 

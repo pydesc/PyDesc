@@ -62,7 +62,7 @@ def draw_structures(structures, split_states=False):
         cmd.read_pdbstr(pdb_stream, name, state=state_n)
 
 
-def draw_contact(structure, ind1, ind2, point="rc", contact_name=None, gap=0.5):
+def draw_contact(structure, ind1, ind2, point="gc", contact_name=None, gap=0.5):
     """Draw single contact as unlabeled distance between mers.
 
     Args:
@@ -94,7 +94,7 @@ def draw_contact(structure, ind1, ind2, point="rc", contact_name=None, gap=0.5):
     cmd.delete(p2n)
 
 
-def draw_contact_maps(contact_maps, structures=None, split_contacts=False, point="rc"):
+def draw_contact_maps(contact_maps, structures=None, split_contacts=False, point="gc"):
     """Draw given contact maps.
 
     Draws two contact maps: one for contacts with contact value 2 only (sure contacts),
@@ -108,7 +108,7 @@ def draw_contact_maps(contact_maps, structures=None, split_contacts=False, point
         split_contacts(bool): determines if each contact is to be drawn as separate
         object. False by default.
         point(str): name of atom or pseudoatom to start and end contact lines at (
-        "rc" by default).
+        "gc" by default).
 
     """
 
@@ -145,7 +145,7 @@ def draw_contact_maps(contact_maps, structures=None, split_contacts=False, point
 def draw_pseudoatoms(structure, pseudoatom_name, anchor_name=None, split_objects=False):
     """Draw pseudoatoms of choice.
 
-    Mers not having given pseudoatom are skipped.
+    AtomSets subclasses instances not having given pseudoatom are skipped.
 
     Args:
         structure: (sub)structure for which pseudoatoms should be drawn.

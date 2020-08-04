@@ -8,7 +8,7 @@ from Bio.PDB import DSSP
 import pydesc.dbhandler
 import pydesc.geometry
 from pydesc.config import ConfigManager
-from pydesc.mers.base import Mer
+from pydesc.chemistry.base import AtomSet
 from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import DiscontinuityError
 from pydesc.warnexcept import WrongElement
@@ -19,12 +19,12 @@ class BackbonedMixIn:
     def _fill_mers_attrs(self):
         """Sets mers attributes normally set by init.
 
-        Sets next/previous_mer attributes.
+        Sets next/prev_mer attributes.
         """
         for pair in zip(self._mers[:-1], self._mers[1:]):
             if pair[0].has_bond(pair[1]):
                 pair[0].next_mer = pair[1]
-                pair[1].previous_mer = pair[0]
+                pair[1].prev_mer = pair[0]
 
 
 class AbstractStructure(metaclass=ABCMeta):
@@ -115,7 +115,7 @@ class AbstractStructure(metaclass=ABCMeta):
                 # if given parameter already is a PDB_id or a corresponding
                 # tuple instance
                 param = self.derived_from.converter.get_ind(param)
-            if isinstance(param, Mer):
+            if isinstance(param, AtomSet):
                 return self._mers.index(param)
             try:
                 # if parameter is an integer - it is probably monomer ind
@@ -579,7 +579,7 @@ class ElementChainable(AbstractElement, Segment):
             start = self._mers[0]
             end = self._mers[-1]
             try:
-                self._mers = (start.previous_mer,) + self._mers + (end.next_mer,)
+                self._mers = (start.prev_mer,) + self._mers + (end.next_mer,)
             except AttributeError:
                 raise ValueError(msg)
         if self._mers.count(None) != 0:

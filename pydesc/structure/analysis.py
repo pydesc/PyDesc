@@ -23,7 +23,7 @@ created: 10.07.2013 - , Giovanni Nico, Tymoteusz 'hert' Oleniecki
 
 import numpy
 
-from pydesc.mers.full_atom import Residue
+from pydesc.chemistry.full_atom import Residue
 
 eps = 0.00000001
 rtod = 180.0 / numpy.pi

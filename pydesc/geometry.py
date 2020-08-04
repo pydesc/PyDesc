@@ -369,7 +369,7 @@ class Plane:
 
         return Coord(numpy_vec=res)
 
-    def dihedral_angle(self, plane2):
+    def dihedral_angle(self, plane2, direction=None):
         """
         """
         nrm = 1
@@ -379,7 +379,11 @@ class Plane:
         sin = c_p_norm / nrm
         angle = numpy.arctan2(sin, cos)
 
-        return angle
+        sign = 1.0
+        if direction is not None:
+            sign = numpy.sign((direction * c_prod).sum())
+
+        return angle * sign
 
     def dihedral_angle_cos(self, plane2):
         """Returns value of the cosinus of the angle between two planes.

@@ -5,13 +5,13 @@ import pytest
 
 from pydesc import selection
 from pydesc.config import ConfigManager
-from pydesc.mers.base import MerChainable
-from pydesc.mers.factories import CopyingFactor
-from pydesc.mers.factories import WrongMerType
-from pydesc.mers.full_atom import Ion
-from pydesc.mers.full_atom import Ligand
-from pydesc.mers.full_atom import Nucleotide
-from pydesc.mers.full_atom import Residue
+from pydesc.chemistry.base import Mer
+from pydesc.chemistry.factories import CopyingFactor
+from pydesc.chemistry.factories import WrongAtomSetType
+from pydesc.chemistry.full_atom import MonoatomicIon
+from pydesc.chemistry.full_atom import Compound
+from pydesc.chemistry.full_atom import Nucleotide
+from pydesc.chemistry.full_atom import Residue
 from pydesc.structure import StructureLoader
 from pydesc.structure.topology import AbstractStructure
 from pydesc.structure.topology import PartialStructure
@@ -94,14 +94,14 @@ class TestSelectorCreateNewStructure(SelectionTestBase):
     def test_mer_name(self, structure):
         names = {mer.name: mer for mer in structure}
         for name, mer in names.items():
-            sele = selection.MerName(name)
+            sele = selection.AtomSetName(name)
             new_structure = self.picker.create_new_structure(sele, structure)
             self.assert_atoms(new_structure[-1], mer)
 
     def test_mer_type(self, structure):
         types = {type(mer): mer for mer in structure}
         for type_, mer in types.items():
-            sele = selection.MerExactType(type_)
+            sele = selection.AtomSetExactType(type_)
             new_structure = self.picker.create_new_structure(sele, structure)
             self.assert_atoms(new_structure[-1], mer)
 
@@ -176,7 +176,7 @@ class TestRangeSelection:
     def test_create_segment(self, structure):
         chainable = True
         for mer in tuple(structure)[0:6]:
-            if not isinstance(mer, MerChainable):
+            if not isinstance(mer, Mer):
                 chainable = False
         range_selection, start, end = self.create_6_mer_range(structure)
         if chainable:
@@ -243,12 +243,12 @@ class TestChainSelection:
             assert get_id(mer.ind) in new_sel.ids
 
 
-class TestMerNameSelection:
+class TestAtomSetNameSelection:
     def test_specify(self, structure):
         get_id = structure.converter.get_pdb_id
         mers = tuple(structure)[:6]
         for mer in mers:
-            mer_name_selection = selection.MerName(mer.name)
+            mer_name_selection = selection.AtomSetName(mer.name)
             new_selection = mer_name_selection.specify(structure)
             assert get_id(mer.ind) in new_selection
             assert len(tuple(new_selection)) >= 1
@@ -257,14 +257,14 @@ class TestMerNameSelection:
                 assert selected_mer.name == mer.name
 
 
-class TestMerExactTypeSelection:
+class TestAtomSetExactTypeSelection:
     def test_wrong_class(self):
-        with pytest.raises(WrongMerType):
-            selection.MerExactType(type(None))
+        with pytest.raises(WrongAtomSetType):
+            selection.AtomSetExactType(type(None))
 
     def test_specify_residue(self, stc_2dlc):
         get_id = stc_2dlc.converter.get_pdb_id
-        residue_selection = selection.MerExactType(Residue)
+        residue_selection = selection.AtomSetExactType(Residue)
         residues_set = residue_selection.specify(stc_2dlc)
         assert len(tuple(residues_set)) > 0
         for mer in stc_2dlc.get_chain("X"):
@@ -274,7 +274,7 @@ class TestMerExactTypeSelection:
 
     def test_specify_nucleotide(self, stc_2dlc):
         get_id = stc_2dlc.converter.get_pdb_id
-        nucleotide_selection = selection.MerExactType(Nucleotide)
+        nucleotide_selection = selection.AtomSetExactType(Nucleotide)
         nucleotides_set = nucleotide_selection.specify(stc_2dlc)
         assert len(tuple(nucleotides_set)) > 0
         for mer in stc_2dlc.get_chain("Y"):
@@ -283,12 +283,12 @@ class TestMerExactTypeSelection:
             assert get_id(mer.ind) in nucleotides_set.ids
 
     def test_specify_ligand(self, stc_2dlc):
-        ligand_selection = selection.MerExactType(Ligand)
+        ligand_selection = selection.AtomSetExactType(Compound)
         ligands_set = ligand_selection.specify(stc_2dlc)
         assert len(tuple(ligands_set)) > 0
 
     def test_specify_ion(self, stc_2dlc):
-        ion_selection = selection.MerExactType(Ion)
+        ion_selection = selection.AtomSetExactType(MonoatomicIon)
         ions_set = ion_selection.specify(stc_2dlc)
         assert len(tuple(ions_set)) > 0
 
@@ -311,8 +311,8 @@ class TestComplexSelections:
         the_mer = max(structure, key=lambda mer: mer.is_chainable())
         test_name = the_mer.name
         test_type = type(the_mer)
-        sel1 = selection.MerName(test_name)
-        sel2 = selection.MerExactType(test_type)
+        sel1 = selection.AtomSetName(test_name)
+        sel2 = selection.AtomSetExactType(test_type)
         intersection = sel1 * sel2
         assert isinstance(intersection, selection.SelectionsIntersection)
 
@@ -337,14 +337,14 @@ class TestComplexSelections:
         assert isinstance(union, selection.SelectionsUnion)
 
     def test_complement(self, stc_2dlc):
-        res_sel = selection.MerExactType(Residue)
+        res_sel = selection.AtomSetExactType(Residue)
         prot_chain = selection.ChainSelection("X")
         diff = prot_chain - res_sel
         assert isinstance(diff, selection.SelectionsComplement)
         new_sel = diff.specify(stc_2dlc)
         assert len(new_sel.ids) == 1  # single Mg ion
 
-        nuc_sel = selection.MerExactType(Nucleotide)
+        nuc_sel = selection.AtomSetExactType(Nucleotide)
         nuc_chain = selection.ChainSelection("Y")
         diff2 = nuc_chain - nuc_sel
         new_stc = diff2.create_structure(stc_2dlc)

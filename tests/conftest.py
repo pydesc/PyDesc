@@ -3,9 +3,9 @@ import os.path
 import pytest
 
 from pydesc.config import ConfigManager
-from pydesc.mers.full_atom import Ion
-from pydesc.mers.full_atom import Nucleotide
-from pydesc.mers.full_atom import Residue
+from pydesc.chemistry.full_atom import MonoatomicIon
+from pydesc.chemistry.full_atom import Nucleotide
+from pydesc.chemistry.full_atom import Residue
 
 ConfigManager.warnings.class_filters.UnknownParticleName = "ignore"
 ConfigManager.warnings.class_filters.Info = "ignore"
@@ -51,7 +51,7 @@ PURE_TYPES_2_MERS_DICT = {
     "rna_only_nmr": Nucleotide,
     "prots_only": Residue,
     "prots_only_nmr": Residue,
-    "PorCA_only": Ion,
+    "PorCA_only": MonoatomicIon,
 }
 
 DIR_DICT = {v: k for k, v in list(PURE_TYPES_2_MERS_DICT.items())}
@@ -78,6 +78,16 @@ def pure_types_2_mers():
 )
 def structure_file_w_type_short(request):
     return request.param
+
+
+@pytest.fixture(scope="session")
+def mixed_structures_path():
+    return os.path.join(TEST_STRUCTURES_DIR, "mixed")
+
+
+@pytest.fixture(scope="session")
+def ligands_structures_path():
+    return os.path.join(TEST_STRUCTURES_DIR, "ligands")
 
 
 def pytest_addoption(parser):

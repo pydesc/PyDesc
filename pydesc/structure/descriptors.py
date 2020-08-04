@@ -121,7 +121,7 @@ class DescriptorBuilder(metaclass=ABCMeta):
         """  # TODO: fix
         stc = element_obj.derived_from
         central_mer = element_obj.central_monomer
-        contacts_ = sorted(contact_map.get_mer_contacts(central_mer.ind))
+        contacts_ = sorted(contact_map.get_atom_set_contacts(central_mer.ind))
 
         def create_contact(payload):
             """Returns Contact or None if failed to create one.
