@@ -19,23 +19,26 @@
 
 from functools import wraps
 
+import numpy
 from scipy.sparse import dok_matrix
 
 
 def same_structure_only(method):
     @wraps(method)
     def method_wrapper(self, other, *args, **kwargs):
-        if self.structure.derived_from != other.structure.derived_from:
-            msg = "Sum of maps of contacts calculated for different structures is not" \
-                  " supported."
+        if self.converter != other.converter:
+            msg = (
+                "Sum of maps of contacts calculated for different structures is not"
+                " supported."
+            )
             raise ValueError(msg)
         return method(self, other, *args, **kwargs)
 
     return method_wrapper
 
 
-class ContactMapCalculator:
-    """Class responsible for calculating contact maps.
+class AbstractContactMapCalculator:
+    """Abstract superclass responsible for calculating contact (frequency) maps.
 
     Args:
         structure: structure instance.
@@ -48,14 +51,7 @@ class ContactMapCalculator:
         self.structure = structure
         self.selection1, self.selection2 = selections
 
-    def calculate_contact_map(self):
-        """Perform calculation of contact map for structure passed to initialization.
-
-        Returns:
-            ContactMap: object storing values of all contacts defined by contact
-            criterion.
-
-        """
+    def _calculate_contact_matrix(self):
         if self.selection1 is not None:
             structure1 = self.selection1.create_structure(self.structure)
             structure2 = self.selection2.create_structure(self.structure)
@@ -67,39 +63,105 @@ class ContactMapCalculator:
         contacts_mtx = dok_matrix(contacts_mtx)
         contacts_mtx.setdiag(0)
 
-        return ContactMap(contacts_mtx, self.structure)
+        return contacts_mtx
 
 
-class ContactMap:
-    """Map of contacts present in a given (sub)structure.
+class ContactMapCalculator(AbstractContactMapCalculator):
+    """Class responsible for calculating contact maps."""
 
-    Args:
-        contacts_mtx(scipy.sparse.dok_matrix): matrix storing contact values.
-        structure: instance of structure or substructure.
+    def calculate_contact_map(self):
+        """Perform calculation of contact map for structure passed to initialization.
 
-    """
+        Returns:
+            ContactMap: object storing values of all contacts defined by contact
+            criterion.
 
-    def __init__(self, contacts_mtx, structure):
-        self.structure = structure
+        """
+        contacts_mtx = self._calculate_contact_matrix()
+        converter = self.structure.derived_from.converter
+        return ContactMap(contacts_mtx, converter)
+
+
+class FrequencyMapCalculator(AbstractContactMapCalculator):
+
+    # TODO: add hook for vectorized calculations
+
+    def calculate_frequency_map(self):
+        original_frame = self.structure.derived_from.get_frame()
+        self.structure.derived_from.set_frame(0)
+        end_frame = self.structure.derived_from.get_n_frames()
+        contact_mtx = self._calculate_contact_matrix().astype(numpy.float64)
+        for frame_ind in range(1, end_frame):
+            self.structure.derived_from.set_frame(frame_ind)
+            contact_mtx += self._calculate_contact_matrix()
+        contact_mtx /= 2
+        frequency_map = FrequencyMap(contact_mtx, self.structure, end_frame)
+        self.structure.derived_from.set_frame(original_frame)
+        return frequency_map
+
+
+class AbstractContactMap:
+    """Abstract superclass for maps of contacts."""
+
+    def __init__(self, contacts_mtx, converter):
+        self.converter = converter
         self._contacts = contacts_mtx
 
     def __iter__(self):
         """Returns iterator that runs over all non-zero contacts in contact map."""
-        return iter(list(self._contacts.items()))
+        return iter(self._contacts.items())
 
     def __len__(self):
         """Return number of non-zero contacts in this contact map."""
         return len(self._contacts)
+
+    def get_dok_matrix(self):
+        """Return contacts as scipy dok matrix."""
+        return self._contacts
+
+    def _get_atom_set_contacts(self, ind):
+        """Get values of non-zero contacts of single atom set."""
+        contacts = [(ind, value) for (_, ind), value in self._contacts[ind].items()]
+        return contacts
+
+    def _get_contact_value(self, ind1, ind2):
+        """Return value of contact between atom sets of two given inds."""
+        return self._contacts[ind1, ind2]
+
+    def to_string(self, stream_out):
+        """Dumps pairs of atom sets in contacts to a given file-like object in CSV
+        format.
+
+        Args:
+          stream_out: file-like object (opened file or StringIO etc.).
+
+        """
+        with stream_out:
+            for (ind1, ind2), value in self:
+                pdb_id1 = self.converter.get_pdb_id(ind1)
+                pdb_id2 = self.converter.get_pdb_id(ind2)
+                line = f"{pdb_id1}\t{pdb_id2}\t{value}\n"
+                stream_out.write(line)
+
+
+class ContactMap(AbstractContactMap):
+    """Map of contacts present in a given (sub)structure.
+
+    Args:
+        contacts_mtx(scipy.sparse.dok_matrix): matrix storing contact values.
+        converter: instance of structure or substructure.
+
+    """
+
+    def __init__(self, contacts_mtx, converter):
+        mtx = dok_matrix(contacts_mtx, dtype=numpy.uint8)
+        super().__init__(mtx, converter)
 
     def __getitem__(self, item):
         try:
             return self.get_contact_value(*item)
         except TypeError:
             return self.get_atom_set_contacts(item)
-
-    def get_dok_matrix(self):
-        """Return contacts as scipy dok matrix."""
-        return self._contacts
 
     @same_structure_only
     def combine(self, other):
@@ -113,7 +175,7 @@ class ContactMap:
 
         """
         matrix = other.get_dok_matrix().maximum(self.get_dok_matrix())
-        return ContactMap(matrix, self.structure)
+        return ContactMap(matrix, self.converter)
 
     @same_structure_only
     def get_relative_compliment_map(self, other):
@@ -131,7 +193,7 @@ class ContactMap:
         other_matrix = other.get_dok_matrix()
         matrix[other_matrix == 2] = 0
         matrix[(other_matrix == 1).toarray() & (matrix != 0).toarray()] = 1
-        return ContactMap(matrix, self.structure)
+        return ContactMap(matrix, self.converter)
 
     def get_atom_set_contacts(self, ind):
         """Get values of non-zero contacts of single atom set.
@@ -144,8 +206,7 @@ class ContactMap:
              values are present (1 or 2).
 
         """
-        contacts = [(ind, value) for (_, ind), value in self._contacts[ind].items()]
-        return contacts
+        return self._get_atom_set_contacts(ind)
 
     def get_contact_value(self, ind1, ind2):
         """Return value of contact between atom sets of two given inds.
@@ -158,20 +219,81 @@ class ContactMap:
             int: contact values (0, 1 or 2).
 
         """
-        return self._contacts[ind1, ind2]
+        return self._get_contact_value(ind1, ind2)
 
-    def to_string(self, stream_out):
-        """Dumps pairs of atom sets in contacts to a given file-like object in CSV
-        format.
+
+class FrequencyMap(AbstractContactMap):
+    """Map storing frequency of contacts in given (sub)structure or trajectory.
+
+    Args:
+        contacts_mtx(scipy.sparse.dok_matrix): matrix storing contact occurs.
+        converter: (sub)structure or (sub)trajectory.
+        n_frames(int): number of frames. Only necessary if second argument is
+        structure, not trajectory. In such case structure is actually only needed for
+        its converter (and that's typeist).
+
+    """
+
+    def __init__(self, contacts_mtx, converter, n_frames=None):
+        mtx = dok_matrix(contacts_mtx, dtype=numpy.float64)
+        super().__init__(mtx, converter)
+        if n_frames is None:
+            n_frames = converter.get_n_frames()
+        self.n_frames = n_frames
+
+    def __iter__(self):
+        for pair, value in super().__iter__():
+            yield pair, value / self.n_frames
+
+    def get_contacts_occurs(self, ind):
+        """Get non-zero occurs of contacts of single atom set.
 
         Args:
-          stream_out: file-like object (opened file or StringIO etc.).
+             ind(int): atom set ind.
+
+        Returns:
+             : sequence of tuples storing inds and contact occurs.
 
         """
-        converter = self.structure.converter
-        with stream_out:
-            for (ind1, ind2), value in self:
-                pdb_id1 = converter.get_pdb_id(ind1)
-                pdb_id2 = converter.get_pdb_id(ind2)
-                line = f"{pdb_id1}\t{pdb_id2}\t{value}\n"
-                stream_out.write(line)
+        return self._get_atom_set_contacts(ind)
+
+    def get_contacts_frequencies(self, ind):
+        """Get non-zero frequencies of contacts of single atom set.
+
+        Args:
+             ind(int): atom set ind.
+
+        Returns:
+             : sequence of tuples storing inds and contact frequencies.
+
+        """
+        items = self._contacts[ind].items()
+        contacts = [(ind, value / self.n_frames) for (_, ind), value in items]
+        return contacts
+
+    def get_contact_occurs(self, ind1, ind2):
+        """Return number of occurs of contact between atom sets of two given inds.
+
+        Args:
+            ind1(int): ind of first atom set.
+            ind2(int): ind of second atom set.
+
+        Returns:
+            float: number of occurs. Uncertain contacts are counted as 0.5.
+
+        """
+        return self._get_contact_value(ind1, ind2)
+
+    def get_contact_frequency(self, ind1, ind2):
+        """Return frequency of contact between atom sets of two given inds.
+
+        Args:
+            ind1(int): ind of first atom set.
+            ind2(int): ind of second atom set.
+
+        Returns:
+            float: contact frequency (0.0-1.0).
+
+        """
+        value = self._get_contact_value(ind1, ind2)
+        return value / self.n_frames
