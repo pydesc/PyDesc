@@ -133,7 +133,7 @@ class DBHandler:
         dct = {
             3: (self.assert_val, Info(f"Accessing cache to load {val}...")),
             2: (self.get_from_local_db, Info(f"Accessing local db to load {val}...")),
-            1: (self.download_file, Info("Downloading {val} to cache...")),
+            1: (self.download_file, Info(f"Downloading {val} to cache...")),
         }
         for i in mode:
             try:
