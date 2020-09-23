@@ -276,6 +276,9 @@ class NumberConverter:
         self.pdb2ind = {tuple(v): i for i, v in enumerate(self.ind2pdb)}
         self.last = len(ids)
 
+    def __eq__(self, other):
+        return self.ind2pdb == other.ind2pdb
+
     def get_max_ind(self):
         """Return the greatest stored ind."""
         return self.last
