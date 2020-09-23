@@ -12,6 +12,7 @@ ConfigManager.warnings.class_filters.Info = "ignore"
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 TEST_STRUCTURES_DIR = os.path.join(BASE_DIR, "data", "test_structures")
+TEST_TRAJECTORIES_DIR = os.path.join(BASE_DIR, "data", "test_trajectories")
 
 CIF_FILES_WITH_TYPE = []
 
@@ -65,6 +66,16 @@ def structures_dir():
 @pytest.fixture
 def cmaps_dir():
     return os.path.join(BASE_DIR, "data", "validated_cmaps")
+
+
+@pytest.fixture(scope="session")
+def trajectories_path():
+    return os.path.join(TEST_TRAJECTORIES_DIR, "{type}", "{traj}.{type}")
+
+
+@pytest.fixture(scope="session")
+def topologies_path():
+    return os.path.join(TEST_TRAJECTORIES_DIR, "topologies", "{topo}.pdb")
 
 
 @pytest.fixture
