@@ -212,7 +212,7 @@ def draw_frequency_map(frequency_map, trajectory, point="gc", frames=None):
                 state=(state_n + 1),
             )
             color_id = int(frequency * 800 + 100)
-            color_name = f"o{color_id}"    # from o100 to o900
+            color_name = f"o{color_id}"  # from o100 to o900
             cmd.color(color_name, distance_name)
 
 

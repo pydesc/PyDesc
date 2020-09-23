@@ -66,9 +66,9 @@ def test_partial_fmap(trajectories_path, topologies_path):
 
     crit = get_default_protein_criterion()
     calc_whole = FrequencyMapCalculator(traj, crit)
-    chain_a = ChainSelection('A').create_structure(traj)     # dna chain
+    chain_a = ChainSelection("A").create_structure(traj)  # dna chain
     calc_chain_a = FrequencyMapCalculator(chain_a, crit)
-    chain_b = ChainSelection('B').create_structure(traj)     # protein chain
+    chain_b = ChainSelection("B").create_structure(traj)  # protein chain
     calc_chain_b = FrequencyMapCalculator(chain_b, crit)
 
     fmap_chain_a = calc_chain_a.calculate_frequency_map()
