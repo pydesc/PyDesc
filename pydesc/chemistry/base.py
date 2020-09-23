@@ -127,6 +127,9 @@ class AtomProxy(pydesc.geometry.Coord):
         self.atom = atom
         self.trajectory = trajectory
 
+    def __getattr__(self, item):
+        return getattr(self.atom, item)
+
     def copy(self):
         """Cast self to atom."""
         return self.cast_to_atom()
