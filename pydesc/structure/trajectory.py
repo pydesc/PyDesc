@@ -11,7 +11,7 @@ class Trajectory(Structure):
         MDTraj trajectory."""
         super().__init__(name, path, converter_obj)
         self._frame = 0
-        self.md_matrix = md_trajectory.xyz
+        self.md_matrix = md_trajectory.xyz * 10.0
         atoms = md_trajectory.topology.atoms
         self.serial_map = {atom.serial: atom.index for atom in atoms}
 

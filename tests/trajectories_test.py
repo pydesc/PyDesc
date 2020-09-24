@@ -177,6 +177,13 @@ class TestTrajectory:
 
         assert trajectory.get_n_frames() == new_trajectory.get_n_frames()
 
+        assert len(new_trajectory) == len(trajectory)
+        assert len(new_trajectory.chains) == len(trajectory.chains)
+        old_chains = trajectory.chains
+        new_chains = new_trajectory.chains
+        for old_chain, new_chain in zip(old_chains, new_chains):
+            assert len(new_chain) == len(old_chain)
+
         for index in range(5):
             trajectory.set_frame(index)
             new_trajectory.set_frame(index)

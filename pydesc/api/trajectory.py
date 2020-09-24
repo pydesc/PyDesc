@@ -25,6 +25,7 @@ from pydesc.selection import Selector
 from pydesc.structure.topology import Chain
 from pydesc.structure.topology import Structure
 from pydesc.structure.trajectory import Trajectory
+from pydesc.structure import TrajectoryLoader
 
 
 def freeze_frame(trajectory):
@@ -67,5 +68,8 @@ def from_frames(frames, topology=None):
                 atom_index = trajectory.serial_map[atom.serial_number]
                 coords[n, atom_index] = atom.vector
     trajectory.md_matrix = coords
+    loader = TrajectoryLoader()
+    chains = [loader.create_chain(chain, trajectory) for chain in topology.chains]
+    trajectory.finalize(chains)
 
     return trajectory

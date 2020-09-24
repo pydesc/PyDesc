@@ -43,7 +43,7 @@ def _fmt(string):
 
 
 def draw_structures(structures, split_states=False):
-    """ Draw given pydesc structure and add it to registry.
+    """Draw given pydesc structure and add it to registry.
 
     Args:
         structures: list of structure instances.
@@ -62,24 +62,51 @@ def draw_structures(structures, split_states=False):
         cmd.read_pdbstr(pdb_stream, name, state=state_n)
 
 
-def draw_contact(structure, ind1, ind2, point="gc", contact_name=None, gap=0.5):
+def draw_trajectory(trajectory):
+    """Draw trajectory with frames as states of PyMOL object.
+
+    Args:
+        trajectory: pydesc trajectory instance.
+
+    """
+    original_frame = trajectory.get_frame()
+    name = trajectory.name
+    for f_ind in range(trajectory.get_n_frames()):
+        trajectory.set_frame(f_ind)
+        pdb_stream = PDBWriter.create_pdb_string(trajectory, False)
+        cmd.read_pdbstr(pdb_stream, name, state=(f_ind + 1))
+    Registry.register(trajectory, name, 0)
+    trajectory.set_frame(original_frame)
+
+
+def draw_contact(
+    structure, ind1, ind2, point="gc", contact_name=None, gap=0.5, state=None
+):
     """Draw single contact as unlabeled distance between mers.
 
     Args:
         structure: (sub)structure instance. In case of structures -- they have to be
-        already drawn in PyMOL (registered). Same requirement applies to parent
-        structures of substructure.
+            already drawn in PyMOL (registered). Same requirement applies to parent
+            structures of substructure.
         ind1(int): 1st mer ind.
         ind2(int): 2nd mer ind.
         point(string): name of atom or pseudoatom present in both mers at ends of
         contact line to be drawn. Optional.
         contact_name(string): PyMOL name of distance object to be created. Note that
-        if this object already exists, newly created distance will be merged with
-        existing one.
+            if this object already exists, newly created distance will be merged with
+            existing one.
         gap(float): length of gaps between lines.
+        state(int): state of resulting PyMOL distance object. By default it is set to
+            state of object corresponding with given structure, but given state
+            overwrites it.
+
+    Return:
+        str: name of created distance object.
 
     """
     name, state_n = Registry.get_structure_or_parent_id(structure)
+    if state is not None:
+        state_n = state
     trt = structure.trt_matrix
     p1 = getattr(structure[ind1], point)
     p2 = getattr(structure[ind2], point)
@@ -88,14 +115,24 @@ def draw_contact(structure, ind1, ind2, point="gc", contact_name=None, gap=0.5):
     cmd.pseudoatom(p1n, pos=p1.get_coord(trt), state=state_n)
     cmd.pseudoatom(p2n, pos=p2.get_coord(trt), state=state_n)
     if contact_name is None:
-        contact_name = p1n + "_" + p2n
+        contact_name = f"{name}_{ind1}_{ind2}_{point}"
     cmd.distance(_fmt(contact_name), p1n, p2n, gap=gap, label=0, state=state_n)
     cmd.delete(p1n)
     cmd.delete(p2n)
+    return contact_name
 
 
-def draw_contact_maps(contact_maps, structures=None, split_contacts=False, point="gc"):
-    """Draw given contact maps.
+def _draw_contact_safe(structure, ind1, ind2, **kwargs):
+    try:
+        return draw_contact(structure, ind1, ind2, **kwargs)
+    except AttributeError:
+        msg = "Skipping contact between %s and %s due to lack of pseudoatom."
+        inp = ind1, ind2
+        print(msg % inp)
+
+
+def draw_contact_map(contact_map, structure, split_contacts=False, point="gc"):
+    """Draw given contact map.
 
     Draws two contact maps: one for contacts with contact value 2 only (sure contacts),
     and second one with with contact of value 1 (uncertain contacts). Former is
@@ -103,43 +140,80 @@ def draw_contact_maps(contact_maps, structures=None, split_contacts=False, point
     has greater gaps.
 
     Args:
-        contact_maps: list of pydesc contact maps.
-        structures: (optional) list of structures corresponding to contact maps.
+        contact_map: pydesc contact map.
+        structure: structure for which contact map was calculated.
         split_contacts(bool): determines if each contact is to be drawn as separate
-        object. False by default.
+            object. False by default.
         point(str): name of atom or pseudoatom to start and end contact lines at (
-        "gc" by default).
+            "gc" by default).
 
     """
 
-    def mk_map(contacts, map_name=None, gap=0.5):
-        contacts = set([frozenset(i) for i in contacts])
+    def mk_map(contacts, map_name, gap):
+        contacts = set([frozenset(contact) for contact in contacts])
+        names = set()
         for ind1, ind2 in contacts:
-            try:
-                draw_contact(structure, ind1, ind2, point, map_name, gap=gap)
-            except AttributeError:
-                msg = "Skipping contact between %s and %s due to lack of pseudoatom."
-                inp = ind1, ind2
-                print(msg % inp)
-                continue
+            c_name = _draw_contact_safe(
+                structure,
+                ind1,
+                ind2,
+                point=point,
+                contact_name=map_name,
+                gap=gap,
+                state=state,
+            )
+            names.add(c_name)
+        return names
 
-    for i, contact_map in enumerate(contact_maps):
-        if structures is None:
-            structure = contact_map.structure
-        else:
-            structure = structures[i]
-        name, _ = Registry.get_structure_or_parent_id(structure)
-        contacts_dct = {}
-        for ind_pair, value in contact_map:
-            contacts_dct.setdefault(value, []).append(ind_pair)
+    name, state = Registry.get_structure_or_parent_id(structure)
+    contacts_dct = {}
+    for ind_pair, value in contact_map:
+        contacts_dct.setdefault(value, []).append(ind_pair)
 
-        sure_map_name = None if split_contacts else f"{name}_cm"
-        uncertain_map_name = None if split_contacts else f"{name}_pcm"
-        mk_map(contacts_dct.get(1, []), uncertain_map_name, gap=0.75)
-        mk_map(contacts_dct.get(2, []), sure_map_name, gap=0.25)
+    sure_map_name = None if split_contacts else f"{name}_cm"
+    uncertain_map_name = None if split_contacts else f"{name}_pcm"
+    uncertain_names = mk_map(contacts_dct.get(1, []), uncertain_map_name, gap=0.75)
+    sure_names = mk_map(contacts_dct.get(2, []), sure_map_name, gap=0.25)
 
-        cmd.color("red", sure_map_name)
-        cmd.color("orange", uncertain_map_name)
+    for name in uncertain_names:
+        cmd.color("orange", name)
+    for name in sure_names:
+        cmd.color("red", name)
+
+
+def draw_frequency_map(frequency_map, trajectory, point="gc", frames=None):
+    """Draw frequency map on each frame of given trajectory.
+
+    All contacts will be separate objects (like contact maps with split_state=True).
+    Frequencies are coded as colors and gap size.
+
+    Args:
+        frequency_map: pydesc frequency map.
+        trajectory: trajectory for which frequency map was calculated.
+        point(str): name of atom or pseudoatom to start and end contact lines at (
+            "gc" by default).
+        frames: sequence of numbers of frames for which to draw a frequency map. By
+            default None, which means all frames. That might take time for long
+            trajectories and dense frequency maps.
+
+    """
+    if frames is None:
+        frames = range(trajectory.get_n_frames())
+    for state_n in frames:
+        trajectory.set_frame(state_n)
+        for ind_pair, frequency in frequency_map:
+            ind1, ind2 = ind_pair
+            distance_name = _draw_contact_safe(
+                trajectory,
+                ind1,
+                ind2,
+                point=point,
+                gap=(1.0 - frequency),
+                state=(state_n + 1),
+            )
+            color_id = int(frequency * 800 + 100)
+            color_name = f"o{color_id}"  # from o100 to o900
+            cmd.color(color_name, distance_name)
 
 
 def draw_pseudoatoms(structure, pseudoatom_name, anchor_name=None, split_objects=False):
