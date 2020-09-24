@@ -1,14 +1,15 @@
-import numpy as np
 import os.path
+
+import numpy as np
 
 from pydesc.api.cmaps import calculate_contact_map
 from pydesc.api.cmaps import create_frequency_map_from_contact_maps
+from pydesc.api.criteria import get_default_protein_criterion
+from pydesc.api.criteria import get_gc_distance_criterion
 from pydesc.api.structure import get_structures_from_file
-from pydesc.selection import ChainSelection
-
-from pydesc.structure import TrajectoryLoader
 from pydesc.contacts.maps import FrequencyMapCalculator
-from pydesc.api.criteria import get_default_protein_criterion, get_gc_distance_criterion
+from pydesc.selection import ChainSelection
+from pydesc.structure import TrajectoryLoader
 
 
 def test_fmap_from_cmap(structures_dir):
