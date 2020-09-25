@@ -68,6 +68,11 @@ def cmaps_dir():
     return os.path.join(BASE_DIR, "data", "validated_cmaps")
 
 
+@pytest.fixture
+def alignments_dir():
+    return os.path.join(BASE_DIR, "data", "test_alignments")
+
+
 @pytest.fixture(scope="session")
 def trajectories_path():
     return os.path.join(TEST_TRAJECTORIES_DIR, "{type}", "{traj}.{type}")
