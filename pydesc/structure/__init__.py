@@ -155,7 +155,7 @@ class StructureLoader:
         structure.finalize(chains)
         return structure
 
-    def load_structures(self, code=None, path=None):
+    def load_structures(self, code=None, path=None, common_converter=False):
         """Returns a list of Structure instances and the NumberConverter
         instance.
 
@@ -177,8 +177,16 @@ class StructureLoader:
         path, open_files = self._get_files_and_path(code, path)
         code = self._get_code(code, path)
         models = self._get_models(open_files, code)
-        converter = NumberConverterFactory().from_pdb_models(models)
-        structures = [self.create_structure(model, path, converter) for model in models]
+        if common_converter:
+            converter = NumberConverterFactory().from_pdb_models(models)
+        else:
+            nc_factory = NumberConverterFactory()
+        structures = []
+        for model in models:
+            if not common_converter:
+                converter = nc_factory.from_pdb_models([model])
+            structure = self.create_structure(model, path, converter)
+            structures.append(structure)
 
         return structures
 

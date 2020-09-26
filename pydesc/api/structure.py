@@ -19,7 +19,7 @@
 from pydesc.structure import StructureLoader
 
 
-def get_structures(name):
+def get_structures(name, common_converter=False):
     """Load structures using default behaviour.
 
     Default behaviour means:
@@ -28,7 +28,9 @@ def get_structures(name):
 
     Args:
         name(str): proper structure identifier. See pydes.dbhandler for more
-        information.
+            information.
+        common_converter(bool): determines if all structures should share converter.
+            False by default.
 
     Returns:
         : list of structures. There will be more than one structure if structure
@@ -36,15 +38,17 @@ def get_structures(name):
 
     """
     sl = StructureLoader()
-    res = sl.load_structures(name)
+    res = sl.load_structures(name, common_converter=common_converter)
     return res
 
 
-def get_structures_from_file(path):
+def get_structures_from_file(path, common_converter=False):
     """Load file from local path.
 
     Args:
         path(str): relative or absolute path to file (pdb or cif).
+        common_converter(bool): determines if all structures should share converter.
+            False by default.
 
     Returns:
         : list of structures. There will be more than one structure if structure
@@ -52,5 +56,5 @@ def get_structures_from_file(path):
 
     """
     sl = StructureLoader()
-    res = sl.load_structures(path=path)
+    res = sl.load_structures(path=path, common_converter=common_converter)
     return res

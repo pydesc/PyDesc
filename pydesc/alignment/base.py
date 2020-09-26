@@ -4,7 +4,6 @@ from abc import ABCMeta, abstractmethod
 
 
 class Alignment(metaclass=ABCMeta):
-
     pass
 
 
@@ -24,6 +23,10 @@ class PairAlignment(AbstractColumnAlignment):
 
 
 class MultipleColumnsAlignment(AbstractColumnAlignment):
-
     pass
 
+
+class JoinedPairAlignments(Alignment):
+
+    def __init__(self, pair_alignments):
+        self.pair_alignments = pair_alignments
