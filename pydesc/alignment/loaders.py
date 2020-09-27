@@ -22,7 +22,6 @@ def get_column_alignment_class(array):
 
 
 class AbstractLoader(metaclass=ABCMeta):
-
     def __init__(self, path):
         self.path = path
         self._data = {}
@@ -53,16 +52,25 @@ class AbstractLoader(metaclass=ABCMeta):
 
     def read_metadata(self):
         metadata = dict(self.metadata)
-        metadata['labels'] = self.structure_labels
+        metadata["labels"] = self.structure_labels
         return metadata
 
     @abstractmethod
-    def create_alignment(self, structures):
+    def load_partial_alignment(self, structures_map):
         pass
+
+    def load_alignment(self, structures):
+        if len(structures) != len(self.structure_labels):
+            raise ValueError(
+                "Number of given structures must match number of "
+                "structure labels in alignment file. Consider using "
+                "'load_partial_alignment' method instead."
+            )
+        structure_map = dict(zip(self.structure_labels, structures))
+        return self.load_partial_alignment(structure_map)
 
 
 class CSVLoader(AbstractLoader):
-
     def __init__(self, path, delimiter="\t"):
         super().__init__(path)
         self.delimiter = delimiter
@@ -71,9 +79,9 @@ class CSVLoader(AbstractLoader):
         with open(self.path) as csv_file:
             reader = csv.reader(csv_file, delimiter=self.delimiter)
             structures_labels = next(reader)
-            rows = [i for i in reader if i]
+            rows = [numpy.array(i) for i in reader if i]
         self._structure_labels = structures_labels
-        self._data['rows'] = rows
+        self._data["rows"] = rows
 
     @staticmethod
     def _parse_pdb_id(id_str):
@@ -92,22 +100,30 @@ class CSVLoader(AbstractLoader):
             return None
         return converter.get_ind(pdb_id)
 
-    def create_alignment(self, structures):
-        converters = [structure.converter for structure in structures]
-        length = len(self.data['rows'])
-        array = numpy.empty((length, len(structures)))
-        for i, row in enumerate(self.data['rows']):
+    def load_partial_alignment(self, structures_map):
+        converters = [
+            structures_map[label].converter for label in self.structure_labels
+        ]
+        length = len(self.data["rows"])
+        array = numpy.empty((length, len(structures_map)))
+        array_indices = [
+            i
+            for i, label in enumerate(self.structure_labels)
+            if label in structures_map
+        ]
+        for i, row in enumerate(self.data["rows"]):
+            row = row[array_indices]
             row_pdb_ids = [self._parse_pdb_id(id_str) for id_str in row]
             iterator = zip(row_pdb_ids, converters)
-            row_inds = [self._get_ind(converter, pdb_id) for pdb_id, converter in
-                        iterator]
+            row_inds = [
+                self._get_ind(converter, pdb_id) for pdb_id, converter in iterator
+            ]
             array[i] = row_inds
         alignment_class = get_column_alignment_class(array)
-        return alignment_class(structures, array)
+        return alignment_class(structures_map, array)
 
 
 class PALLoader(AbstractLoader):
-
     def _read_file(self):
         with open(self.path) as file:
             n_structures = int(file.readline())
@@ -175,7 +191,7 @@ class PALLoader(AbstractLoader):
     def _unwrap_range(structure, id1, id2):
         ind1 = structure.converter.get_ind(id1)
         ind2 = structure.converter.get_ind(id2)
-        inds = [mer.ind for mer in structure[ind1: ind2]]
+        inds = [mer.ind for mer in structure[ind1:ind2]]
         return inds
 
     def _unwrap_ranges(self, ranges_ids, structures):
@@ -187,11 +203,13 @@ class PALLoader(AbstractLoader):
             inds2.extend(self._unwrap_range(stc2, id2s, id2e))
         return inds1, inds2
 
-    def create_alignment(self, structures):
-        label2structure = dict(zip(self.structure_labels, structures))
+    def load_partial_alignment(self, structures_map):
         pair_alignments = []
         for header, ranges in self.data.items():
-            structures_subset = self._get_structures(header, label2structure)
+            try:
+                structures_subset = self._get_structures(header, structures_map)
+            except KeyError:
+                continue
             ranges_ids = [self._parse_ranges(line) for line in ranges]
             ranges_ids = self._fill_chains(ranges_ids, structures_subset)
             inds1, inds2 = self._unwrap_ranges(ranges_ids, structures_subset)

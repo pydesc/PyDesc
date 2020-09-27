@@ -18,7 +18,7 @@ class TestLoaders:
         structures = [MagicMock() for _ in range(4)]
         for mocked_structure in structures:
             mocked_structure.converter.get_ind.side_effect = [i for i in range(1, 7)]
-        alignment = loader.create_alignment(structures)
+        alignment = loader.load_alignment(structures)
 
         assert alignment.inds.shape == (6, 4)
         expected_not_nans = [5, 4, 3, 5]
@@ -51,7 +51,7 @@ class TestLoaders:
         path = os.path.join(alignments_dir, "csv", "artificial_pair.csv")
         loader = CSVLoader(path)
         structures = [MagicMock() for _ in range(2)]
-        alignment = loader.create_alignment(structures)
+        alignment = loader.load_alignment(structures)
 
         assert isinstance(alignment, PairAlignment)
 
@@ -61,7 +61,7 @@ class TestLoaders:
         structures = [MagicMock() for _ in range(4)]
 
         with pytest.raises(Exception):
-            loader.create_alignment(structures)
+            loader.load_alignment(structures)
 
     def test_pal_artificial_multi(self, alignments_dir):
         path = os.path.join(alignments_dir, "pal", "artificial_multi.pal")
@@ -73,7 +73,7 @@ class TestLoaders:
         metadata = loader.read_metadata()
         for mol in "MOL1", "MOL2", "MOL3":
             assert mol in metadata['labels']
-        alignment = loader.create_alignment(structures)
+        alignment = loader.load_alignment(structures)
 
         assert len(alignment.pair_alignments) == 3
 
@@ -100,7 +100,7 @@ class TestLoaders:
         path = os.path.join(alignments_dir, "pal", "sars_pair.pal")
 
         loader = PALLoader(path)
-        alignment = loader.create_alignment(structures)
+        alignment = loader.load_alignment(structures)
 
         assert isinstance(alignment, PairAlignment)
         assert alignment.inds.shape == (148, 2)
