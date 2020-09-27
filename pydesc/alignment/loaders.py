@@ -27,16 +27,17 @@ class AbstractLoader(metaclass=ABCMeta):
         self._data = {}
         self._metadata = {}
         self._structure_labels = None
+        self._read = False
 
     @property
     def data(self):
-        if not self._data:
+        if not self._read:
             self._read_file()
         return self._data
 
     @property
     def metadata(self):
-        if not self._metadata:
+        if not self._read:
             self._read_file()
         return self._metadata
 
@@ -48,7 +49,7 @@ class AbstractLoader(metaclass=ABCMeta):
 
     @abstractmethod
     def _read_file(self):
-        pass
+        self._read = True
 
     def read_metadata(self):
         metadata = dict(self.metadata)
@@ -82,6 +83,7 @@ class CSVLoader(AbstractLoader):
             rows = [numpy.array(i) for i in reader if i]
         self._structure_labels = structures_labels
         self._data["rows"] = rows
+        super()._read_file()
 
     @staticmethod
     def _parse_pdb_id(id_str):
@@ -138,6 +140,7 @@ class PALLoader(AbstractLoader):
                     continue
                 n_lines = int(file.readline().replace("@", ""))
                 self._data[header] = [file.readline() for _ in range(n_lines)]
+        super()._read_file()
 
     @staticmethod
     def _get_structures(header, label_map):
@@ -164,8 +167,19 @@ class PALLoader(AbstractLoader):
         return ids
 
     @staticmethod
-    def _fill_chain_if_none(pdb_id, new_chain_name):
+    def _fit_chain_by_ind(converter, pdb_id):
+        try:
+            (matching_id,) = [pid for pid in converter.ind2pdb if pid[1:] == pdb_id[1:]]
+        except ValueError:
+            icode = pdb_id.icode or ""
+            mer_id = f"{pdb_id.ind}{icode}"
+            raise ValueError(f"Mer {mer_id} matches none or more than one chain.")
+        return matching_id
+
+    def _fill_chain_if_none(self, pdb_id, new_chain_name, converter):
         if pdb_id.chain is None:
+            if new_chain_name is None:
+                return self._fit_chain_by_ind(converter, pdb_id)
             pdb_id = PDBid((new_chain_name, pdb_id.ind, pdb_id.icode))
             return pdb_id
         return pdb_id
@@ -180,10 +194,10 @@ class PALLoader(AbstractLoader):
             stc2chain = stc2.chains[0].chain_name
         new_ids = []
         for id1s, id1e, id2s, id2e in ranges_ids:
-            id1s = self._fill_chain_if_none(id1s, stc1chain)
-            id1e = self._fill_chain_if_none(id1e, stc1chain)
-            id2s = self._fill_chain_if_none(id2s, stc2chain)
-            id2e = self._fill_chain_if_none(id2e, stc2chain)
+            id1s = self._fill_chain_if_none(id1s, stc1chain, stc1.converter)
+            id1e = self._fill_chain_if_none(id1e, stc1chain, stc1.converter)
+            id2s = self._fill_chain_if_none(id2s, stc2chain, stc2.converter)
+            id2e = self._fill_chain_if_none(id2e, stc2chain, stc2.converter)
             new_ids.append((id1s, id1e, id2s, id2e))
         return new_ids
 
@@ -213,10 +227,127 @@ class PALLoader(AbstractLoader):
             ranges_ids = [self._parse_ranges(line) for line in ranges]
             ranges_ids = self._fill_chains(ranges_ids, structures_subset)
             inds1, inds2 = self._unwrap_ranges(ranges_ids, structures_subset)
-            inds_rows = numpy.array(tuple(zip(inds1, inds2)))
+            inds_rows = numpy.array(tuple(zip(inds1, inds2)), dtype=numpy.uint32)
             pair_alignment = PairAlignment(structures_subset, inds_rows)
             pair_alignments.append(pair_alignment)
 
         if len(pair_alignments) == 1:
             return pair_alignments[0]
         return JoinedPairAlignments(pair_alignments)
+
+
+class FASTALoader(AbstractLoader):
+    def __init__(self, path, miss_match_characters=(".", "-")):
+        super().__init__(path)
+        self.mmc = miss_match_characters
+        self._metadata["#"] = {}
+        self._metadata["ranges"] = {}
+
+    @property
+    def ranges(self):
+        return self.metadata["ranges"]
+
+    def _read_file(self):
+        structure_labels = []
+        with open(self.path) as fasta_file:
+            current_label = None
+            while True:
+                line = fasta_file.readline()
+                if not line:
+                    break  # eof
+                elif line.startswith("#"):
+                    continue  # comment
+                elif not line.strip():
+                    continue  # blanks
+                elif line.startswith(">"):
+                    label, comment, ranges = self._parse_label(line)
+                    structure_labels.append(label)
+                    current_label = label
+                    self._metadata["ranges"][label] = ranges
+                    self._metadata["#"][label] = comment
+                    continue
+                sequence = self._data.get(current_label, "")
+                self._data[current_label] = sequence + line.strip()
+
+        self._structure_labels = structure_labels
+        super()._read_file()
+
+    @staticmethod
+    def _parse_label(label_line):
+        match = re.match(r">(\w*)[\ \t]*([\w\ ]*)(\[.*\])?", label_line)
+        label = match.group(1)
+        comment = match.group(2)
+        ranges = match.group(3) or "[]"
+        return label, comment, ranges
+
+    def load_partial_alignment(self, structures_map):
+        mer_iterators = {}
+        for label, structure in structures_map.items():
+            ranges = self._parse_ranges(self.ranges[label])
+            mer_iterator = self._iter_inds(structure, ranges)
+            mer_iterators[label] = mer_iterator
+        lengths = {len(self.data[label]) for label in structures_map}
+        if len(lengths) != 1:
+            raise ValueError(
+                "Sequences of given structures in fasta alignment file " "are uneven."
+            )
+        length = max(lengths)
+        array = numpy.empty((length, len(structures_map)))
+        structures = []
+        for i, label in enumerate(self.structure_labels):
+            if label not in structures_map:
+                continue
+            sequence = self.data[label]
+            mer_i = mer_iterators[label]
+            column = [self._get_ind(char, mer_i) for char in sequence]
+            array[:, i] = numpy.array(column)
+            structures.append(structures_map[label])
+        array = self._remove_single_structure_rows(array)
+        alignment_class = get_column_alignment_class(array)
+        return alignment_class(structures, array)
+
+    @staticmethod
+    def _parse_ranges(ranges_str):
+        range_pattern = r"\w+:\d+[^\d\]\[]?-\d+[^\d\]\[]?"
+        ranges = re.findall(range_pattern, ranges_str)
+        range_pattern = r"(\w+):(\d+)(\D?)-(\d+)(\D?)"
+        results = []
+        for range_str in ranges:
+            match = re.match(range_pattern, range_str)
+            chain = match.group(1)
+            id1 = match.group(2)
+            icode1 = match.group(3) or None
+            id2 = match.group(4)
+            icode2 = match.group(5) or None
+            pdb_id1 = PDBid((chain, id1, icode1))
+            pdb_id2 = PDBid((chain, id2, icode2))
+            results.append((pdb_id1, pdb_id2))
+        return results
+
+    @staticmethod
+    def _iter_inds(structure, ranges):
+        if not ranges:
+            first = structure.converter.ind2pdb[0]
+            last = structure.converter.ind2pdb[-1]
+            ranges = ((first, last),)
+        converter = structure.converter
+        for start_id, end_id in ranges:
+            start = converter.get_ind(start_id)
+            end = converter.get_ind(end_id)
+            for mer in structure[start:end]:
+                yield mer.ind
+
+    def _get_ind(self, char, iterator):
+        if char in self.mmc:
+            return numpy.nan
+        if re.match("[a-z]", char):
+            _ = next(iterator)
+            return numpy.nan
+        return next(iterator)
+
+    @staticmethod
+    def _remove_single_structure_rows(array):
+        _, n_structures = array.shape
+        n_nans = numpy.count_nonzero(numpy.isnan(array), axis=1)
+        array = array[n_nans < (n_structures - 1)]
+        return array

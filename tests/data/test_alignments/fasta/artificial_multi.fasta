@@ -1,0 +1,11 @@
+>mol1 comment [A:2-4]
+-ALA-
+>mol2 [B:1-4i]
+mA
+LA-
+>mol3_chainAB [AB:1-2]
+..LA-
+>mol4
+TALA-
+>mol5 [A:1i-2, B:1-1]
+YAL.A

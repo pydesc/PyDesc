@@ -7,6 +7,7 @@ import pytest
 from pydesc.alignment.base import MultipleColumnsAlignment
 from pydesc.alignment.base import PairAlignment
 from pydesc.alignment.loaders import CSVLoader
+from pydesc.alignment.loaders import FASTALoader
 from pydesc.alignment.loaders import PALLoader
 from pydesc.api.structure import get_structures_from_file
 
@@ -60,7 +61,7 @@ class TestLoaders:
         loader = CSVLoader(path)
         structures = [MagicMock() for _ in range(4)]
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValueError):
             loader.load_alignment(structures)
 
     def test_pal_artificial_multi(self, alignments_dir):
@@ -72,7 +73,7 @@ class TestLoaders:
         loader = PALLoader(path)
         metadata = loader.read_metadata()
         for mol in "MOL1", "MOL2", "MOL3":
-            assert mol in metadata['labels']
+            assert mol in metadata["labels"]
         alignment = loader.load_alignment(structures)
 
         assert len(alignment.pair_alignments) == 3
@@ -112,3 +113,50 @@ class TestLoaders:
             [[8, 10], [9, 12]]
         )  # there is 1 residue gap in right structure
         numpy.testing.assert_equal(alignment.inds[(8, 9), :], expected_7_8)
+
+    def test_fasta_artificial_multi(self, alignments_dir):
+        path = os.path.join(alignments_dir, "fasta", "artificial_multi.fasta")
+        structures = [MagicMock(name=f"mol{i}") for i in range(5)]
+        for stc in structures[:4]:
+            stc.__getitem__.return_value = [MagicMock(ind=i) for i in range(10, 15)]
+        structures[-1].__getitem__.return_value = [MagicMock(ind=1), MagicMock(ind=2)]
+
+        loader = FASTALoader(path)
+        alignment = loader.load_alignment(structures)
+
+        for label in ('mol1', 'mol2', "mol3_chainAB", "mol4", "mol5"):
+            assert label in loader.structure_labels
+
+        assert alignment.inds.shape == (4, 5)
+
+        expected = numpy.array(
+            [
+                [numpy.nan, numpy.nan, numpy.nan, 10., 1.],
+                [10., 11., numpy.nan, 11., 2.],
+                [11., 12., 10., 12., 1.],
+                [12., 13., 11., 13., numpy.nan]
+            ]
+        )
+        numpy.testing.assert_equal(alignment.inds, expected)
+
+    @pytest.mark.system
+    def test_fasta_pal_from_dama(self, alignments_dir):
+        file_name = "mers_sars2.%s"
+        fasta_path = os.path.join(alignments_dir, "fasta", file_name % "fasta")
+        pal_path = os.path.join(alignments_dir, "pal", file_name % "pal")
+        mers_path = os.path.join(alignments_dir, "structures", "mers.pdb")
+        mers_stc, = get_structures_from_file(mers_path)
+        sars_path = os.path.join(alignments_dir, "structures", "sars2.pdb")
+        sars_stc, = get_structures_from_file(sars_path)
+        structures_map = {
+            "MOL1": mers_stc,
+            "MOL2": sars_stc,
+        }
+
+        fasta_loader = FASTALoader(fasta_path)
+        fasta = fasta_loader.load_partial_alignment(structures_map)
+        pal_loader = PALLoader(pal_path)
+        pal = pal_loader.load_partial_alignment(structures_map)
+
+        numpy.testing.assert_equal(fasta.inds, pal.inds)
+        assert fasta.structures == pal.structures
