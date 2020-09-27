@@ -1,6 +1,6 @@
 """Basic classes storing alignments."""
 
-from abc import ABCMeta, abstractmethod
+from abc import ABCMeta
 
 
 class Alignment(metaclass=ABCMeta):

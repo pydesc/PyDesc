@@ -6,8 +6,9 @@ from abc import abstractmethod
 
 import numpy
 
+from pydesc.alignment.base import JoinedPairAlignments
 from pydesc.alignment.base import MultipleColumnsAlignment
-from pydesc.alignment.base import PairAlignment, JoinedPairAlignments
+from pydesc.alignment.base import PairAlignment
 from pydesc.numberconverter import PDBid
 
 
@@ -24,17 +25,33 @@ class AbstractLoader(metaclass=ABCMeta):
 
     def __init__(self, path):
         self.path = path
-        self.data = {}
-        self.metadata = {}
-        self.structure_labels = None
+        self._data = {}
+        self._metadata = {}
+        self._structure_labels = None
+
+    @property
+    def data(self):
+        if not self._data:
+            self._read_file()
+        return self._data
+
+    @property
+    def metadata(self):
+        if not self._metadata:
+            self._read_file()
+        return self._metadata
+
+    @property
+    def structure_labels(self):
+        if self._structure_labels is None:
+            self._read_file()
+        return self._structure_labels
 
     @abstractmethod
     def _read_file(self):
         pass
 
     def read_metadata(self):
-        if self.structure_labels is None:
-            self._read_file()
         metadata = dict(self.metadata)
         metadata['labels'] = self.structure_labels
         return metadata
@@ -55,8 +72,8 @@ class CSVLoader(AbstractLoader):
             reader = csv.reader(csv_file, delimiter=self.delimiter)
             structures_labels = next(reader)
             rows = [i for i in reader if i]
-        self.structure_labels = structures_labels
-        self.data['rows'] = rows
+        self._structure_labels = structures_labels
+        self._data['rows'] = rows
 
     @staticmethod
     def _parse_pdb_id(id_str):
@@ -76,8 +93,6 @@ class CSVLoader(AbstractLoader):
         return converter.get_ind(pdb_id)
 
     def create_alignment(self, structures):
-        if 'rows' not in self.data:
-            self._read_file()
         converters = [structure.converter for structure in structures]
         length = len(self.data['rows'])
         array = numpy.empty((length, len(structures)))
@@ -97,7 +112,7 @@ class PALLoader(AbstractLoader):
         with open(self.path) as file:
             n_structures = int(file.readline())
             labels = [file.readline().strip() for _ in range(n_structures)]
-            self.structure_labels = labels
+            self._structure_labels = labels
             while True:
                 header = file.readline()
                 if not header:
@@ -106,7 +121,7 @@ class PALLoader(AbstractLoader):
                     # not a header
                     continue
                 n_lines = int(file.readline().replace("@", ""))
-                self.data[header] = [file.readline() for _ in range(n_lines)]
+                self._data[header] = [file.readline() for _ in range(n_lines)]
 
     @staticmethod
     def _get_structures(header, label_map):
@@ -173,8 +188,6 @@ class PALLoader(AbstractLoader):
         return inds1, inds2
 
     def create_alignment(self, structures):
-        if not self.data:
-            self._read_file()
         label2structure = dict(zip(self.structure_labels, structures))
         pair_alignments = []
         for header, ranges in self.data.items():
