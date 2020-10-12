@@ -8,7 +8,7 @@ from pydesc.alignment.base import MultipleColumnsAlignment
 from pydesc.alignment.base import PairAlignment
 from pydesc.alignment.loaders import CSVLoader
 from pydesc.alignment.loaders import FASTALoader
-from pydesc.alignment.loaders import PALLoader
+from pydesc.alignment.loaders import PALLoader, DASH
 from pydesc.api.structure import get_structures_from_file
 
 
@@ -23,7 +23,7 @@ class TestLoaders:
 
         assert alignment.inds.shape == (6, 4)
         expected_not_nans = [5, 4, 3, 5]
-        real_not_nans = numpy.count_nonzero(~numpy.isnan(alignment.inds), axis=0)
+        real_not_nans = numpy.count_nonzero(alignment.inds != DASH, axis=0)
         numpy.testing.assert_equal(real_not_nans, expected_not_nans)
 
         assert len(alignment.structures) == 4
@@ -124,17 +124,17 @@ class TestLoaders:
         loader = FASTALoader(path)
         alignment = loader.load_alignment(structures)
 
-        for label in ('mol1', 'mol2', "mol3_chainAB", "mol4", "mol5"):
+        for label in ("mol1", "mol2", "mol3_chainAB", "mol4", "mol5"):
             assert label in loader.structure_labels
 
         assert alignment.inds.shape == (4, 5)
 
         expected = numpy.array(
             [
-                [numpy.nan, numpy.nan, numpy.nan, 10., 1.],
-                [10., 11., numpy.nan, 11., 2.],
-                [11., 12., 10., 12., 1.],
-                [12., 13., 11., 13., numpy.nan]
+                [DASH, DASH, DASH, 10.0, 1.0],
+                [10.0, 11.0, DASH, 11.0, 2.0],
+                [11.0, 12.0, 10.0, 12.0, 1.0],
+                [12.0, 13.0, 11.0, 13.0, DASH],
             ]
         )
         numpy.testing.assert_equal(alignment.inds, expected)
@@ -145,9 +145,9 @@ class TestLoaders:
         fasta_path = os.path.join(alignments_dir, "fasta", file_name % "fasta")
         pal_path = os.path.join(alignments_dir, "pal", file_name % "pal")
         mers_path = os.path.join(alignments_dir, "structures", "mers.pdb")
-        mers_stc, = get_structures_from_file(mers_path)
+        (mers_stc,) = get_structures_from_file(mers_path)
         sars_path = os.path.join(alignments_dir, "structures", "sars2.pdb")
-        sars_stc, = get_structures_from_file(sars_path)
+        (sars_stc,) = get_structures_from_file(sars_path)
         structures_map = {
             "MOL1": mers_stc,
             "MOL2": sars_stc,
@@ -160,3 +160,19 @@ class TestLoaders:
 
         numpy.testing.assert_equal(fasta.inds, pal.inds)
         assert fasta.structures == pal.structures
+
+
+class TestColumnAlignment:
+    def test_simplify_pair(self):
+        payload = numpy.array([[0, DASH], [1, 0]])
+        alignment = PairAlignment([None, None], payload)
+        alignment.simplify()
+
+        assert alignment.inds.shape == (1, 2)
+
+    def test_simplify_multi(self):
+        payload = numpy.array([[0, DASH, 0], [1, 0, 1], [DASH, DASH, 4],])
+        alignment = MultipleColumnsAlignment([None, None, None], payload)
+        alignment.simplify()
+
+        assert alignment.inds.shape == (2, 3)

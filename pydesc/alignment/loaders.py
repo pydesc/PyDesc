@@ -6,6 +6,7 @@ from abc import abstractmethod
 
 import numpy
 
+from pydesc.alignment.base import DASH
 from pydesc.alignment.base import JoinedPairAlignments
 from pydesc.alignment.base import MultipleColumnsAlignment
 from pydesc.alignment.base import PairAlignment
@@ -88,10 +89,9 @@ class CSVLoader(AbstractLoader):
     @staticmethod
     def _parse_pdb_id(id_str):
         match = re.match("([^:]+):([0-9]*)([^0-9,:]?)", id_str)
-        try:
-            chain = match.group(1)
-        except AttributeError:
+        if match is None:
             return None
+        chain = match.group(1)
         no = int(match.group(2))
         i_code = match.group(3) or None
         return PDBid((chain, no, i_code))
@@ -99,7 +99,7 @@ class CSVLoader(AbstractLoader):
     @staticmethod
     def _get_ind(converter, pdb_id):
         if pdb_id is None:
-            return None
+            return DASH
         return converter.get_ind(pdb_id)
 
     def load_partial_alignment(self, structures_map):
@@ -107,7 +107,7 @@ class CSVLoader(AbstractLoader):
             structures_map[label].converter for label in self.structure_labels
         ]
         length = len(self.data["rows"])
-        array = numpy.empty((length, len(structures_map)))
+        array = numpy.empty((length, len(structures_map)), dtype=object)
         array_indices = [
             i
             for i, label in enumerate(self.structure_labels)
@@ -227,7 +227,7 @@ class PALLoader(AbstractLoader):
             ranges_ids = [self._parse_ranges(line) for line in ranges]
             ranges_ids = self._fill_chains(ranges_ids, structures_subset)
             inds1, inds2 = self._unwrap_ranges(ranges_ids, structures_subset)
-            inds_rows = numpy.array(tuple(zip(inds1, inds2)), dtype=numpy.uint32)
+            inds_rows = numpy.array(tuple(zip(inds1, inds2)), dtype=object)
             pair_alignment = PairAlignment(structures_subset, inds_rows)
             pair_alignments.append(pair_alignment)
 
@@ -274,7 +274,7 @@ class FASTALoader(AbstractLoader):
 
     @staticmethod
     def _parse_label(label_line):
-        match = re.match(r">(\w*)[\ \t]*([\w\ ]*)(\[.*\])?", label_line)
+        match = re.match(r">(\w*)[ \t]*([\w ]*)(\[.*])?", label_line)
         label = match.group(1)
         comment = match.group(2)
         ranges = match.group(3) or "[]"
@@ -292,7 +292,7 @@ class FASTALoader(AbstractLoader):
                 "Sequences of given structures in fasta alignment file " "are uneven."
             )
         length = max(lengths)
-        array = numpy.empty((length, len(structures_map)))
+        array = numpy.empty((length, len(structures_map)), dtype=object)
         structures = []
         for i, label in enumerate(self.structure_labels):
             if label not in structures_map:
@@ -302,9 +302,10 @@ class FASTALoader(AbstractLoader):
             column = [self._get_ind(char, mer_i) for char in sequence]
             array[:, i] = numpy.array(column)
             structures.append(structures_map[label])
-        array = self._remove_single_structure_rows(array)
         alignment_class = get_column_alignment_class(array)
-        return alignment_class(structures, array)
+        alignment = alignment_class(structures, array)
+        alignment.simplify()
+        return alignment
 
     @staticmethod
     def _parse_ranges(ranges_str):
@@ -339,15 +340,8 @@ class FASTALoader(AbstractLoader):
 
     def _get_ind(self, char, iterator):
         if char in self.mmc:
-            return numpy.nan
+            return DASH
         if re.match("[a-z]", char):
             _ = next(iterator)
-            return numpy.nan
+            return DASH
         return next(iterator)
-
-    @staticmethod
-    def _remove_single_structure_rows(array):
-        _, n_structures = array.shape
-        n_nans = numpy.count_nonzero(numpy.isnan(array), axis=1)
-        array = array[n_nans < (n_structures - 1)]
-        return array
