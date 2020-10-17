@@ -304,7 +304,7 @@ class FASTALoader(AbstractLoader):
             structures.append(structures_map[label])
         alignment_class = get_column_alignment_class(array)
         alignment = alignment_class(structures, array)
-        alignment.prune()
+        alignment = alignment.prune()
         return alignment
 
     @staticmethod

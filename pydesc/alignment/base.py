@@ -44,10 +44,13 @@ class AbstractColumnAlignment(AbstractAlignment):
     def prune(self):
         _, n_structures = self.inds.shape
         n_nans = numpy.count_nonzero(self.inds == DASH, axis=1)
-        self.inds = self.inds[n_nans < (n_structures - 1)]
+        new_array = self.inds[n_nans < (n_structures - 1)]
+        klass = type(self)
+        new_alignment = klass(self.structures, new_array)
+        return new_alignment
 
     def concatenate(self, other):
-        # TODO: adding rows (more aligned mers)
+        # adding rows (more aligned mers)
         other_indices = other.get_structure_indices()
         column_inds = [other_indices[structure] for structure in self.structures]
         other_array = other.inds[:, column_inds]
@@ -123,7 +126,7 @@ class MultipleColumnsAlignment(AbstractColumnAlignment):
                 columns_inds = [structure_indices[stc] for stc in structures]
                 array = self.inds[:, columns_inds]
                 alignment = PairAlignment((stc1, stc2), array)
-                alignment.prune()
+                alignment = alignment.prune()
                 alignments.append(alignment)
         alignment = JoinedPairAlignments(alignments)
         return alignment

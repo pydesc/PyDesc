@@ -32,17 +32,17 @@ def mocked_structures3():
 
 
 class TestColumnAlignment:
-    def test_simplify_pair(self):
+    def test_prune_pair(self):
         payload = numpy.array([[0, DASH], [1, 0]])
         alignment = PairAlignment([None, None], payload)
-        alignment.prune()
+        alignment = alignment.prune()
 
         assert alignment.inds.shape == (1, 2)
 
-    def test_simplify_multi(self):
+    def test_prune_multi(self):
         payload = numpy.array([[0, DASH, 0], [1, 0, 1], [DASH, DASH, 4], ])
         alignment = MultipleColumnsAlignment([None, None, None], payload)
-        alignment.prune()
+        alignment = alignment.prune()
 
         assert alignment.inds.shape == (2, 3)
 
