@@ -36,10 +36,23 @@ class AbstractColumnAlignment(AbstractAlignment):
     def __init__(self, structures, inds_rows):
         self.structures = tuple(structures)
         self.inds = inds_rows
+        self._mer_map = {structure: {} for structure in structures}
 
     @abstractmethod
     def to_joined_pairs(self):
         pass
+
+    def _fill_mer_map(self):
+        for no, row in enumerate(self.inds):
+            for structure, ind in zip(self.structures, row):
+                self._mer_map[structure][ind] = no
+
+    def get_mers_aligned_with(self, mer, structure):
+        array_index = self._mer_map[structure][mer.ind]
+        inds = self.inds[array_index]
+        generator = zip(self.structures, inds)
+        mers = {structure: structure[ind] for structure, ind in generator}
+        return mers
 
     def prune(self):
         _, n_structures = self.inds.shape
