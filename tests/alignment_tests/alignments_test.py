@@ -40,7 +40,7 @@ class TestColumnAlignment:
         assert alignment.inds.shape == (1, 2)
 
     def test_prune_multi(self):
-        payload = numpy.array([[0, DASH, 0], [1, 0, 1], [DASH, DASH, 4], ])
+        payload = numpy.array([[0, DASH, 0], [1, 0, 1], [DASH, DASH, 4],])
         alignment = MultipleColumnsAlignment([None, None, None], payload)
         alignment = alignment.prune()
 
@@ -48,12 +48,7 @@ class TestColumnAlignment:
 
     @pytest.fixture
     def trivial_array3(self):
-        array = numpy.array([
-            [1, 1, 1],
-            [2, 2, 2],
-            [3, 3, 3],
-            [4, 4, 4]
-        ])
+        array = numpy.array([[1, 1, 1], [2, 2, 2], [3, 3, 3], [4, 4, 4]])
         return array
 
     def test_columns_to_joined_pairs(self, mocked_structures3):
@@ -70,15 +65,8 @@ class TestColumnAlignment:
 
     def test_concatenate(self, mocked_structures3):
         # GIVEN
-        arr1 = numpy.array([
-            [1, 1, 1],
-            [2, 2, 3]
-        ])
-        arr2 = numpy.array([
-            [2, 3, 2],
-            [3, 4, 5],
-            [6, 7, 8]
-        ])
+        arr1 = numpy.array([[1, 1, 1], [2, 2, 3]])
+        arr2 = numpy.array([[2, 3, 2], [3, 4, 5], [6, 7, 8]])
         stc1, stc2, stc3 = mocked_structures3
         structure_new_order = stc1, stc3, stc2
         al1 = MultipleColumnsAlignment(mocked_structures3, arr1)
@@ -108,7 +96,6 @@ class TestColumnAlignment:
 
 
 class TestJoinedAlignments:
-
     def test_join(self):
         pair_alignments1 = get_3_pair_alignments()
         alignment1 = JoinedPairAlignments(pair_alignments1)
@@ -157,7 +144,7 @@ class TestJoinedAlignments:
         structures = get_n_mocked_structures(4)
         pas = []
         for i, stc1 in enumerate(structures):
-            for stc2 in structures[i + 1:]:
+            for stc2 in structures[i + 1 :]:
                 arr = numpy.array([[l, l] for l in range(6)])
                 pa = PairAlignment((stc1, stc2), arr)
                 pas.append(pa)
@@ -169,7 +156,6 @@ class TestJoinedAlignments:
 
 
 class TestPairAlignment:
-
     @pytest.fixture
     def pair_alignment(self):
         stc1, stc2 = get_n_mocked_structures(2)
@@ -177,11 +163,14 @@ class TestPairAlignment:
         return pa
 
     def test_init(self, mocked_structures3):
+        arr = numpy.array([[1, 2], [3, 4], [5, 6],])
         with pytest.raises(ValueError):
-            PairAlignment(mocked_structures3, None)
-        pa = PairAlignment(mocked_structures3[:-1], None)
+            PairAlignment(mocked_structures3, arr)
+        pa = PairAlignment(mocked_structures3[:-1], arr)
 
-        assert pa.inds is None
+        assert mocked_structures3[0] in pa.mer_map
+        assert mocked_structures3[1] in pa.mer_map
+        assert pa.inds.shape == (3, 2)
 
     def test_conversion(self, pair_alignment):
         same_pa = pair_alignment.to_columns()
@@ -191,7 +180,7 @@ class TestPairAlignment:
         assert pair_alignment is also_this_pa
 
     def test_limit(self, pair_alignment):
-        stc3, = get_n_mocked_structures(1, start=2)
+        (stc3,) = get_n_mocked_structures(1, start=2)
         with pytest.raises(ValueError):
             pair_alignment.limit_to_structures(stc3)
 
@@ -213,3 +202,25 @@ class TestPairAlignment:
         pa_different_mers.inds = pa_different_mers.inds[:3]
 
         assert not pa_different_mers == pair_alignment
+
+    def test_transit_trivial(self):
+        stc1, stc2, stc3 = get_n_mocked_structures(3)
+        pa1_2 = get_trivial_pair_alignment(stc1, stc2)
+        pa2_3 = get_trivial_pair_alignment(stc2, stc3)
+        expected1_3 = get_trivial_pair_alignment(stc1, stc3)
+
+        # WHEN
+        pa1_3 = pa1_2.transit(pa2_3)
+
+        # THEN
+        numpy.testing.assert_array_equal(pa1_3.inds, expected1_3.inds)
+
+    def test_transit_with_dash(self):
+        stc1, stc2, stc3 = get_n_mocked_structures(3)
+        arr1 = numpy.array([[1, 1], [DASH, 2],])
+        arr2 = numpy.array([[2, 2]])
+        pa1_2 = PairAlignment((stc1, stc2), arr1)
+        pa2_3 = PairAlignment((stc2, stc3), arr2)
+        pa1_3 = pa1_2.transit(pa2_3)
+
+        assert pa1_3.inds.shape == (1, 2)

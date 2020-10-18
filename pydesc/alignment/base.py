@@ -9,14 +9,12 @@ DASH = object()
 
 
 class AbstractAlignment(ABC):
-
     @abstractmethod
     def limit_to_structures(self, *structures):
         pass
 
 
 class AbstractJoinedPairAlignments(AbstractAlignment):
-
     @property
     @abstractmethod
     def pair_alignments(self):
@@ -36,7 +34,8 @@ class AbstractColumnAlignment(AbstractAlignment):
     def __init__(self, structures, inds_rows):
         self.structures = tuple(structures)
         self.inds = inds_rows
-        self._mer_map = {structure: {} for structure in structures}
+        self.mer_map = {structure: {} for structure in structures}
+        self._fill_mer_map()
 
     @abstractmethod
     def to_joined_pairs(self):
@@ -45,10 +44,12 @@ class AbstractColumnAlignment(AbstractAlignment):
     def _fill_mer_map(self):
         for no, row in enumerate(self.inds):
             for structure, ind in zip(self.structures, row):
-                self._mer_map[structure][ind] = no
+                if ind is DASH:
+                    continue
+                self.mer_map[structure][ind] = no
 
     def get_mers_aligned_with(self, mer, structure):
-        array_index = self._mer_map[structure][mer.ind]
+        array_index = self.mer_map[structure][mer.ind]
         inds = self.inds[array_index]
         generator = zip(self.structures, inds)
         mers = {structure: structure[ind] for structure, ind in generator}
@@ -80,7 +81,7 @@ class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
     def __init__(self, structures, inds_rows):
         if len(structures) != 2:
             raise ValueError("Pair alignment requires exactly two structures.")
-        super().__init__(structures, inds_rows)
+        AbstractColumnAlignment.__init__(self, structures, inds_rows)
 
     def __eq__(self, other):
         if self is other:
@@ -90,6 +91,8 @@ class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
         order = [0, 1]
         if self.structures != other.structures:
             order = [1, 0]
+        if self.inds.shape != other.inds.shape:
+            return False
         comparison = self.inds == other.inds[:, order]
         return numpy.all(comparison)
 
@@ -102,13 +105,45 @@ class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
 
     def limit_to_structures(self, *structures):
         if set(structures) != set(self.structures):
-            msg = "Pair alignment limit can only be trivial." \
-                  "Make sure passed structures are already in it."
+            msg = (
+                "Pair alignment limit can only be trivial."
+                "Make sure passed structures are already in it."
+            )
             raise ValueError(msg)
         return self
 
     def transit(self, alignment):
-        pass
+        try:
+            (common_stc,) = set(self.structures) & set(alignment.structures)
+        except ValueError:
+            msg = (
+                "To perform transition, both alignments have to have exactly one "
+                "common structure."
+            )
+            raise ValueError(msg)
+        own_map = self.mer_map[common_stc]
+        own_mer_inds = set(own_map)
+        other_map = alignment.mer_map[common_stc]
+        other_mer_inds = set(other_map)
+        common_mer_inds = sorted(own_mer_inds & other_mer_inds)
+        own_rows = [own_map[i] for i in common_mer_inds]
+        other_rows = [other_map[i] for i in common_mer_inds]
+        # tricky way to get index of structure other than common
+        # it works for pair alignments. column index is simply
+        # int of bool value of predicate "is common structure at column 0?"
+        own_2nd_structure_col = int(self.structures[0] == common_stc)
+        other_2nd_structure_col = int(alignment.structures[0] == common_stc)
+
+        inds_array = numpy.empty((len(common_mer_inds), 2), dtype=object)
+        inds_array[:, 0] = self.inds[own_rows, own_2nd_structure_col]
+        inds_array[:, 1] = alignment.inds[other_rows, other_2nd_structure_col]
+
+        structures = (
+            self.structures[own_2nd_structure_col],
+            alignment.structures[other_2nd_structure_col],
+        )
+        transit_alignment = PairAlignment(structures, inds_array)
+        return transit_alignment
 
     def to_joined_pairs(self):
         return self
@@ -118,7 +153,6 @@ class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
 
 
 class MultipleColumnsAlignment(AbstractColumnAlignment):
-
     def limit_to_structures(self, *structures):
         if len(structures) < 2:
             msg = "At least two structure are necessary to perform this operation."
@@ -134,7 +168,7 @@ class MultipleColumnsAlignment(AbstractColumnAlignment):
         structure_indices = self.get_structure_indices()
         alignments = []
         for i, stc1 in enumerate(self.structures):
-            for stc2 in self.structures[i + 1:]:
+            for stc2 in self.structures[i + 1 :]:
                 structures = stc1, stc2
                 columns_inds = [structure_indices[stc] for stc in structures]
                 array = self.inds[:, columns_inds]
