@@ -8,6 +8,13 @@ import numpy
 DASH = object()
 
 
+def drop_single_mer_rows(array):
+    _, n_structures = array.shape
+    n_nans = numpy.count_nonzero(array == DASH, axis=1)
+    new_array = array[n_nans < (n_structures - 1)]
+    return new_array
+
+
 class AbstractAlignment(ABC):
     @abstractmethod
     def limit_to_structures(self, *structures):
@@ -56,9 +63,7 @@ class AbstractColumnAlignment(AbstractAlignment):
         return mers
 
     def prune(self):
-        _, n_structures = self.inds.shape
-        n_nans = numpy.count_nonzero(self.inds == DASH, axis=1)
-        new_array = self.inds[n_nans < (n_structures - 1)]
+        new_array = drop_single_mer_rows(self.inds)
         klass = type(self)
         new_alignment = klass(self.structures, new_array)
         return new_alignment
@@ -137,6 +142,7 @@ class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
         inds_array = numpy.empty((len(common_mer_inds), 2), dtype=object)
         inds_array[:, 0] = self.inds[own_rows, own_2nd_structure_col]
         inds_array[:, 1] = alignment.inds[other_rows, other_2nd_structure_col]
+        inds_array = drop_single_mer_rows(inds_array)
 
         structures = (
             self.structures[own_2nd_structure_col],
@@ -168,15 +174,18 @@ class MultipleColumnsAlignment(AbstractColumnAlignment):
         structure_indices = self.get_structure_indices()
         alignments = []
         for i, stc1 in enumerate(self.structures):
-            for stc2 in self.structures[i + 1 :]:
+            for stc2 in self.structures[i+1:]:
                 structures = stc1, stc2
                 columns_inds = [structure_indices[stc] for stc in structures]
                 array = self.inds[:, columns_inds]
+                array = drop_single_mer_rows(array)
                 alignment = PairAlignment((stc1, stc2), array)
-                alignment = alignment.prune()
                 alignments.append(alignment)
         alignment = JoinedPairAlignments(alignments)
         return alignment
+
+    def close(self):
+
 
 
 class JoinedPairAlignments(AbstractJoinedPairAlignments):

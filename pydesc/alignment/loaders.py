@@ -10,6 +10,7 @@ from pydesc.alignment.base import DASH
 from pydesc.alignment.base import JoinedPairAlignments
 from pydesc.alignment.base import MultipleColumnsAlignment
 from pydesc.alignment.base import PairAlignment
+from pydesc.alignment.base import drop_single_mer_rows
 from pydesc.numberconverter import PDBid
 
 
@@ -303,8 +304,8 @@ class FASTALoader(AbstractLoader):
             array[:, i] = numpy.array(column)
             structures.append(structures_map[label])
         alignment_class = get_column_alignment_class(array)
+        array = drop_single_mer_rows(array)
         alignment = alignment_class(structures, array)
-        alignment = alignment.prune()
         return alignment
 
     @staticmethod

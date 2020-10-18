@@ -217,10 +217,11 @@ class TestPairAlignment:
 
     def test_transit_with_dash(self):
         stc1, stc2, stc3 = get_n_mocked_structures(3)
-        arr1 = numpy.array([[1, 1], [DASH, 2],])
-        arr2 = numpy.array([[2, 2]])
+        arr1 = numpy.array([[1, 1], [DASH, 2]])
+        arr2 = numpy.array([[1, 0], [2, 2]])
         pa1_2 = PairAlignment((stc1, stc2), arr1)
         pa2_3 = PairAlignment((stc2, stc3), arr2)
         pa1_3 = pa1_2.transit(pa2_3)
 
         assert pa1_3.inds.shape == (1, 2)
+        assert DASH not in pa1_3.inds.ravel()
