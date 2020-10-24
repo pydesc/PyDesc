@@ -2,6 +2,7 @@
 
 from abc import ABC
 from abc import abstractmethod
+from collections import defaultdict
 
 import numpy
 
@@ -49,11 +50,17 @@ class AbstractColumnAlignment(AbstractAlignment):
         pass
 
     def _fill_mer_map(self):
+        mer_map = {structure: defaultdict(list) for structure in self.structures}
         for no, row in enumerate(self.inds):
             for structure, ind in zip(self.structures, row):
                 if ind is DASH:
                     continue
-                self.mer_map[structure][ind] = no
+                mer_map[structure][ind].append(no)
+        self.mer_map = {structure: {} for structure in self.structures}
+        for structure in self.structures:
+            stc_mer_map = mer_map[structure]
+            for ind, occurs in stc_mer_map.items():
+                self.mer_map[structure][ind] = numpy.array(occurs, dtype=numpy.uint32)
 
     def get_mers_aligned_with(self, mer, structure):
         array_index = self.mer_map[structure][mer.ind]
@@ -118,6 +125,8 @@ class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
         return self
 
     def transit(self, alignment):
+        # note that if some mers are aligned multiple times,
+        # arbitrary one will be picked
         try:
             (common_stc,) = set(self.structures) & set(alignment.structures)
         except ValueError:
@@ -131,8 +140,8 @@ class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
         other_map = alignment.mer_map[common_stc]
         other_mer_inds = set(other_map)
         common_mer_inds = sorted(own_mer_inds & other_mer_inds)
-        own_rows = [own_map[i] for i in common_mer_inds]
-        other_rows = [other_map[i] for i in common_mer_inds]
+        own_rows = [own_map[i].max() for i in common_mer_inds]
+        other_rows = [other_map[i].max() for i in common_mer_inds]
         # tricky way to get index of structure other than common
         # it works for pair alignments. column index is simply
         # int of bool value of predicate "is common structure at column 0?"
@@ -174,7 +183,7 @@ class MultipleColumnsAlignment(AbstractColumnAlignment):
         structure_indices = self.get_structure_indices()
         alignments = []
         for i, stc1 in enumerate(self.structures):
-            for stc2 in self.structures[i+1:]:
+            for stc2 in self.structures[i + 1 :]:
                 structures = stc1, stc2
                 columns_inds = [structure_indices[stc] for stc in structures]
                 array = self.inds[:, columns_inds]
@@ -185,7 +194,7 @@ class MultipleColumnsAlignment(AbstractColumnAlignment):
         return alignment
 
     def close(self):
-
+        pass
 
 
 class JoinedPairAlignments(AbstractJoinedPairAlignments):
