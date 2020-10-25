@@ -90,6 +90,9 @@ class AbstractColumnAlignment(AbstractAlignment):
     def iter_rows(self):
         return iter(self.inds)
 
+    def iter_columns(self):
+        return iter(self.inds.T)
+
     def get_inds_aligned_with(self, structure, ind):
         row_indices = self.mer_map[structure][ind]
         aligned_rows = self.inds[row_indices]
