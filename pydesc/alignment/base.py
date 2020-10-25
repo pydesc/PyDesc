@@ -6,18 +6,32 @@ from collections import defaultdict
 
 import numpy
 
-DASH = object()
+
+class _Dash:
+    def __repr__(self):
+        return "<->"
+
+    def __gt__(self, other):
+        return False
+
+    def __lt__(self, other):
+        return True
 
 
-def max_ind(ind1, ind2):
+DASH = _Dash()
+
+
+def not_dash_if_possible(ind1, ind2):
     if ind1 is DASH:
         return ind2
     if ind2 is DASH:
         return ind1
-    return numpy.maximum(ind1, ind2)
+    if ind1 == ind2:
+        return ind1
+    raise ValueError("Two different integers given.")
 
 
-max_ind = numpy.vectorize(max_ind, otypes=[object])
+not_dash_if_possible = numpy.vectorize(not_dash_if_possible, otypes=[object])
 
 
 def drop_single_mer_rows(array):
@@ -219,7 +233,11 @@ class MultipleColumnsAlignment(AbstractColumnAlignment):
                 if seen_index is None:
                     continue
                 seen_row = new_rows[seen_index]
-                new_row = max_ind(new_row, seen_row)
+                try:
+                    new_row = not_dash_if_possible(new_row, seen_row)
+                except ValueError:
+                    msg = "Inconsistent alignment cannot be closed."
+                    raise ValueError(msg)
             new_rows.append(new_row)
             for i, ind in enumerate(new_row):
                 if ind is DASH:

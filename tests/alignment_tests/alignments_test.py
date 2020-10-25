@@ -113,7 +113,6 @@ class TestColumnAlignment:
         expected_row2 = [3, 3, DASH, DASH]
         numpy.testing.assert_array_equal(closed_alignment.inds[2], expected_row2)
 
-    @pytest.mark.skip(reason="Not sure if it is worth implementing")
     def test_close_inconsistent(self):
         arr = numpy.array([[1, 1, DASH], [DASH, 1, 1], [1, DASH, 2],])
         structures = get_n_mocked_structures(3)
