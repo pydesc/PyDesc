@@ -87,6 +87,9 @@ class AbstractColumnAlignment(AbstractAlignment):
             for ind, occurs in stc_mer_map.items():
                 self.mer_map[structure][ind] = numpy.array(occurs, dtype=numpy.uint32)
 
+    def iter_rows(self):
+        return iter(self.inds)
+
     def get_inds_aligned_with(self, structure, ind):
         row_indices = self.mer_map[structure][ind]
         aligned_rows = self.inds[row_indices]
