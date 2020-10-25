@@ -32,14 +32,7 @@ def mocked_structures3():
 
 
 class TestColumnAlignment:
-    def test_prune_pair(self):
-        payload = numpy.array([[0, DASH], [1, 0]])
-        alignment = PairAlignment([None, None], payload)
-        alignment = alignment.prune()
-
-        assert alignment.inds.shape == (1, 2)
-
-    def test_prune_multi(self):
+    def test_prune(self):
         payload = numpy.array([[0, DASH, 0], [1, 0, 1], [DASH, DASH, 4],])
         alignment = MultipleColumnsAlignment([None, None, None], payload)
         alignment = alignment.prune()
@@ -196,6 +189,13 @@ class TestPairAlignment:
         stc1, stc2 = get_n_mocked_structures(2)
         pa = get_trivial_pair_alignment(stc1, stc2)
         return pa
+
+    def test_prune(self):
+        payload = numpy.array([[0, DASH], [1, 0]])
+        alignment = PairAlignment([None, None], payload)
+        alignment = alignment.prune()
+
+        assert alignment.inds.shape == (1, 2)
 
     def test_init(self, mocked_structures3):
         arr = numpy.array([[1, 2], [3, 4], [5, 6],])
