@@ -113,6 +113,28 @@ class AbstractColumnAlignment(AbstractAlignment):
         indices = {structure: i for i, structure in enumerate(self.structures)}
         return indices
 
+    def sort(self):
+        longest_structure = max(self.mer_map, key=lambda stc: len(self.mer_map[stc]))
+        stc_col_dct = self.get_structure_indices()
+        column = stc_col_dct[longest_structure]
+        new_row_order = self.inds[:, column].argsort()
+        partially_sorted_rows = self.inds[new_row_order, :]
+        rows_to_move = numpy.where(partially_sorted_rows[:, column] == DASH)
+        rows_to_push = partially_sorted_rows[rows_to_move].tolist()
+        no_dash = partially_sorted_rows[:, column] != DASH
+        accepted_rows = partially_sorted_rows[no_dash].tolist()
+        for new_row in rows_to_push:
+            for ind, row in enumerate(accepted_rows):
+                comparison = new_row < row
+                if numpy.any(comparison):
+                    accepted_rows.insert(ind, new_row)
+                    break
+            else:
+                accepted_rows.append(new_row)
+        accepted_rows = numpy.array(accepted_rows)
+        alignment = type(self)(self.structures, accepted_rows)
+        return alignment
+
 
 class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
     def __init__(self, structures, inds_rows):

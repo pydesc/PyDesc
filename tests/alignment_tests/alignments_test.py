@@ -121,6 +121,25 @@ class TestColumnAlignment:
         with pytest.raises(ValueError):
             alignment.close()
 
+    def test_sort(self):
+        col0 = numpy.array([DASH] * 5 + list(range(8)))
+        col1 = numpy.array(list(range(10)) + [DASH] * 3)
+        col2 = numpy.array(list(range(5)) + [DASH] * 8)
+        col3 = numpy.array([1, 2, DASH, DASH, 5, 6, 7, 8, 9, 10, 11, 12, 13])
+        arr = numpy.empty((13, 4), dtype=object)
+        arr[:, 0] = col0
+        arr[:, 1] = col1
+        arr[:, 2] = col2
+        arr[:, 3] = col3
+        messy_arr = arr[[2, 6, 1, 12, 5, 7, 0, 11, 9, 4, 10, 3, 8], :]
+        structures = get_n_mocked_structures(4)
+
+        alignment = MultipleColumnsAlignment(structures, messy_arr)
+
+        sorted_al = alignment.sort()
+
+        numpy.testing.assert_array_equal(sorted_al.inds, arr)
+
 
 class TestJoinedAlignments:
     def test_join(self):
