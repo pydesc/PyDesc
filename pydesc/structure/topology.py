@@ -1,17 +1,17 @@
 import math
-import numpy
 import operator
 from abc import ABCMeta
 from abc import abstractmethod
 
+import numpy
 from Bio.PDB import DSSP
 
 import pydesc.dbhandler
 import pydesc.geometry
 from pydesc.config import ConfigManager
-from pydesc.chemistry.base import AtomSet
 from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import DiscontinuityError
+from pydesc.warnexcept import NotASlice
 from pydesc.warnexcept import WrongElement
 from pydesc.warnexcept import warn
 
@@ -28,6 +28,37 @@ class BackbonedMixIn:
                 pair[1].prev_mer = pair[0]
 
 
+class PDBidGetter:
+    def __init__(self, structure):
+        self.converter = structure.derived_from.converter
+        self.structure = structure
+
+    def __getitem__(self, item):
+        try:
+            # TODO: serve slices and lists
+            raise NotASlice
+        except NotASlice:
+            if isinstance(item, str) or isinstance(item, PDBid):
+                return self._get_mer(item)
+            return self._get_iterable(item)
+
+    def _get_iterable(self, iterable):
+        inds = [self._get_ind(key) for key in iterable]
+        return self.structure[inds]
+
+    def _get_mer(self, key):
+        ind = self._get_ind(key)
+        return self.structure[ind]
+
+    def _get_ind(self, key):
+        try:
+            pdb_id = PDBid.create_from_string(key)
+        except TypeError:
+            pdb_id = key
+        ind = self.converter.get_ind(pdb_id)
+        return ind
+
+
 class AbstractStructure(metaclass=ABCMeta):
     """Abstract class, representation of all the structures and their
     derivatives.
@@ -36,28 +67,17 @@ class AbstractStructure(metaclass=ABCMeta):
     PICKING SLICES OF STRUCTURES RETURNS LIST OF MERS INCLUDING LAST
     INDICATED MER
 
-    Subclasses:
-    Structure -- molecular structure of a protein or a nucleic acid.
-    Segment -- any continuous structure of a structure.
-    Element -- central mer with two following and two preceding mers.
-    Contact -- two Elements in contact.
-    Descriptor -- all Contacts containing central Element.
     """
 
     def __init__(self, derived_from):
-        """(Sub)structure constructor.
-
-        Argument:
-        derived_form -- structure, which self is derived from. Structures
-        loaded from files and user structures are derived from themselves.
-        """
         self.derived_from = derived_from
         self._mers = numpy.array([], dtype=object)
         if self == derived_from:
             self.trt_matrix = pydesc.geometry.TRTMatrix()
         else:
             self.trt_matrix = self.derived_from.trt_matrix
-        self._hash_monomers = None
+        self._atom_set_map = None
+        self.pdb_ids = PDBidGetter(self)
 
     def __add__(self, structure_obj):
         """Returns UserStructure or Segment containing all mers present in
@@ -80,72 +100,62 @@ class AbstractStructure(metaclass=ABCMeta):
             # ValueError is raised by Segment.__init__
             return PartialStructure(self.derived_from, mers)
 
-    def __contains__(self, monomer_obj):
-        """Checks if given mer is present in current structure (mer needs
-        to have ind attr).
-        """
-        return monomer_obj in self._mers
+    def __contains__(self, atom_set):
+        return atom_set in self._mers
 
     def __getitem__(self, key):
-        """Returns mer or list of mers.
-
-        Argument:
-        key -- slice or int. If slice, returns list of mer INCLUDING SECOND
-        INDICATED MER with specific PyDesc integers (inds), otherwise
-        returns specified mer.
-        """
-
-        def get_hash_if_possible(param):
-            """Returns _mers index for given slice parameter.
-
-            Slice parameter can be monomer ind (PyDesc integer), negative
-            index,
-            string convertable to PDB_id or PDB_id itself.
-            For monomer inds - monomer's index on _mers list is returned.
-            Negative values and 0 are not changed.
-            Other values raise IndexError.
-            Strings are converted to PDB_id.
-            For PDB_id - corresponding ind is taken from number converter and
-            again
-            """
-            # TODO: brush and prune this tree
-            if isinstance(param, str):
-                # strings are converted to PDB_id
-                param = PDBid.create_from_string(param)
-            if isinstance(param, PDBid) or isinstance(param, tuple):
-                # if given parameter already is a PDB_id or a corresponding
-                # tuple instance
-                param = self.derived_from.converter.get_ind(param)
-            if isinstance(param, AtomSet):
-                return self._mers.index(param)
+        try:
+            return self._get_slice(key)
+        except NotASlice:
             try:
-                # if parameter is an integer - it is probably monomer ind
-                return self._hash(param)
-            except KeyError:
-                # if not - only negative indexes and 0 are supported
-                if not param < 1:
-                    raise IndexError("%s out of mers list range" % str(param))
-                return param
+                return self._get_iterable(key)
+            except TypeError:
+                return self._get_mer(key)
 
-        if isinstance(key, slice):
-            if key.step is not None:
-                raise TypeError("AbstractStructure does not support steps")
-            if key.start is None:
-                key = slice(self._mers[0].ind, key.stop, None)
-            if key.stop is None:
-                key = slice(key.start, self._mers[-1].ind, None)
-            start, end = list(map(get_hash_if_possible, [key.start, key.stop]))
-            try:
-                segment = Segment(self, self._mers[start], self._mers[end])
-                if not all(mer in self for mer in segment):
-                    raise DiscontinuityError()
-                return segment
-            except (DiscontinuityError, ValueError):
-                end = end + 1 if end != -1 else None
-                mers = self._mers[start:end]
-                return PartialStructure(self.derived_from, mers)
-        else:
-            return self._mers[get_hash_if_possible(key)]
+    def _get_slice(self, slice_):
+        try:
+            if slice_.step is not None:
+                raise ValueError("Structures slicing does not support steps.")
+        except AttributeError:
+            raise NotASlice
+        ind1 = slice_.start or self._mers[0].ind
+        ind2 = slice_.stop or self._mers[-1].ind
+        start = self._get_hash(ind1)
+        stop = self._get_hash(ind2)
+        mers = self._mers[start : stop + 1]
+        return self._create_substructure(mers)
+
+    def _get_iterable(self, iterable):
+        mers = set([self._get_mer(ind) for ind in iterable])
+        mers = sorted(mers, key=lambda mer: mer.ind)
+        return self._create_substructure(mers)
+
+    def _get_mer(self, ind):
+        index = self._get_hash(ind)
+        return self._mers[index]
+
+    def _get_hash(self, ind):
+        if self._atom_set_map is None:
+            self._set_atom_set_map()
+        if ind < 0:
+            return ind
+        try:
+            return self._atom_set_map[ind]
+        except KeyError:
+            msg = "AtomSet ind(ex) out of range."
+            raise IndexError(msg)
+
+    def _set_atom_set_map(self):
+        self._atom_set_map = {}
+        for i, atom_set in enumerate(self._mers):
+            self._atom_set_map[atom_set.ind] = i
+
+    def _create_substructure(self, mers):
+        try:
+            substructure = Segment(self.derived_from, mers=mers)
+        except DiscontinuityError:
+            substructure = PartialStructure(self.derived_from, mers)
+        return substructure
 
     def __iter__(self):
         """Returns iterator that iterates over structure mers."""
@@ -154,28 +164,6 @@ class AbstractStructure(metaclass=ABCMeta):
     def __len__(self):
         """Returns number of mers present in current structure."""
         return len(self._mers)
-
-    def _hash(self, ind):
-        """Returns index on _mers list corresponding to given PyDesc integer
-        (ind).
-
-        Argument:
-        ind -- PyDesc integer.
-        """
-        if self._hash_monomers is None:
-            self._set_hash()
-        return self._hash_monomers[ind]
-
-    def _set_hash(self):
-        """Sets _has_monomers attribute.
-
-        _has_monomers is dictionary containing all mers inds as keys and
-        their indexes on _mers list as values.
-        It is used by __getitem__ as hash list.
-        """
-        self._hash_monomers = dict(
-            (monomer_obj.ind, index) for index, monomer_obj in enumerate(self._mers)
-        )
 
     def next_mer(self, monomer_obj):
         """Returns next monomer available in current structure for given
@@ -272,18 +260,18 @@ class Structure(AbstractStructure):
         Sets mers' next_mer attribute and creates their elements.
         Extended AbstractStructure method.
         """  # TODO fix docstring
-
+        self.converter = converter_obj
         AbstractStructure.__init__(self, self)
         self.path = path
         self.name = name
-        self.converter = converter_obj
         self.chains = None
 
     def finalize(self, chains):
         self.chains = chains
-        self._mers = numpy.array([mer for chain in chains for mer in chain],
-                                 dtype=object)
-        self._set_hash()
+        self._mers = numpy.array(
+            [mer for chain in chains for mer in chain], dtype=object
+        )
+        self._set_atom_set_map()
 
     def __repr__(self):
         return "<Structure %s>" % self.name
@@ -440,8 +428,9 @@ class Segment(AbstractStructure):
                     raise DiscontinuityError(msg)
                 mers.append(current_mer)
         else:
-            mers = numpy.array(sorted(mers, key=operator.attrgetter("ind")),
-                               dtype=object)
+            mers = numpy.array(
+                sorted(mers, key=operator.attrgetter("ind")), dtype=object
+            )
         super().__init__(derived_from)
         self._mers = numpy.array(mers, dtype=object)
         self._check_continuity()
@@ -450,10 +439,14 @@ class Segment(AbstractStructure):
 
     def _check_continuity(self):
         """Raises DiscontinuityError if segment is not continuous."""
-        for (monomer1, monomer2) in zip(self._mers, self._mers[1:]):
-            if monomer1.next_mer == monomer2:
+        for (mer1, mer2) in zip(self._mers, self._mers[1:]):
+            try:
+                next_mer = mer1.next_mer
+            except AttributeError:
+                raise DiscontinuityError(mer1, mer2)
+            if next_mer == mer2:
                 continue
-            raise DiscontinuityError(monomer1, monomer2)
+            raise DiscontinuityError(mer1, mer2)
 
     def __repr__(self):
         return "<Segment %s-%s>" % (
