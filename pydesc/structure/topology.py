@@ -1,4 +1,5 @@
 import math
+import numpy
 import operator
 from abc import ABCMeta
 from abc import abstractmethod
@@ -51,7 +52,7 @@ class AbstractStructure(metaclass=ABCMeta):
         loaded from files and user structures are derived from themselves.
         """
         self.derived_from = derived_from
-        self._mers = ()
+        self._mers = numpy.array([], dtype=object)
         if self == derived_from:
             self.trt_matrix = pydesc.geometry.TRTMatrix()
         else:
@@ -280,7 +281,8 @@ class Structure(AbstractStructure):
 
     def finalize(self, chains):
         self.chains = chains
-        self._mers = tuple([mer for chain in chains for mer in chain])
+        self._mers = numpy.array([mer for chain in chains for mer in chain],
+                                 dtype=object)
         self._set_hash()
 
     def __repr__(self):
@@ -385,7 +387,7 @@ class PartialStructure(BackbonedMixIn, AbstractStructure):
     def set_mers(self, sequence_of_mers):
         """Set _mers attribute to tuple of mers in given sequence and
         finalize structure."""
-        self._mers = tuple(sequence_of_mers)
+        self._mers = numpy.array(sequence_of_mers, dtype=object)
         self.finalize()
 
     def finalize(self):
@@ -438,9 +440,10 @@ class Segment(AbstractStructure):
                     raise DiscontinuityError(msg)
                 mers.append(current_mer)
         else:
-            mers = sorted(mers, key=operator.attrgetter("ind"))
+            mers = numpy.array(sorted(mers, key=operator.attrgetter("ind")),
+                               dtype=object)
         super().__init__(derived_from)
-        self._mers = tuple(mers)
+        self._mers = numpy.array(mers, dtype=object)
         self._check_continuity()
         if len(self._mers) == 0:
             raise ValueError("Failed to create segment, wrong mers given.")
@@ -517,7 +520,7 @@ class Chain(BackbonedMixIn, AbstractStructure):
         """  # TODO fix docstring
         AbstractStructure.__init__(self, structure_obj)
         self.chain_name = chain_name
-        self._mers = tuple(mers)
+        self._mers = numpy.array(mers, dtype=object)
         self._fill_mers_attrs()
 
     def __repr__(self, mode=0):
@@ -545,7 +548,6 @@ class AbstractElement(AbstractStructure, metaclass=ABCMeta):
         """
         AbstractStructure.__init__(self, derived_from)
         self.central_monomer = mer
-        self._mers = (mer,)
 
     def __repr__(self, mode=0):
         return "<%s of %s>" % (
@@ -574,16 +576,19 @@ class ElementChainable(AbstractElement, Segment):
         length = ConfigManager.element.element_chainable_length
         if not length % 2 == 1:
             raise ValueError("Length of chainable element should be odd.")
-        msg = "Cannot create chainable element for mer %i." % mer.ind
+        mers = [self.central_monomer]
         for _ in range(length // 2):
-            start = self._mers[0]
-            end = self._mers[-1]
+            start = mers[0]
+            end = mers[-1]
             try:
-                self._mers = (start.prev_mer,) + self._mers + (end.next_mer,)
+                mers = [start.prev_mer, *mers, end.next_mer]
             except AttributeError:
+                msg = f"Element creation failed for mer {mer.ind}"
                 raise ValueError(msg)
-        if self._mers.count(None) != 0:
+        if mers.count(None) != 0:
+            msg = f"Element creation failed for mer {mer.ind}"
             raise ValueError(msg)
+        self._mers = numpy.array(mers, dtype=object)
 
 
 class ElementOther(AbstractElement):
@@ -621,7 +626,7 @@ class Contact(AbstractStructure):
         if element1.central_monomer.ind == element2.central_monomer.ind:
             raise ValueError("Impossible to create contact using one element")
         AbstractStructure.__init__(self, element1.derived_from)
-        self._mers = tuple(element1) + tuple(element2)
+        self._mers = numpy.array([*element1, *element2], dtype=object)
 
     def __sub__(self, val):
         """Deprecated."""

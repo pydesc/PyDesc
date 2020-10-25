@@ -1,3 +1,4 @@
+import numpy
 from abc import ABCMeta
 from functools import reduce
 
@@ -209,7 +210,7 @@ class Descriptor(AbstractStructure):
         AbstractStructure.__init__(self, central_element.derived_from)
         self.central_element = central_element
         self.contacts = contacts
-        self._mers = mers
+        self._mers = numpy.array(mers, dtype=object)
         self.segments = segments
         self.elements = elements
 
