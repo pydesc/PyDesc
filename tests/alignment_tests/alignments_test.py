@@ -94,6 +94,41 @@ class TestColumnAlignment:
         assert new_pa.inds.shape == (5, 2)
         assert new_ma.inds.shape == (5, 3)
 
+    def test_close_trivial(self):
+        arr = numpy.array(
+            [
+                [1, 1, DASH, DASH],
+                [DASH, 1, 1, DASH],
+                [DASH, DASH, 1, 1],
+                [1, DASH, DASH, 1],
+                [2, 2, DASH, DASH],
+                [DASH, 2, 2, 2],
+                [3, 3, DASH, DASH],
+                [DASH, DASH, 4, 4],
+            ]
+        )
+        structures = get_n_mocked_structures(4)
+        alignment = MultipleColumnsAlignment(structures, arr)
+
+        closed_alignment = alignment.close()
+
+        assert closed_alignment.inds.shape == (4, 4)
+        expected_row0 = [1, 1, 1, 1]
+        numpy.testing.assert_array_equal(closed_alignment.inds[0], expected_row0)
+        expected_row1 = [2, 2, 2, 2]
+        numpy.testing.assert_array_equal(closed_alignment.inds[1], expected_row1)
+        expected_row2 = [3, 3, DASH, DASH]
+        numpy.testing.assert_array_equal(closed_alignment.inds[2], expected_row2)
+
+    @pytest.mark.skip(reason="Not sure if it is worth implementing")
+    def test_close_inconsistent(self):
+        arr = numpy.array([[1, 1, DASH], [DASH, 1, 1], [1, DASH, 2],])
+        structures = get_n_mocked_structures(3)
+        alignment = MultipleColumnsAlignment(structures, arr)
+
+        with pytest.raises(ValueError):
+            alignment.close()
+
 
 class TestJoinedAlignments:
     def test_join(self):

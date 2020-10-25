@@ -9,6 +9,17 @@ import numpy
 DASH = object()
 
 
+def max_ind(ind1, ind2):
+    if ind1 is DASH:
+        return ind2
+    if ind2 is DASH:
+        return ind1
+    return numpy.maximum(ind1, ind2)
+
+
+max_ind = numpy.vectorize(max_ind, otypes=[object])
+
+
 def drop_single_mer_rows(array):
     _, n_structures = array.shape
     n_nans = numpy.count_nonzero(array == DASH, axis=1)
@@ -194,7 +205,34 @@ class MultipleColumnsAlignment(AbstractColumnAlignment):
         return alignment
 
     def close(self):
-        pass
+        # unexpected behaviour for inconsistent alignments
+        seen_mers = {}
+        new_rows = []
+        current_ind = -1
+        for row in self.inds:
+            current_ind += 1
+            new_row = row.copy()
+            for i, ind in enumerate(row):
+                if ind is DASH:
+                    continue
+                seen_index = seen_mers.get((i, ind), None)
+                if seen_index is None:
+                    continue
+                seen_row = new_rows[seen_index]
+                new_row = max_ind(new_row, seen_row)
+            new_rows.append(new_row)
+            for i, ind in enumerate(new_row):
+                if ind is DASH:
+                    continue
+                seen_mers[(i, ind)] = current_ind
+        valid_new_rows_indices = sorted(set(seen_mers.values()))
+        n_rows = len(valid_new_rows_indices)
+        n_cols = len(self.structures)
+        new_array = numpy.empty((n_rows, n_cols), dtype=object)
+        for no, index in enumerate(valid_new_rows_indices):
+            new_array[no] = new_rows[index]
+        alignment = type(self)(self.structures, new_array)
+        return alignment
 
 
 class JoinedPairAlignments(AbstractJoinedPairAlignments):
