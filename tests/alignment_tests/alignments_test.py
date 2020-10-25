@@ -33,7 +33,7 @@ def mocked_structures3():
 
 class TestColumnAlignment:
     def test_prune(self):
-        payload = numpy.array([[0, DASH, 0], [1, 0, 1], [DASH, DASH, 4], ])
+        payload = numpy.array([[0, DASH, 0], [1, 0, 1], [DASH, DASH, 4],])
         alignment = MultipleColumnsAlignment([None, None, None], payload)
         alignment = alignment.prune()
 
@@ -114,7 +114,7 @@ class TestColumnAlignment:
         numpy.testing.assert_array_equal(closed_alignment.inds[2], expected_row2)
 
     def test_close_inconsistent(self):
-        arr = numpy.array([[1, 1, DASH], [DASH, 1, 1], [1, DASH, 2], ])
+        arr = numpy.array([[1, 1, DASH], [DASH, 1, 1], [1, DASH, 2],])
         structures = get_n_mocked_structures(3)
         alignment = MultipleColumnsAlignment(structures, arr)
 
@@ -141,11 +141,7 @@ class TestColumnAlignment:
         numpy.testing.assert_array_equal(sorted_al.inds, arr)
 
     def test_get_aligned_inds(self):
-        arr = numpy.array([
-            [1, 1, 1, 1],
-            [1, 2, DASH, DASH],
-            [3, 3, 3, 3],
-        ])
+        arr = numpy.array([[1, 1, 1, 1], [1, 2, DASH, DASH], [3, 3, 3, 3],])
         structures = get_n_mocked_structures(4)
         stc0, stc1, stc2, stc3 = structures
         alignment = MultipleColumnsAlignment(structures, arr)
@@ -219,7 +215,7 @@ class TestJoinedAlignments:
         structures = get_n_mocked_structures(4)
         pas = []
         for i, stc1 in enumerate(structures):
-            for stc2 in structures[i + 1:]:
+            for stc2 in structures[i + 1 :]:
                 arr = numpy.array([[l, l] for l in range(6)])
                 pa = PairAlignment((stc1, stc2), arr)
                 pas.append(pa)
@@ -245,7 +241,7 @@ class TestPairAlignment:
         assert alignment.inds.shape == (1, 2)
 
     def test_init(self, mocked_structures3):
-        arr = numpy.array([[1, 2], [3, 4], [5, 6], ])
+        arr = numpy.array([[1, 2], [3, 4], [5, 6],])
         with pytest.raises(ValueError):
             PairAlignment(mocked_structures3, arr)
         pa = PairAlignment(mocked_structures3[:-1], arr)
@@ -307,3 +303,43 @@ class TestPairAlignment:
 
         assert pa1_3.inds.shape == (1, 2)
         assert DASH not in pa1_3.inds.ravel()
+
+    def test_consistency_positive(self):
+        stc1, stc2 = get_n_mocked_structures(2)
+        pa1 = get_trivial_pair_alignment(stc1, stc2)
+        pa2 = get_trivial_pair_alignment(stc1, stc2)
+        pa3 = get_trivial_pair_alignment(stc2, stc1)
+        arr = numpy.array([[1, 1], [42, 42],])
+        pa4 = PairAlignment([stc1, stc2], arr)
+
+        assert pa1.is_consistent_with(pa2)
+        assert pa2.is_consistent_with(pa3)
+        assert pa1.is_consistent_with(pa3)
+        assert pa2.is_consistent_with(pa1)
+        assert pa3.is_consistent_with(pa1)
+        assert pa1.is_consistent_with(pa4)
+
+    def test_consistency_double_mer_alignment(self):
+        stc1, stc2 = get_n_mocked_structures(2)
+        pa1 = get_trivial_pair_alignment(stc1, stc2)
+        arr = numpy.array([[1, 1], [1, 42],])
+        pa2 = PairAlignment([stc1, stc2], arr)
+
+        with pytest.raises(ValueError):
+            pa1.is_consistent_with(pa2)
+
+    def test_consistency_negative(self):
+        stc1, stc2 = get_n_mocked_structures(2)
+        pa1 = get_trivial_pair_alignment(stc1, stc2)
+        arr = numpy.array([[1, 1], [2, 42],])
+        pa2 = PairAlignment([stc1, stc2], arr)
+        assert not pa1.is_consistent_with(pa2)
+
+    def test_consistency_different_structures(self):
+        stc1, stc2, stc3, stc4 = get_n_mocked_structures(4)
+        pa1 = get_trivial_pair_alignment(stc1, stc2)
+        pa2 = get_trivial_pair_alignment(stc2, stc3)
+        pa3 = get_trivial_pair_alignment(stc3, stc4)
+
+        assert pa1.is_consistent_with(pa2)
+        assert pa1.is_consistent_with(pa3)

@@ -114,6 +114,12 @@ class AbstractColumnAlignment(AbstractAlignment):
         indices = {structure: i for i, structure in enumerate(self.structures)}
         return indices
 
+    def get_common_structures(self, other):
+        self_structures = set(self.structures)
+        other_structures = set(other.structures)
+        common = self_structures & other_structures
+        return common
+
     def sort(self):
         longest_structure = max(self.mer_map, key=lambda stc: len(self.mer_map[stc]))
         stc_col_dct = self.get_structure_indices()
@@ -172,11 +178,11 @@ class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
             raise ValueError(msg)
         return self
 
-    def transit(self, alignment):
+    def transit(self, other):
         # note that if some mers are aligned multiple times,
         # arbitrary one will be picked
         try:
-            (common_stc,) = set(self.structures) & set(alignment.structures)
+            (common_stc,) = self.get_common_structures(other)
         except ValueError:
             msg = (
                 "To perform transition, both alignments have to have exactly one "
@@ -185,7 +191,7 @@ class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
             raise ValueError(msg)
         own_map = self.mer_map[common_stc]
         own_mer_inds = set(own_map)
-        other_map = alignment.mer_map[common_stc]
+        other_map = other.mer_map[common_stc]
         other_mer_inds = set(other_map)
         common_mer_inds = sorted(own_mer_inds & other_mer_inds)
         own_rows = [own_map[i].max() for i in common_mer_inds]
@@ -194,19 +200,43 @@ class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
         # it works for pair alignments. column index is simply
         # int of bool value of predicate "is common structure at column 0?"
         own_2nd_structure_col = int(self.structures[0] == common_stc)
-        other_2nd_structure_col = int(alignment.structures[0] == common_stc)
+        other_2nd_structure_col = int(other.structures[0] == common_stc)
 
         inds_array = numpy.empty((len(common_mer_inds), 2), dtype=object)
         inds_array[:, 0] = self.inds[own_rows, own_2nd_structure_col]
-        inds_array[:, 1] = alignment.inds[other_rows, other_2nd_structure_col]
+        inds_array[:, 1] = other.inds[other_rows, other_2nd_structure_col]
         inds_array = drop_single_mer_rows(inds_array)
 
         structures = (
             self.structures[own_2nd_structure_col],
-            alignment.structures[other_2nd_structure_col],
+            other.structures[other_2nd_structure_col],
         )
         transit_alignment = PairAlignment(structures, inds_array)
         return transit_alignment
+
+    def is_consistent_with(self, other):
+        common_structures = self.get_common_structures(other)
+        if common_structures != set(self.structures):
+            return True
+        for structure in common_structures:
+            self_inds = set(self.mer_map[structure])
+            other_inds = set(other.mer_map[structure])
+            common_inds = self_inds & other_inds
+            for ind in common_inds:
+                self_rows = self.mer_map[structure][ind]
+                self_aligned = self.inds[self_rows]
+                other_rows = other.mer_map[structure][ind]
+                other_aligned = other.inds[other_rows]
+                try:
+                    if numpy.any(self_aligned != other_aligned, axis=1):
+                        return False
+                except ValueError:
+                    msg = (
+                        "One of pair alignments is internally inconsistent."
+                        "Make sure each mer is aligned with only one other mer."
+                    )
+                    raise ValueError(msg)
+        return True
 
     def to_joined_pairs(self):
         return self
