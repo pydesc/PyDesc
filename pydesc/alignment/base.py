@@ -87,12 +87,13 @@ class AbstractColumnAlignment(AbstractAlignment):
             for ind, occurs in stc_mer_map.items():
                 self.mer_map[structure][ind] = numpy.array(occurs, dtype=numpy.uint32)
 
-    def get_mers_aligned_with(self, mer, structure):
-        array_index = self.mer_map[structure][mer.ind]
-        inds = self.inds[array_index]
-        generator = zip(self.structures, inds)
-        mers = {structure: structure[ind] for structure, ind in generator}
-        return mers
+    def get_inds_aligned_with(self, structure, ind):
+        row_indices = self.mer_map[structure][ind]
+        aligned_rows = self.inds[row_indices]
+        generator = zip(self.structures, aligned_rows.T)
+        aligned_map = {stc: inds[inds != DASH].tolist() for stc, inds in generator}
+        aligned_map = {k: v for k, v in aligned_map.items() if v and (k != structure)}
+        return aligned_map
 
     def prune(self):
         new_array = drop_single_mer_rows(self.inds)

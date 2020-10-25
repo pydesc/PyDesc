@@ -33,7 +33,7 @@ def mocked_structures3():
 
 class TestColumnAlignment:
     def test_prune(self):
-        payload = numpy.array([[0, DASH, 0], [1, 0, 1], [DASH, DASH, 4],])
+        payload = numpy.array([[0, DASH, 0], [1, 0, 1], [DASH, DASH, 4], ])
         alignment = MultipleColumnsAlignment([None, None, None], payload)
         alignment = alignment.prune()
 
@@ -114,7 +114,7 @@ class TestColumnAlignment:
         numpy.testing.assert_array_equal(closed_alignment.inds[2], expected_row2)
 
     def test_close_inconsistent(self):
-        arr = numpy.array([[1, 1, DASH], [DASH, 1, 1], [1, DASH, 2],])
+        arr = numpy.array([[1, 1, DASH], [DASH, 1, 1], [1, DASH, 2], ])
         structures = get_n_mocked_structures(3)
         alignment = MultipleColumnsAlignment(structures, arr)
 
@@ -139,6 +139,35 @@ class TestColumnAlignment:
         sorted_al = alignment.sort()
 
         numpy.testing.assert_array_equal(sorted_al.inds, arr)
+
+    def test_get_aligned_inds(self):
+        arr = numpy.array([
+            [1, 1, 1, 1],
+            [1, 2, DASH, DASH],
+            [3, 3, 3, 3],
+        ])
+        structures = get_n_mocked_structures(4)
+        stc0, stc1, stc2, stc3 = structures
+        alignment = MultipleColumnsAlignment(structures, arr)
+
+        expected_stc0_mer1 = {
+            stc1: [1, 2],
+            stc2: [1],
+            stc3: [1],
+        }
+        stc0_mer1 = alignment.get_inds_aligned_with(stc0, 1)
+        assert stc0_mer1 == expected_stc0_mer1
+
+        expected_stc1_mer2 = {stc0: [1]}
+        stc1_mer2 = alignment.get_inds_aligned_with(stc1, 2)
+        assert stc1_mer2 == expected_stc1_mer2
+
+        expected_stc0_mer3 = {stc: [3] for stc in structures[1:]}
+        stc0_mer3 = alignment.get_inds_aligned_with(stc0, 3)
+        assert stc0_mer3 == expected_stc0_mer3
+
+        with pytest.raises(KeyError):
+            alignment.get_inds_aligned_with(stc0, 42)
 
 
 class TestJoinedAlignments:
@@ -190,7 +219,7 @@ class TestJoinedAlignments:
         structures = get_n_mocked_structures(4)
         pas = []
         for i, stc1 in enumerate(structures):
-            for stc2 in structures[i + 1 :]:
+            for stc2 in structures[i + 1:]:
                 arr = numpy.array([[l, l] for l in range(6)])
                 pa = PairAlignment((stc1, stc2), arr)
                 pas.append(pa)
@@ -216,7 +245,7 @@ class TestPairAlignment:
         assert alignment.inds.shape == (1, 2)
 
     def test_init(self, mocked_structures3):
-        arr = numpy.array([[1, 2], [3, 4], [5, 6],])
+        arr = numpy.array([[1, 2], [3, 4], [5, 6], ])
         with pytest.raises(ValueError):
             PairAlignment(mocked_structures3, arr)
         pa = PairAlignment(mocked_structures3[:-1], arr)
