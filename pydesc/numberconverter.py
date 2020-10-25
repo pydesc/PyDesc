@@ -183,17 +183,15 @@ class PDBid(tuple):
         """Returns PDB id tuple.
 
         Argument:
-            pdb_id -- string in format <chain><pdb_number><pdb_insertion_code>,
+            pdb_id -- string in format <chain>:<pdb_number><pdb_insertion_code>,
         e.g. C12A.
         """
-        match = re.match("^(.)([0-9]*)([^0-9])?$", pdb_id)
-
+        match = re.match("^(.*):([0-9]*)([^0-9])?$", pdb_id)
         if match is None:
             raise ValueError("Unexpected id string %s\n" % pdb_id)
-
-        tuple_ = match.groups()
-        icode = None if tuple_[2] in (" ", "") else tuple_[2]
-        return pdb_id([tuple_[0], int(tuple_[1]), icode])
+        chain, ind, icode = match.groups()
+        icode = None if icode in (" ", "") else icode
+        return PDBid([chain, int(ind), icode])
 
     @staticmethod
     def create_from_pdb_residue(pdb_residue):
