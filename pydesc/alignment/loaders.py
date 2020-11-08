@@ -127,9 +127,36 @@ class CSVLoader(AbstractLoader):
 
 
 class PALLoader(AbstractLoader):
+    def __init__(self, path):
+        super(PALLoader, self).__init__(path)
+        self.version = None
+
+    @staticmethod
+    def _get_id_pattern(version):
+        id_patterns = {
+            "1.0": "[^0-9]*[0-9]*.?",
+            "2.0": "[^:]:*[0-9]*.?",
+        }
+        return id_patterns[version]
+
+    @staticmethod
+    def _get_pid_pattern(version):
+        pid_patterns = {
+            "1.0": "([^0-9]*)([0-9]*)(.?)",
+            "2.0": "([^:]*):([0-9]*)(.?)",
+        }
+        return pid_patterns[version]
+
     def _read_file(self):
         with open(self.path) as file:
-            n_structures = int(file.readline())
+            first_line = file.readline()
+            version_match = re.match("v:([0-9]+.[0-9]+)", first_line)
+            if version_match is not None:
+                self.version = version_match.group(1)
+                n_structures = int(file.readline())
+            else:
+                n_structures = int(first_line)
+                self.version = "1.0"
             labels = [file.readline().strip() for _ in range(n_structures)]
             self._structure_labels = labels
             while True:
@@ -151,16 +178,16 @@ class PALLoader(AbstractLoader):
         structure2 = label_map[label2]
         return structure1, structure2
 
-    @staticmethod
-    def _parse_pdb_id(pdb_str):
-        match = re.match("([^0-9]*)([0-9]*)(.?)", pdb_str.strip())
+    def _parse_pdb_id(self, pdb_str):
+        pid_pattern = self._get_pid_pattern(self.version)
+        match = re.match(pid_pattern, pdb_str.strip())
         chain = match.group(1) or None
         no = int(match.group(2))
         i_code = match.group(3) or None
         return PDBid((chain, no, i_code))
 
     def _parse_ranges(self, ranges):
-        id_pattern = "[^0-9]*[0-9]*.?"
+        id_pattern = self._get_id_pattern(self.version)
         range_pattern = f"({id_pattern}) -- ({id_pattern})"
         match = re.match(f"{range_pattern} <--> {range_pattern}", ranges)
         ids = [match.group(i) for i in range(1, 5)]
