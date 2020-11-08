@@ -245,7 +245,9 @@ class PairAlignment(AbstractColumnAlignment, AbstractJoinedPairAlignments):
         return True
 
     def to_joined_pairs(self):
-        return self
+        new_inds = drop_single_mer_rows(self.inds)
+        new_alignment = PairAlignment(self.structures, new_inds)
+        return new_alignment
 
     def to_columns(self):
         return self

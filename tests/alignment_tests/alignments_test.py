@@ -254,8 +254,20 @@ class TestPairAlignment:
         same_pa = pair_alignment.to_columns()
         also_this_pa = pair_alignment.to_joined_pairs()
 
-        assert pair_alignment is same_pa
-        assert pair_alignment is also_this_pa
+        numpy.testing.assert_array_equal(pair_alignment.inds, same_pa.inds)
+        numpy.testing.assert_array_equal(pair_alignment.inds, also_this_pa.inds)
+        assert pair_alignment.structures == same_pa.structures
+        assert pair_alignment.structures == also_this_pa.structures
+
+    def test_joined_skips_dashes(self, mocked_structures3):
+        stc1, stc2, _ = mocked_structures3
+        arr = numpy.array([[DASH, 1], [2, 3],])
+        alignment = PairAlignment((stc1, stc2), arr)
+
+        new_alignment = alignment.to_joined_pairs()
+        assert new_alignment.inds.shape == (1, 2)
+        expected_arr = numpy.array([[2, 3]])
+        numpy.testing.assert_array_equal(new_alignment.inds, expected_arr)
 
     def test_limit(self, pair_alignment):
         (stc3,) = get_n_mocked_structures(1, start=2)
