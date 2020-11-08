@@ -5,10 +5,13 @@ import numpy
 import pytest
 
 from pydesc.alignment.base import DASH
+from pydesc.alignment.base import MultipleColumnsAlignment
 from pydesc.alignment.base import PairAlignment
 from pydesc.alignment.savers import CSVSaver
 from pydesc.alignment.savers import FASTASaver
+from pydesc.alignment.savers import PALSaver
 from pydesc.alignment.savers import get_segments
+from pydesc.alignment.loaders import PALLoader
 from pydesc.api.structure import get_structures_from_file
 
 
@@ -173,3 +176,126 @@ class TestFASTASaver:
 
         assert len(seq1_line1.strip()) == 15
         assert len(seq1_line2.strip()) == 15
+
+
+class TestPALSaver:
+    def test_trivial_pair(self, structure1, structure2):
+        saver = PALSaver()
+        alignment = make_full_trivial_alignment(structure1, structure2)
+
+        tmp_file = StringIO()
+        saver.save(tmp_file, alignment)
+
+        tmp_file.seek(0)
+        string = tmp_file.read()
+        assert string != ""
+        expected_header = "v:2.0\n2\n2BLL\n2BLL\n"
+        assert string.startswith(expected_header)
+
+        assert ">2BLL 2BLL" in string
+
+        expected_line = "A:316 -- A:657 <--> A:316 -- A:657  (0,1)"
+        assert expected_line in string
+
+    def test_dashes_pair(self, structure1, structure2):
+        saver = PALSaver()
+        alignment = make_trivial_pair_w_dashes(structure1, structure2)
+
+        stream = StringIO()
+        saver.save(stream, alignment)
+
+        stream.seek(0)
+        string = stream.read()
+
+        expected_line1 = "A:317 -- A:317 <--> A:317 -- A:317  (0,1)"
+        expected_line2 = "A:320 -- A:320 <--> A:320 -- A:320  (0,1)"
+        assert expected_line1 in string
+        assert expected_line2 in string
+        assert "@2" in string
+
+    def test_names_mapping(self, structure1, structure2, structure3):
+        names = {
+            structure1: "AA",
+            structure2: "BB",
+        }
+        saver = PALSaver()
+        arr, _ = numpy.indices((10, 3))
+        structures = (structure1, structure2, structure3)
+        alignment = MultipleColumnsAlignment(structures, arr)
+        stream = StringIO()
+
+        saver.save(stream, alignment, names=names)
+
+        stream.seek(0)
+        string = stream.read()
+
+        expected_header = "v:2.0\n3\nAA\nBB\n1KIS"
+        assert string.startswith(expected_header)
+
+        assert ">AA BB" in string
+        assert ">AA 1KIS" in string
+        assert ">BB 1KIS" in string
+
+    def test_trivial_multiple(self, structure1, structure2, structure3):
+        saver = PALSaver()
+        arr, _ = numpy.indices((10, 3))
+        structures = (structure1, structure2, structure3)
+        alignment = MultipleColumnsAlignment(structures, arr)
+        stream = StringIO()
+
+        saver.save(stream, alignment)
+
+        stream.seek(0)
+        string = stream.read()
+
+        expected_header = "v:2.0\n3\n2BLL\n2BLL\n1KIS"
+        assert string.startswith(expected_header)
+
+        expected_line1 = "A:316 -- A:325 <--> A:316 -- A:325  (0,1)"
+        expected_line2 = "A:316 -- A:325 <--> A:1 -- A:10  (0,1)"
+
+        assert expected_line1 in string
+        assert expected_line2 in string
+
+    def test_multiple_chains(self, structure1, structure2, structure3):
+        saver = PALSaver()
+        arr, _ = numpy.indices((30, 3))
+        structures = (structure1, structure2, structure3)
+        alignment = MultipleColumnsAlignment(structures, arr)
+        stream = StringIO()
+
+        saver.save(stream, alignment)
+
+        stream.seek(0)
+        string = stream.read()
+
+        expected_header = "v:2.0\n3\n2BLL\n2BLL\n1KIS"
+        assert string.startswith(expected_header)
+
+        expected_stc1_stc2 = ">2BLL 2BLL\n@1\nA:316 -- A:345 <--> A:316 -- A:345  (0,1)"
+        assert expected_stc1_stc2 in string
+
+        expected_stc1_stc3 = (
+            ">2BLL 1KIS\n@2\n"
+            "A:316 -- A:331 <--> A:1 -- A:16  (0,1)\n"
+            "A:332 -- A:345 <--> B:17 -- B:30  (0,1)\n"
+        )
+        assert expected_stc1_stc3 in string
+
+    @pytest.mark.system
+    def test_read_written(self, structure1, structure4, tmp_path):
+        alignment = make_full_trivial_alignment(structure1, structure4)
+        saver = PALSaver()
+
+        save_stream = StringIO()
+        saver.save(save_stream, alignment)
+
+        save_stream.seek(0)
+        tmp_file = tmp_path / "test.pal"
+        tmp_file.write_text(save_stream.read())
+        loader = PALLoader(str(tmp_file))
+
+        new_alignment = loader.load_alignment((structure1, structure4))
+
+        numpy.testing.assert_array_equal(alignment.inds, new_alignment.inds)
+        assert alignment.structures == new_alignment.structures
