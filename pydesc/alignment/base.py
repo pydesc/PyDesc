@@ -6,6 +6,8 @@ from collections import defaultdict
 
 import numpy
 
+from pydesc.selection import Set
+
 
 class _Dash:
     def __repr__(self):
