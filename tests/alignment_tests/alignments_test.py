@@ -4,7 +4,7 @@ import numpy
 import pytest
 
 from pydesc.alignment.base import JoinedPairAlignments
-from pydesc.alignment.base import MultipleColumnsAlignment
+from pydesc.alignment.base import MultipleAlignment
 from pydesc.alignment.base import PairAlignment
 from pydesc.alignment.loaders import DASH
 
@@ -34,7 +34,7 @@ def mocked_structures3():
 class TestColumnAlignment:
     def test_prune(self):
         payload = numpy.array([[0, DASH, 0], [1, 0, 1], [DASH, DASH, 4],])
-        alignment = MultipleColumnsAlignment([None, None, None], payload)
+        alignment = MultipleAlignment([None, None, None], payload)
         alignment = alignment.prune()
 
         assert alignment.inds.shape == (2, 3)
@@ -46,7 +46,7 @@ class TestColumnAlignment:
 
     def test_columns_to_joined_pairs(self, mocked_structures3):
         payload = numpy.array([[0, 0, 0], [1, 1, 1], [DASH, 2, 2]])
-        alignment = MultipleColumnsAlignment(mocked_structures3, payload)
+        alignment = MultipleAlignment(mocked_structures3, payload)
         jp_alignment = alignment.to_joined_pairs()
 
         assert len(jp_alignment.pair_alignments) == 3
@@ -62,8 +62,8 @@ class TestColumnAlignment:
         arr2 = numpy.array([[2, 3, 2], [3, 4, 5], [6, 7, 8]])
         stc1, stc2, stc3 = mocked_structures3
         structure_new_order = stc1, stc3, stc2
-        al1 = MultipleColumnsAlignment(mocked_structures3, arr1)
-        al2 = MultipleColumnsAlignment(structure_new_order, arr2)
+        al1 = MultipleAlignment(mocked_structures3, arr1)
+        al2 = MultipleAlignment(structure_new_order, arr2)
 
         # WHEN
         al3 = al1.concatenate(al2)
@@ -74,7 +74,7 @@ class TestColumnAlignment:
     def test_limit_structures(self):
         structures = get_n_mocked_structures(4)
         array = numpy.array([[i] * 4 for i in range(5)])
-        alignment = MultipleColumnsAlignment(structures, array)
+        alignment = MultipleAlignment(structures, array)
         stc1, stc2, stc3, stc4 = structures
 
         # WHEN
@@ -101,7 +101,7 @@ class TestColumnAlignment:
             ]
         )
         structures = get_n_mocked_structures(4)
-        alignment = MultipleColumnsAlignment(structures, arr)
+        alignment = MultipleAlignment(structures, arr)
 
         closed_alignment = alignment.close()
 
@@ -116,7 +116,7 @@ class TestColumnAlignment:
     def test_close_inconsistent(self):
         arr = numpy.array([[1, 1, DASH], [DASH, 1, 1], [1, DASH, 2],])
         structures = get_n_mocked_structures(3)
-        alignment = MultipleColumnsAlignment(structures, arr)
+        alignment = MultipleAlignment(structures, arr)
 
         with pytest.raises(ValueError):
             alignment.close()
@@ -134,7 +134,7 @@ class TestColumnAlignment:
         messy_arr = arr[[2, 6, 1, 12, 5, 7, 0, 11, 9, 4, 10, 3, 8], :]
         structures = get_n_mocked_structures(4)
 
-        alignment = MultipleColumnsAlignment(structures, messy_arr)
+        alignment = MultipleAlignment(structures, messy_arr)
 
         sorted_al = alignment.sort()
 
@@ -144,7 +144,7 @@ class TestColumnAlignment:
         arr = numpy.array([[1, 1, 1, 1], [1, 2, DASH, DASH], [3, 3, 3, 3],])
         structures = get_n_mocked_structures(4)
         stc0, stc1, stc2, stc3 = structures
-        alignment = MultipleColumnsAlignment(structures, arr)
+        alignment = MultipleAlignment(structures, arr)
 
         expected_stc0_mer1 = {
             stc1: [1, 2],

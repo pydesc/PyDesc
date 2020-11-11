@@ -5,7 +5,7 @@ import numpy
 import pytest
 
 from pydesc.alignment.base import DASH
-from pydesc.alignment.base import MultipleColumnsAlignment
+from pydesc.alignment.base import MultipleAlignment
 from pydesc.alignment.base import PairAlignment
 from pydesc.alignment.savers import CSVSaver
 from pydesc.alignment.savers import FASTASaver
@@ -221,7 +221,7 @@ class TestPALSaver:
         saver = PALSaver()
         arr, _ = numpy.indices((10, 3))
         structures = (structure1, structure2, structure3)
-        alignment = MultipleColumnsAlignment(structures, arr)
+        alignment = MultipleAlignment(structures, arr)
         stream = StringIO()
 
         saver.save(stream, alignment, names=names)
@@ -240,7 +240,7 @@ class TestPALSaver:
         saver = PALSaver()
         arr, _ = numpy.indices((10, 3))
         structures = (structure1, structure2, structure3)
-        alignment = MultipleColumnsAlignment(structures, arr)
+        alignment = MultipleAlignment(structures, arr)
         stream = StringIO()
 
         saver.save(stream, alignment)
@@ -261,7 +261,7 @@ class TestPALSaver:
         saver = PALSaver()
         arr, _ = numpy.indices((30, 3))
         structures = (structure1, structure2, structure3)
-        alignment = MultipleColumnsAlignment(structures, arr)
+        alignment = MultipleAlignment(structures, arr)
         stream = StringIO()
 
         saver.save(stream, alignment)

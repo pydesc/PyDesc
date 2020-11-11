@@ -4,7 +4,7 @@ from unittest.mock import MagicMock
 import numpy
 import pytest
 
-from pydesc.alignment.base import MultipleColumnsAlignment
+from pydesc.alignment.base import MultipleAlignment
 from pydesc.alignment.base import PairAlignment
 from pydesc.alignment.loaders import CSVLoader
 from pydesc.alignment.loaders import DASH
@@ -13,9 +13,9 @@ from pydesc.alignment.loaders import PALLoader
 from pydesc.api.structure import get_structures_from_file
 
 
-class TestLoaders:
-    def test_csv_loader_multi(self, alignments_dir):
-        path = os.path.join(alignments_dir, "csv", "artificial_multi.csv")
+class TestCSVLoader:
+    def test_multi(self, alignments_dir):
+        path = alignments_dir / "csv" / "artificial_multi.csv"
         loader = CSVLoader(path)
         structures = [MagicMock() for _ in range(4)]
         for mocked_structure in structures:
@@ -47,37 +47,53 @@ class TestLoaders:
             arg = call.args[0]
             assert len(arg.chain) == 2
 
-        assert isinstance(alignment, MultipleColumnsAlignment)
+        assert isinstance(alignment, MultipleAlignment)
 
-    def test_csv_loader_pair(self, alignments_dir):
-        path = os.path.join(alignments_dir, "csv", "artificial_pair.csv")
+    def test_pair(self, alignments_dir):
+        path = alignments_dir / "csv" / "artificial_pair.csv"
         loader = CSVLoader(path)
         structures = [MagicMock() for _ in range(2)]
         alignment = loader.load_alignment(structures)
 
         assert isinstance(alignment, PairAlignment)
 
-    def test_csv_wrong_structures(self, alignments_dir):
-        path = os.path.join(alignments_dir, "csv", "artificial_pair.csv")
+    def test_wrong_structures(self, alignments_dir):
+        path = alignments_dir / "csv" / "artificial_pair.csv"
         loader = CSVLoader(path)
         structures = [MagicMock() for _ in range(4)]
 
         with pytest.raises(ValueError):
             loader.load_alignment(structures)
 
-    def test_pal_artificial_multi(self, alignments_dir):
-        path = os.path.join(alignments_dir, "pal", "artificial_multi.pal")
+
+class TestPALLoader:
+    @pytest.fixture(scope="session")
+    def artificial_multi_structures(self):
         structures = [MagicMock() for _ in range(3)]
         mocked_chain = MagicMock(chain_name="K")
         structures[0].chains = [mocked_chain]
+        mocked_mers = [MagicMock(ind=i) for i in range(5)]
+        for structure in structures:
+            structure.converter.get_ind.return_value = 0
+            structure.__getitem__.return_value = mocked_mers
+        return structures
 
+    def test_artificial_multi(self, alignments_dir, artificial_multi_structures):
+        path = alignments_dir / "pal" / "artificial_multi.pal"
+        structures = artificial_multi_structures
         loader = PALLoader(path)
         metadata = loader.read_metadata()
         for mol in "MOL1", "MOL2", "MOL3":
             assert mol in metadata["labels"]
+        joined_pairs = loader.load_joined_pairs(structures)
+
+        assert len(joined_pairs.pair_alignments) == 3
+
         alignment = loader.load_alignment(structures)
 
-        assert len(alignment.pair_alignments) == 3
+        alignment_inds = alignment.inds
+        joined_pairs_inds = joined_pairs.to_columns().inds
+        numpy.testing.assert_array_equal(alignment_inds, joined_pairs_inds)
 
         def get_stc_calls(index):
             return structures[index].converter.get_ind.call_args_list
@@ -96,10 +112,10 @@ class TestLoaders:
         assert stc3_chains == {"A", "B"}
 
     @pytest.mark.system
-    def test_pal_pair(self, alignments_dir):
-        stc_path = os.path.join(alignments_dir, "structures", "sars_pair.pdb")
+    def test_pair(self, alignments_dir):
+        stc_path = alignments_dir / "structures" / "sars_pair.pdb"
         structures = get_structures_from_file(stc_path)
-        path = os.path.join(alignments_dir, "pal", "sars_pair.pal")
+        path = alignments_dir / "pal" / "sars_pair.pal"
 
         loader = PALLoader(path)
         alignment = loader.load_alignment(structures)
@@ -115,8 +131,23 @@ class TestLoaders:
         )  # there is 1 residue gap in right structure
         numpy.testing.assert_equal(alignment.inds[(8, 9), :], expected_7_8)
 
-    def test_fasta_artificial_multi(self, alignments_dir):
-        path = os.path.join(alignments_dir, "fasta", "artificial_multi.fasta")
+    def test_v2_v1(self, alignments_dir, artificial_multi_structures):
+        structures = artificial_multi_structures
+        path1 = alignments_dir / "pal" / "artificial_multi.pal"
+        loader1 = PALLoader(path1)
+        path2 = alignments_dir / "pal" / "artificial_multi_v2.pal"
+        loader2 = PALLoader(path2)
+
+        al1 = loader1.load_alignment(structures)
+        al2 = loader2.load_alignment(structures)
+
+        numpy.testing.assert_array_equal(al1.inds, al2.inds)
+        assert al1.structures == al2.structures
+
+
+class TestFASTALoader:
+    def test_artificial_multi(self, alignments_dir):
+        path = alignments_dir / "fasta" / "artificial_multi.fasta"
         structures = [MagicMock(name=f"mol{i}") for i in range(5)]
         for stc in structures[:4]:
             stc.__getitem__.return_value = [MagicMock(ind=i) for i in range(10, 15)]
@@ -141,13 +172,13 @@ class TestLoaders:
         numpy.testing.assert_equal(alignment.inds, expected)
 
     @pytest.mark.system
-    def test_fasta_pal_from_dama(self, alignments_dir):
+    def test_from_dama(self, alignments_dir):
         file_name = "mers_sars2.%s"
-        fasta_path = os.path.join(alignments_dir, "fasta", file_name % "fasta")
-        pal_path = os.path.join(alignments_dir, "pal", file_name % "pal")
-        mers_path = os.path.join(alignments_dir, "structures", "mers.pdb")
+        fasta_path = alignments_dir / "fasta" / (file_name % "fasta")
+        pal_path = alignments_dir / "pal" / (file_name % "pal")
+        mers_path = alignments_dir / "structures" / "mers.pdb"
         (mers_stc,) = get_structures_from_file(mers_path)
-        sars_path = os.path.join(alignments_dir, "structures", "sars2.pdb")
+        sars_path = alignments_dir / "structures" / "sars2.pdb"
         (sars_stc,) = get_structures_from_file(sars_path)
         structures_map = {
             "MOL1": mers_stc,

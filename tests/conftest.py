@@ -1,4 +1,5 @@
 import os.path
+from pathlib import Path
 
 import pytest
 
@@ -70,7 +71,7 @@ def cmaps_dir():
 
 @pytest.fixture
 def alignments_dir():
-    return os.path.join(BASE_DIR, "data", "test_alignments")
+    return Path(BASE_DIR) / "data" / "test_alignments"
 
 
 @pytest.fixture(scope="session")

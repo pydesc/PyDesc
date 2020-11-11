@@ -1,14 +1,14 @@
 """Alignment loader classes."""
 import csv
 import re
-from abc import ABCMeta
+from abc import ABC
 from abc import abstractmethod
 
 import numpy
 
 from pydesc.alignment.base import DASH
 from pydesc.alignment.base import JoinedPairAlignments
-from pydesc.alignment.base import MultipleColumnsAlignment
+from pydesc.alignment.base import MultipleAlignment
 from pydesc.alignment.base import PairAlignment
 from pydesc.alignment.base import drop_single_mer_rows
 from pydesc.numberconverter import PDBid
@@ -19,11 +19,11 @@ def get_column_alignment_class(array):
     if n_structures == 2:
         return PairAlignment
     elif n_structures > 2:
-        return MultipleColumnsAlignment
+        return MultipleAlignment
     raise ValueError("Not enough columns to create alignment.")
 
 
-class AbstractLoader(metaclass=ABCMeta):
+class AbstractLoader(ABC):
     def __init__(self, path):
         self.path = path
         self._data = {}
@@ -62,7 +62,7 @@ class AbstractLoader(metaclass=ABCMeta):
     def load_partial_alignment(self, structures_map):
         pass
 
-    def load_alignment(self, structures):
+    def _prepare_map_for_structures(self, structures):
         if len(structures) != len(self.structure_labels):
             raise ValueError(
                 "Number of given structures must match number of "
@@ -70,7 +70,12 @@ class AbstractLoader(metaclass=ABCMeta):
                 "'load_partial_alignment' method instead."
             )
         structure_map = dict(zip(self.structure_labels, structures))
-        return self.load_partial_alignment(structure_map)
+        return structure_map
+
+    def load_alignment(self, structures):
+        structure_map = self._prepare_map_for_structures(structures)
+        alignment = self.load_partial_alignment(structure_map)
+        return alignment
 
 
 class CSVLoader(AbstractLoader):
@@ -130,22 +135,15 @@ class PALLoader(AbstractLoader):
     def __init__(self, path):
         super(PALLoader, self).__init__(path)
         self.version = None
+        self.id_parser = None
 
     @staticmethod
-    def _get_id_pattern(version):
-        id_patterns = {
-            "1.0": "[^0-9]*[0-9]*.?",
-            "2.0": "[^:]:*[0-9]*.?",
+    def _get_id_parser(version):
+        dct = {
+            "1.0": PALIdParserV1(),
+            "2.0": PALIdParserV2(),
         }
-        return id_patterns[version]
-
-    @staticmethod
-    def _get_pid_pattern(version):
-        pid_patterns = {
-            "1.0": "([^0-9]*)([0-9]*)(.?)",
-            "2.0": "([^:]*):([0-9]*)(.?)",
-        }
-        return pid_patterns[version]
+        return dct[version]
 
     def _read_file(self):
         with open(self.path) as file:
@@ -157,6 +155,7 @@ class PALLoader(AbstractLoader):
             else:
                 n_structures = int(first_line)
                 self.version = "1.0"
+            self.id_parser = self._get_id_parser(self.version)
             labels = [file.readline().strip() for _ in range(n_structures)]
             self._structure_labels = labels
             while True:
@@ -170,6 +169,34 @@ class PALLoader(AbstractLoader):
                 self._data[header] = [file.readline() for _ in range(n_lines)]
         super()._read_file()
 
+    def load_partial_alignment(self, structures_map):
+        joined_pairs = self.load_partial_joined_pairs(structures_map)
+        alignment = joined_pairs.to_columns()
+        return alignment
+
+    def load_joined_pairs(self, structures):
+        structure_map = self._prepare_map_for_structures(structures)
+        alignment = self.load_partial_joined_pairs(structure_map)
+        return alignment
+
+    def load_partial_joined_pairs(self, structures_map):
+        pair_alignments = []
+        for header, ranges in self.data.items():
+            try:
+                structures_subset = self._get_structures(header, structures_map)
+            except KeyError:
+                continue
+            ranges_ids = [self._parse_ranges(line) for line in ranges]
+            ranges_ids = self._fill_chains(ranges_ids, structures_subset)
+            inds1, inds2 = self._unwrap_ranges(ranges_ids, structures_subset)
+            inds_rows = numpy.array(tuple(zip(inds1, inds2)), dtype=object)
+            pair_alignment = PairAlignment(structures_subset, inds_rows)
+            pair_alignments.append(pair_alignment)
+
+        if len(pair_alignments) == 1:
+            return pair_alignments[0]
+        return JoinedPairAlignments(pair_alignments)
+
     @staticmethod
     def _get_structures(header, label_map):
         match = re.match(">(.*) (.*)\n", header)
@@ -178,39 +205,12 @@ class PALLoader(AbstractLoader):
         structure2 = label_map[label2]
         return structure1, structure2
 
-    def _parse_pdb_id(self, pdb_str):
-        pid_pattern = self._get_pid_pattern(self.version)
-        match = re.match(pid_pattern, pdb_str.strip())
-        chain = match.group(1) or None
-        no = int(match.group(2))
-        i_code = match.group(3) or None
-        return PDBid((chain, no, i_code))
-
     def _parse_ranges(self, ranges):
-        id_pattern = self._get_id_pattern(self.version)
-        range_pattern = f"({id_pattern}) -- ({id_pattern})"
+        range_pattern = f"(\\S*) -- (\\S*)"
         match = re.match(f"{range_pattern} <--> {range_pattern}", ranges)
         ids = [match.group(i) for i in range(1, 5)]
-        ids = [self._parse_pdb_id(id_str) for id_str in ids]
+        ids = [self.id_parser.parse_pdb_id(id_str) for id_str in ids]
         return ids
-
-    @staticmethod
-    def _fit_chain_by_ind(converter, pdb_id):
-        try:
-            (matching_id,) = [pid for pid in converter.ind2pdb if pid[1:] == pdb_id[1:]]
-        except ValueError:
-            icode = pdb_id.icode or ""
-            mer_id = f"{pdb_id.ind}{icode}"
-            raise ValueError(f"Mer {mer_id} matches none or more than one chain.")
-        return matching_id
-
-    def _fill_chain_if_none(self, pdb_id, new_chain_name, converter):
-        if pdb_id.chain is None:
-            if new_chain_name is None:
-                return self._fit_chain_by_ind(converter, pdb_id)
-            pdb_id = PDBid((new_chain_name, pdb_id.ind, pdb_id.icode))
-            return pdb_id
-        return pdb_id
 
     def _fill_chains(self, ranges_ids, structures):
         stc1chain = None
@@ -229,12 +229,23 @@ class PALLoader(AbstractLoader):
             new_ids.append((id1s, id1e, id2s, id2e))
         return new_ids
 
+    def _fill_chain_if_none(self, pdb_id, new_chain_name, converter):
+        if pdb_id.chain is None:
+            if new_chain_name is None:
+                return self._fit_chain_by_ind(converter, pdb_id)
+            pdb_id = PDBid((new_chain_name, pdb_id.ind, pdb_id.icode))
+            return pdb_id
+        return pdb_id
+
     @staticmethod
-    def _unwrap_range(structure, id1, id2):
-        ind1 = structure.converter.get_ind(id1)
-        ind2 = structure.converter.get_ind(id2)
-        inds = [mer.ind for mer in structure[ind1:ind2]]
-        return inds
+    def _fit_chain_by_ind(converter, pdb_id):
+        try:
+            (matching_id,) = [pid for pid in converter.ind2pdb if pid[1:] == pdb_id[1:]]
+        except ValueError:
+            icode = pdb_id.icode or ""
+            mer_id = f"{pdb_id.ind}{icode}"
+            raise ValueError(f"Mer {mer_id} matches none or more than one chain.")
+        return matching_id
 
     def _unwrap_ranges(self, ranges_ids, structures):
         stc1, stc2 = structures
@@ -245,23 +256,54 @@ class PALLoader(AbstractLoader):
             inds2.extend(self._unwrap_range(stc2, id2s, id2e))
         return inds1, inds2
 
-    def load_partial_alignment(self, structures_map):
-        pair_alignments = []
-        for header, ranges in self.data.items():
-            try:
-                structures_subset = self._get_structures(header, structures_map)
-            except KeyError:
-                continue
-            ranges_ids = [self._parse_ranges(line) for line in ranges]
-            ranges_ids = self._fill_chains(ranges_ids, structures_subset)
-            inds1, inds2 = self._unwrap_ranges(ranges_ids, structures_subset)
-            inds_rows = numpy.array(tuple(zip(inds1, inds2)), dtype=object)
-            pair_alignment = PairAlignment(structures_subset, inds_rows)
-            pair_alignments.append(pair_alignment)
+    @staticmethod
+    def _unwrap_range(structure, id1, id2):
+        ind1 = structure.converter.get_ind(id1)
+        ind2 = structure.converter.get_ind(id2)
+        inds = [mer.ind for mer in structure[ind1:ind2]]
+        return inds
 
-        if len(pair_alignments) == 1:
-            return pair_alignments[0]
-        return JoinedPairAlignments(pair_alignments)
+
+class PALIdParser(ABC):
+    @abstractmethod
+    def parse_pdb_id(self, pdb_str):
+        pass
+
+
+class PALIdParserV1(PALIdParser):
+    def __init__(self):
+        self.pid_pattern = "([^0-9]*)([0-9]*)(.?)"
+
+    def parse_pdb_id(self, pdb_str):
+        match = re.match(self.pid_pattern, pdb_str.strip())
+        chain = match.group(1) or None
+        no = int(match.group(2))
+        i_code = match.group(3) or None
+        return PDBid((chain, no, i_code))
+
+
+class PALIdParserV2(PALIdParser):
+    def __init__(self):
+        self.long_pid_pattern = "([^:]*):([0-9]*)(.?)"
+        self.short_pid_pattern = "([0-9]*)(.?)"
+
+    def parse_pdb_id(self, pdb_str):
+        if ":" in pdb_str:
+            return self._parse_long(pdb_str)
+        return self._parse_short(pdb_str)
+
+    def _parse_short(self, pdb_str):
+        match = re.match(self.short_pid_pattern, pdb_str.strip())
+        no = int(match.group(1))
+        i_code = match.group(2) or None
+        return PDBid((None, no, i_code))
+
+    def _parse_long(self, pdb_str):
+        match = re.match(self.long_pid_pattern, pdb_str.strip())
+        chain = match.group(1) or None
+        no = int(match.group(2))
+        i_code = match.group(3) or None
+        return PDBid((chain, no, i_code))
 
 
 class FASTALoader(AbstractLoader):
