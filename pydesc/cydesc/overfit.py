@@ -24,41 +24,38 @@ created: 27.03.2014 - Pawel Daniluk
 
 import contextlib
 import ctypes
-from ctypes import byref
-
 import operator
-
-import pydesc.cydesc as cydesc
-import pydesc.geometry as geometry
-
-import numpy
+from ctypes import byref
 from functools import reduce
 
-# This is not a constant.
-liboverfit = cydesc.load_library("overfit")  # pylint: disable=C0103
+import numpy
 
-# This is not a constant.
-c_float_4 = ctypes.c_float * 4  # pylint: disable=C0103
-c_float_4.__doc__ = "Array of 4 floats."
+import pydesc.geometry as geometry
+from pydesc.cydesc import load_library
+
+_liboverfit = load_library("overfit")
+
+_c_float_4 = ctypes.c_float * 4
+_c_float_4.__doc__ = "Array of 4 floats."
 
 
-class t_transrot(ctypes.Structure):  # pylint: disable=C0103
-    # This class has to be named as the corresponding C structure.
-    """
-    Class corresponding to t_transrot in overfit.h.
-
+class t_transrot(ctypes.Structure):
+    """Class corresponding to t_transrot in overfit.h.
 
     Transformation is to be applied as follows:
         x' U + Tr
 
     *' denotes transposition
 
-    Fourth vector element is required for proper memory alignment in C and should be ignored.
+    Fourth vector element is required for proper memory alignment in C
+    and should be ignored.
+
     """
-    _fields_ = [("U", c_float_4 * 3), ("Tr", c_float_4)]
+
+    _fields_ = [("U", _c_float_4 * 3), ("Tr", _c_float_4)]
 
     def to_trtmatrix(self):
-        """ Returns geometry.TRTMatrix containing the same transformation. """
+        """Returns geometry.TRTMatrix containing the same transformation."""
         res = geometry.TRTMatrix()
 
         for i in range(3):
@@ -69,33 +66,29 @@ class t_transrot(ctypes.Structure):  # pylint: disable=C0103
         return res
 
 
-class t_overfit_sums(ctypes.Structure):  # pylint: disable=C0103
-    # This class has to be named as the corresponding C structure.
-
-    """
-    Class corresponging to t_overfit_sums in overfit.h.
-
-    Contains data accumulated in overfit.
-    """
+class t_overfit_sums(ctypes.Structure):
+    """Class corresponding to t_overfit_sums in overfit.h containing
+    data accumulated in overfit."""
 
     _fields_ = [
         ("N", ctypes.c_int),
-        ("startA", c_float_4),
-        ("startB", c_float_4),
-        ("A", c_float_4),
-        ("AA", c_float_4),
-        ("B", c_float_4),
-        ("BB", c_float_4),
-        ("AB0", c_float_4),
-        ("AB1", c_float_4),
-        ("AB2", c_float_4),
+        ("startA", _c_float_4),
+        ("startB", _c_float_4),
+        ("A", _c_float_4),
+        ("AA", _c_float_4),
+        ("B", _c_float_4),
+        ("BB", _c_float_4),
+        ("AB0", _c_float_4),
+        ("AB1", _c_float_4),
+        ("AB2", _c_float_4),
     ]
 
     def __add__(self, sums2):
-        """
-        Adds two sets of accumulated sums.
+        """Adds two sets of accumulated sums.
 
-        This method guarantees a correct addition (e.g. accounting for different origins).
+        This method guarantees a correct addition
+        (e.g. accounting for different origins).
+
         """
         overfit_obj = Overfit()
         overfit_obj.add_sums(self)
@@ -103,32 +96,34 @@ class t_overfit_sums(ctypes.Structure):  # pylint: disable=C0103
         return overfit_obj.get_sums()
 
 
-liboverfit.overfit_reset.restype = None
-liboverfit.overfit_release_token.restype = None
+_liboverfit.overfit_reset.restype = None
+_liboverfit.overfit_release_token.restype = None
 
-liboverfit.overfit_sumadd_str.restype = None
-liboverfit.overfit_sumadd_str.argtypes = [ctypes.c_int, ctypes.POINTER(t_overfit_sums)]
+_liboverfit.overfit_sumadd_str.restype = None
+_liboverfit.overfit_sumadd_str.argtypes = [ctypes.c_int, ctypes.POINTER(t_overfit_sums)]
 
-liboverfit.overfit_sumsave_str.restype = None
-liboverfit.overfit_sumsave_str.argtypes = [ctypes.c_int, ctypes.POINTER(t_overfit_sums)]
+_liboverfit.overfit_sumsave_str.restype = None
+_liboverfit.overfit_sumsave_str.argtypes = [
+    ctypes.c_int,
+    ctypes.POINTER(t_overfit_sums),
+]
 
-liboverfit.overfit_add.restype = None
-liboverfit.overfit_add.argtypes = [ctypes.c_int, c_float_4, c_float_4]
+_liboverfit.overfit_add.restype = None
+_liboverfit.overfit_add.argtypes = [ctypes.c_int, _c_float_4, _c_float_4]
 
-liboverfit.fast_overfit.restype = ctypes.c_float
-liboverfit.fast_overfit.argtypes = [ctypes.c_int, ctypes.POINTER(t_transrot)]
+_liboverfit.fast_overfit.restype = ctypes.c_float
+_liboverfit.fast_overfit.argtypes = [ctypes.c_int, ctypes.POINTER(t_transrot)]
 
 
 def _ensure_token(func):
-    """
-    Decorator for methods in Overfit class. Executes a decorated method
+    """Decorator for methods in Overfit class. Executes a decorated method
     in context manager ensuring that token in liboverfit is correctly obtained
     and released.
     """
 
     def wrapper(self, *args, **kwargs):
         """%s
-        This method is execued in context guaranteeing that liboverfit tokens
+        This method is executed in context guaranteeing that liboverfit tokens
         are properly managed.
         """
         with self.token_context():
@@ -139,49 +134,45 @@ def _ensure_token(func):
 
 
 class Overfit(object):
-    """
-    Stateful computation of RMSD using Kabsch algorithm.
+    """Stateful computation of RMSD using Kabsch algorithm.
 
     Enables accumulation of pairs of points, mers, structures etc.
 
     _sums attribute is updated only when token is released. Use get_sums method
     to access sums regardless of state.
+
     """
 
     def __init__(self):
-        """
-        Initially Overfit instance accumulator is empty.
+        """Initially Overfit instance accumulator is empty.
 
-        No additional zeroing is needed. Sums (empty) can be extracted right after creation.
+        No additional zeroing is needed.
+        Sums (empty) can be extracted right after creation.
+
         """
         self._sums = t_overfit_sums()
         self._token = None
 
     def _get_token(self):
-        """
-        Grabs a liboverfit token. Adds data stored in _sums to accumulator in liboverfit.
-        """
+        """Grabs a liboverfit token. Adds data stored in _sums to
+        accumulator in liboverfit."""
         if self._token is None:
-            self._token = liboverfit.overfit_get_token()
-            liboverfit.overfit_reset(self._token)
-            liboverfit.overfit_sumadd_str(self._token, self._sums)
+            self._token = _liboverfit.overfit_get_token()
+            _liboverfit.overfit_reset(self._token)
+            _liboverfit.overfit_sumadd_str(self._token, self._sums)
             return True
         return False
 
     def _release_token(self):
-        """
-        Stores liboverfit accumulator in _sums and releases a token.
-        """
+        """Stores liboverfit accumulator in _sums and releases a token."""
         if self._token is not None:
-            liboverfit.overfit_sumsave_str(self._token, byref(self._sums))
-            liboverfit.overfit_release_token(self._token)
+            _liboverfit.overfit_sumsave_str(self._token, byref(self._sums))
+            _liboverfit.overfit_release_token(self._token)
             self._token = None
 
     @contextlib.contextmanager
     def token_context(self):
-        """
-        Context manager responsible for acquiring and releasing overfit tokens.
-        """
+        """Context manager responsible for acquiring and releasing overfit tokens."""
         got_token = self._get_token()
         try:
             yield
@@ -191,40 +182,32 @@ class Overfit(object):
 
     @_ensure_token
     def add_sums(self, sums):
-        """
-        Adds previously accumulated sums to overfit accumulator.
-        """
-        liboverfit.overfit_sumadd_str(self._token, sums)
+        """Adds previously accumulated sums to overfit accumulator."""
+        _liboverfit.overfit_sumadd_str(self._token, sums)
 
     @_ensure_token
     def get_sums(self):
-        """
-        Returns accumulated sums.
-        """
-        liboverfit.overfit_sumsave_str(self._token, byref(self._sums))
+        """Returns accumulated sums."""
+        _liboverfit.overfit_sumsave_str(self._token, byref(self._sums))
         return self._sums
 
     @_ensure_token
     def add_point(self, point1, point2):
-        """
-        Adds a pair of points to overfit accumulator.
-        """
+        """Adds a pair of points to overfit accumulator."""
         lpoint1, lpoint2 = list(map(list, (point1, point2)))
 
         if not 3 <= len(lpoint1) <= 4 or not 3 <= len(lpoint2) <= 4:
             raise TypeError("Point must have 3 (or 4) float coordinates.")
 
-        liboverfit.overfit_add(
+        _liboverfit.overfit_add(
             self._token,
-            c_float_4(*list(lpoint1[:3] + [0])),
-            c_float_4(*list(lpoint2[:3] + [0])),
+            _c_float_4(*list(lpoint1[:3] + [0])),
+            _c_float_4(*list(lpoint2[:3] + [0])),
         )
 
     @_ensure_token
     def add_mer(self, mer1, mer2):
-        """
-        Adds a pair of mers to overfit accumulator.
-        """
+        """Adds a pair of mers to overfit accumulator."""
         lmer1 = mer1.representation
         lmer2 = mer2.representation
 
@@ -236,9 +219,7 @@ class Overfit(object):
 
     @_ensure_token
     def add_structure(self, struct1, struct2):
-        """
-        Adds a pair of structures to overfit accumulator.
-        """
+        """Adds a pair of structures to overfit accumulator."""
         lstruct1 = list(struct1)
         lstruct2 = list(struct2)
 
@@ -255,10 +236,10 @@ class Overfit(object):
 
     @_ensure_token
     def add(self, list1, list2):
-        """
-        Adds a pair of arbitrarily nested iterables to overfit accumulator.
+        """Adds a pair of arbitrarily nested iterables to overfit accumulator.
 
         They should be 'homeomorphic' and have contain points at the lowest level.
+
         """
         if len(list1) != len(list2):
             raise TypeError("Lists have to have same lengths")
@@ -271,24 +252,22 @@ class Overfit(object):
 
     @_ensure_token
     def overfit(self):
-        """
-        Computes RMSD and optimal superposition of accumulated pairs of points.
-        """
+        """Computes RMSD and optimal superposition of accumulated pairs of points."""
         trot = t_transrot()
 
-        rmsd = liboverfit.fast_overfit(self._token, byref(trot))
+        rmsd = _liboverfit.fast_overfit(self._token, byref(trot))
 
-        return (rmsd, trot.to_trtmatrix())
+        return rmsd, trot.to_trtmatrix()
 
 
 class Multifit(object):
-    """Computation of RMSDs for multiple structure imposistion."""
+    """Computation of RMSDs for multiple structure imposition."""
 
     def __init__(self):
         self.tokens = []
 
     def add_point(self, *args):
-        if len(set(map(len, args)) - set([3, 4])) != 0:
+        if len(set(map(len, args)) - {3, 4}) != 0:
             raise TypeError("Point must have 3 (or 4) float coordinates.")
         if self.tokens != [] and len(args) != len(self.tokens[-1]):
             raise TypeError("Wrong number of points.")
@@ -347,10 +326,8 @@ class Multifit(object):
 
 
 def overfit(list1, list2):
-    """
-    Computes RMSD and optimal superposition of iterables containing points.
-    See Overfit.add and Overfit.overfit for more information.
-    """
+    """Computes RMSD and optimal superposition of iterables containing points.
+    See Overfit.add and Overfit.overfit for more information."""
     overfit_obj = Overfit()
     with overfit_obj.token_context():
         overfit_obj.add(list1, list2)
