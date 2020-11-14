@@ -6,8 +6,6 @@ from collections import defaultdict
 
 import numpy
 
-from pydesc.selection import Set
-
 
 class _Dash:
     def __repr__(self):
@@ -53,10 +51,6 @@ class AbstractJoinedPairAlignments(ABC):
     def to_columns(self):
         pass
 
-    @abstractmethod
-    def limit_to_structures(self, *structures):
-        pass
-
     def join(self, other):
         pair_alignments = set(other.pair_alignments)
         pair_alignments |= set(self.pair_alignments)
@@ -69,10 +63,6 @@ class AbstractAlignment(ABC):
         self.inds = inds_rows
         self.mer_map = {structure: {} for structure in structures}
         self._fill_mer_map()
-
-    @abstractmethod
-    def limit_to_structures(self, *structures):
-        pass
 
     @abstractmethod
     def to_joined_pairs(self):
@@ -178,15 +168,6 @@ class PairAlignment(AbstractAlignment, AbstractJoinedPairAlignments):
     @property
     def pair_alignments(self):
         return [self]
-
-    def limit_to_structures(self, *structures):
-        if set(structures) != set(self.structures):
-            msg = (
-                "Pair alignment limit can only be trivial."
-                "Make sure passed structures are already in it."
-            )
-            raise ValueError(msg)
-        return self
 
     def transit(self, other):
         # note that if some mers are aligned multiple times,
