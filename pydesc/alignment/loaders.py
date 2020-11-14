@@ -59,22 +59,16 @@ class AbstractLoader(ABC):
         return metadata
 
     @abstractmethod
-    def load_partial_alignment(self, structures_map):
+    def load_alignment_mapping(self, structures_map):
         pass
 
     def _prepare_map_for_structures(self, structures):
-        if len(structures) != len(self.structure_labels):
-            raise ValueError(
-                "Number of given structures must match number of "
-                "structure labels in alignment file. Consider using "
-                "'load_partial_alignment' method instead."
-            )
         structure_map = dict(zip(self.structure_labels, structures))
         return structure_map
 
     def load_alignment(self, structures):
         structure_map = self._prepare_map_for_structures(structures)
-        alignment = self.load_partial_alignment(structure_map)
+        alignment = self.load_alignment_mapping(structure_map)
         return alignment
 
 
@@ -108,10 +102,9 @@ class CSVLoader(AbstractLoader):
             return DASH
         return converter.get_ind(pdb_id)
 
-    def load_partial_alignment(self, structures_map):
-        converters = [
-            structures_map[label].converter for label in self.structure_labels
-        ]
+    def load_alignment_mapping(self, structures_map):
+        valid_labels = [i for i in self.structure_labels if i in structures_map]
+        converters = [structures_map[label].converter for label in valid_labels]
         length = len(self.data["rows"])
         array = numpy.empty((length, len(structures_map)), dtype=object)
         array_indices = [
@@ -169,7 +162,7 @@ class PALLoader(AbstractLoader):
                 self._data[header] = [file.readline() for _ in range(n_lines)]
         super()._read_file()
 
-    def load_partial_alignment(self, structures_map):
+    def load_alignment_mapping(self, structures_map):
         joined_pairs = self.load_partial_joined_pairs(structures_map)
         alignment = joined_pairs.to_columns()
         return alignment
@@ -350,7 +343,7 @@ class FASTALoader(AbstractLoader):
         ranges = match.group(3) or "[]"
         return label, comment, ranges
 
-    def load_partial_alignment(self, structures_map):
+    def load_alignment_mapping(self, structures_map):
         mer_iterators = {}
         for label, structure in structures_map.items():
             ranges = self._parse_ranges(self.ranges[label])
@@ -358,20 +351,21 @@ class FASTALoader(AbstractLoader):
             mer_iterators[label] = mer_iterator
         lengths = {len(self.data[label]) for label in structures_map}
         if len(lengths) != 1:
-            raise ValueError(
-                "Sequences of given structures in fasta alignment file " "are uneven."
-            )
+            msg = "Sequences of given structures in fasta alignment file " "are uneven."
+            raise ValueError(msg)
         length = max(lengths)
         array = numpy.empty((length, len(structures_map)), dtype=object)
         structures = []
-        for i, label in enumerate(self.structure_labels):
+        ind = 0
+        for label in self.structure_labels:
             if label not in structures_map:
                 continue
             sequence = self.data[label]
             mer_i = mer_iterators[label]
             column = [self._get_ind(char, mer_i) for char in sequence]
-            array[:, i] = numpy.array(column)
+            array[:, ind] = numpy.array(column)
             structures.append(structures_map[label])
+            ind += 1
         alignment_class = get_column_alignment_class(array)
         array = drop_single_mer_rows(array)
         alignment = alignment_class(structures, array)

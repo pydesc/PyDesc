@@ -14,8 +14,12 @@ from pydesc.api.structure import get_structures_from_file
 
 
 class TestCSVLoader:
-    def test_multi(self, alignments_dir):
-        path = alignments_dir / "csv" / "artificial_multi.csv"
+    @pytest.fixture(scope="session")
+    def csv_path(self, alignments_dir):
+        return alignments_dir / "csv"
+
+    def test_multi(self, csv_path):
+        path = csv_path / "artificial_multi.csv"
         loader = CSVLoader(path)
         structures = [MagicMock() for _ in range(4)]
         for mocked_structure in structures:
@@ -49,21 +53,37 @@ class TestCSVLoader:
 
         assert isinstance(alignment, MultipleAlignment)
 
-    def test_pair(self, alignments_dir):
-        path = alignments_dir / "csv" / "artificial_pair.csv"
+    def test_pair(self, csv_path):
+        path = csv_path / "artificial_pair.csv"
         loader = CSVLoader(path)
         structures = [MagicMock() for _ in range(2)]
         alignment = loader.load_alignment(structures)
 
         assert isinstance(alignment, PairAlignment)
 
-    def test_wrong_structures(self, alignments_dir):
-        path = alignments_dir / "csv" / "artificial_pair.csv"
+    def test_no_content(self, csv_path):
+        path = csv_path / "empty_pair.csv"
         loader = CSVLoader(path)
-        structures = [MagicMock() for _ in range(4)]
+        structures = [MagicMock(name=i) for i in range(2)]
+
+        alignment = loader.load_alignment(structures)
+
+        assert len(alignment) == 0
+        assert len(alignment.structures) == 2
+
+    def test_single_col(self, csv_path):
+        path = csv_path / "single_col.csv"
+        loader = CSVLoader(path)
 
         with pytest.raises(ValueError):
-            loader.load_alignment(structures)
+            loader.load_alignment([MagicMock()])
+
+    def test_load_some(self, csv_path):
+        path = csv_path / "artificial_multi.csv"
+        loader = CSVLoader(path)
+        stc_map = {k: MagicMock(name=k) for k in ("stc1", "stc3A")}
+        alignment = loader.load_alignment_mapping(stc_map)
+        assert isinstance(alignment, PairAlignment)
 
 
 class TestPALLoader:
@@ -78,10 +98,13 @@ class TestPALLoader:
             structure.__getitem__.return_value = mocked_mers
         return structures
 
-    def test_artificial_multi(self, alignments_dir, artificial_multi_structures):
-        path = alignments_dir / "pal" / "artificial_multi.pal"
+    @pytest.fixture(scope="session")
+    def artificial_multi_path(self, alignments_dir):
+        return alignments_dir / "pal" / "artificial_multi.pal"
+
+    def test_artificial_multi(self, artificial_multi_path, artificial_multi_structures):
         structures = artificial_multi_structures
-        loader = PALLoader(path)
+        loader = PALLoader(artificial_multi_path)
         metadata = loader.read_metadata()
         for mol in "MOL1", "MOL2", "MOL3":
             assert mol in metadata["labels"]
@@ -144,17 +167,53 @@ class TestPALLoader:
         numpy.testing.assert_array_equal(al1.inds, al2.inds)
         assert al1.structures == al2.structures
 
+    def test_load_some(self, artificial_multi_path, artificial_multi_structures):
+        loader = PALLoader(artificial_multi_path)
+        structures = artificial_multi_structures[:2]
+        alignment = loader.load_alignment(structures)
+        assert isinstance(alignment, PairAlignment)
+
+    def test_load_lacking_chain(self, alignments_dir):
+        path_wrong = alignments_dir / "pal" / "no_chain_when_needed.pal"
+        loader = PALLoader(path_wrong)
+        stc_path = alignments_dir / "structures" / "3g67.pdb"
+        stc_3g67 = get_structures_from_file(stc_path)[0]
+        mocked_structure = MagicMock()
+        mocked_structure.chains = [MagicMock(chain_name="K")]
+        structures = [stc_3g67, mocked_structure]
+        with pytest.raises(ValueError) as err_info:
+            loader.load_alignment(structures)
+
+        assert "matches none or more than one chain" in str(err_info.value)
+
+        correct_path = alignments_dir / "pal" / "no_chain_when_needed_fixed.pal"
+        loader = PALLoader(correct_path)
+        alignment = loader.load_alignment(structures)
+        assert isinstance(alignment, PairAlignment)
+
 
 class TestFASTALoader:
-    def test_artificial_multi(self, alignments_dir):
+    @pytest.fixture(scope="session")
+    def artificial_uneven_path(self, alignments_dir):
+        path = alignments_dir / "fasta" / "uneven_multi.fasta"
+        return path
+
+    @pytest.fixture(scope="session")
+    def artificial_multi_path(self, alignments_dir):
         path = alignments_dir / "fasta" / "artificial_multi.fasta"
+        return path
+
+    @pytest.fixture(scope="session")
+    def artificial_multi_structures(self):
         structures = [MagicMock(name=f"mol{i}") for i in range(5)]
         for stc in structures[:4]:
             stc.__getitem__.return_value = [MagicMock(ind=i) for i in range(10, 15)]
         structures[-1].__getitem__.return_value = [MagicMock(ind=1), MagicMock(ind=2)]
+        return structures
 
-        loader = FASTALoader(path)
-        alignment = loader.load_alignment(structures)
+    def test_artificial_multi(self, artificial_multi_path, artificial_multi_structures):
+        loader = FASTALoader(artificial_multi_path)
+        alignment = loader.load_alignment(artificial_multi_structures)
 
         for label in ("mol1", "mol2", "mol3_chainAB", "mol4", "mol5"):
             assert label in loader.structure_labels
@@ -186,9 +245,33 @@ class TestFASTALoader:
         }
 
         fasta_loader = FASTALoader(fasta_path)
-        fasta = fasta_loader.load_partial_alignment(structures_map)
+        fasta = fasta_loader.load_alignment_mapping(structures_map)
         pal_loader = PALLoader(pal_path)
-        pal = pal_loader.load_partial_alignment(structures_map)
+        pal = pal_loader.load_alignment_mapping(structures_map)
 
         numpy.testing.assert_equal(fasta.inds, pal.inds)
         assert fasta.structures == pal.structures
+
+    def test_load_some(self, artificial_multi_path, artificial_multi_structures):
+        loader = FASTALoader(artificial_multi_path)
+        alignment = loader.load_alignment(artificial_multi_structures[:2])
+        assert isinstance(alignment, PairAlignment)
+
+    def test_uneven(self, artificial_uneven_path, artificial_multi_structures):
+        loader = FASTALoader(artificial_uneven_path)
+        stc1, stc2, stc3, _, _ = artificial_multi_structures
+        stc_map = {
+            "mol1": stc1,
+            "mol2": stc2,
+            "mol3": stc3,
+        }
+
+        with pytest.raises(ValueError) as err_info:
+            loader.load_alignment(artificial_multi_structures)
+
+        assert "uneven" in str(err_info.value)
+
+        stc_map.pop("mol2")
+        loader = FASTALoader(artificial_uneven_path)
+        alignment = loader.load_alignment_mapping(stc_map)
+        assert isinstance(alignment, PairAlignment)

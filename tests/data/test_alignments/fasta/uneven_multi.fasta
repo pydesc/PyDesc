@@ -1,0 +1,8 @@
+>mol1 [A:2-4]
+AAAA
+
+>mol2 [B:1-4i]
+BB
+
+>mol3 [AB:1-4]
+CCCC

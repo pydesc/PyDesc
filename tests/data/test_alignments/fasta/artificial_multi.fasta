@@ -3,8 +3,11 @@
 >mol2 [B:1-4i]
 mA
 LA-
+
+# comment1
 >mol3_chainAB [AB:1-2]
 ..LA-
+
 >mol4
 TALA-
 >mol5 [A:1i-2, B:1-1]
