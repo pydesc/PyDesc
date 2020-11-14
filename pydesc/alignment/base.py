@@ -64,6 +64,14 @@ class AbstractAlignment(ABC):
         self.mer_map = {structure: {} for structure in structures}
         self._fill_mer_map()
 
+    def __getitem__(self, item):
+        inds_array = self.inds[item, :]
+        alignment = type(self)(self.structures, inds_array)
+        return alignment
+
+    def __len__(self):
+        return self.inds.shape[0]
+
     @abstractmethod
     def to_joined_pairs(self):
         pass
@@ -87,8 +95,11 @@ class AbstractAlignment(ABC):
     def iter_columns(self):
         return iter(self.inds.T)
 
-    def get_inds_aligned_with(self, structure, ind):
-        row_indices = self.mer_map[structure][ind]
+    def get_inds_aligned_with(self, structure, inds):
+        row_indices = set()
+        for ind in inds:
+            row_indices = row_indices.union(self.mer_map[structure][ind])
+        row_indices = sorted(row_indices)
         aligned_rows = self.inds[row_indices]
         generator = zip(self.structures, aligned_rows.T)
         aligned_map = {stc: inds[inds != DASH].tolist() for stc, inds in generator}
@@ -131,8 +142,12 @@ class AbstractAlignment(ABC):
         no_dash = partially_sorted_rows[:, column] != DASH
         accepted_rows = partially_sorted_rows[no_dash].tolist()
         for new_row in rows_to_push:
+            new_row = numpy.array(new_row)
             for ind, row in enumerate(accepted_rows):
-                comparison = new_row < row
+                row = numpy.array(row)
+                mask = new_row != DASH
+                mask &= row != DASH
+                comparison = new_row[mask] < row[mask]
                 if numpy.any(comparison):
                     accepted_rows.insert(ind, new_row)
                     break
@@ -296,6 +311,24 @@ class MultipleAlignment(AbstractAlignment):
         for no, index in enumerate(valid_new_rows_indices):
             new_array[no] = new_rows[index]
         alignment = type(self)(self.structures, new_array)
+        return alignment
+
+    def drop_empty_structures(self):
+        non_empty_cols = []
+        for col_ind, column in enumerate(self.iter_columns()):
+            if numpy.any(column != DASH):
+                non_empty_cols.append(col_ind)
+        structures = [self.structures[i] for i in non_empty_cols]
+        inds_array = self.inds[:, non_empty_cols]
+        _, n_cols = inds_array.shape
+        if n_cols > 2:
+            klass = type(self)
+        elif n_cols == 2:
+            klass = PairAlignment
+        else:
+            msg = "Not enough non-empty structures."
+            raise ValueError(msg)
+        alignment = klass(structures, inds_array)
         return alignment
 
 

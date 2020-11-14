@@ -3,7 +3,11 @@ from unittest.mock import MagicMock
 import numpy
 import pytest
 
-from pydesc.alignment.base import JoinedPairAlignments
+from pydesc.alignment.base import (
+    JoinedPairAlignments,
+    AbstractAlignment,
+    AbstractJoinedPairAlignments,
+)
 from pydesc.alignment.base import MultipleAlignment
 from pydesc.alignment.base import PairAlignment
 from pydesc.alignment.loaders import DASH
@@ -16,6 +20,11 @@ def get_n_mocked_structures(n, *, start=0):
 def get_trivial_pair_alignment(stc1, stc2):
     arr = numpy.array([[i, i] for i in range(10)])
     return PairAlignment((stc1, stc2), arr)
+
+
+def get_trivial_multiple_alignment(structures):
+    arr, _ = numpy.indices((10, len(structures)))
+    return MultipleAlignment(structures, arr)
 
 
 def get_3_pair_alignments():
@@ -31,18 +40,41 @@ def mocked_structures3():
     return get_n_mocked_structures(3)
 
 
+def test_dash_repr():
+    assert repr(DASH) == "<->"
+
+
 class TestColumnAlignment:
+    @pytest.fixture(scope="session")
+    def trivial_array3(self):
+        array = numpy.array([[1, 1, 1], [2, 2, 2], [3, 3, 3], [4, 4, 4]])
+        return array
+
+    @pytest.fixture(scope="session")
+    def trivial_triple_alignment(self):
+        structures = get_n_mocked_structures(3)
+        alignment = get_trivial_multiple_alignment(structures)
+        return alignment
+
+    def test_superclass_abstract_methods(self, trivial_triple_alignment):
+        assert AbstractAlignment.to_joined_pairs(trivial_triple_alignment) is None
+
+    def test_getitem(self, trivial_triple_alignment):
+        alignment = trivial_triple_alignment
+        stc1, _, _ = alignment.structures
+        sub_al = alignment[4:6]
+        assert sub_al.inds.shape == (2, 3)  # 2 rows, 3 structures
+        assert sub_al.mer_map[stc1][4] == 0  # mer of ind 4 in first row
+
+    def test_len(self, trivial_triple_alignment):
+        assert len(trivial_triple_alignment) == 10
+
     def test_prune(self):
         payload = numpy.array([[0, DASH, 0], [1, 0, 1], [DASH, DASH, 4],])
         alignment = MultipleAlignment([None, None, None], payload)
         alignment = alignment.prune()
 
         assert alignment.inds.shape == (2, 3)
-
-    @pytest.fixture
-    def trivial_array3(self):
-        array = numpy.array([[1, 1, 1], [2, 2, 2], [3, 3, 3], [4, 4, 4]])
-        return array
 
     def test_columns_to_joined_pairs(self, mocked_structures3):
         payload = numpy.array([[0, 0, 0], [1, 1, 1], [DASH, 2, 2]])
@@ -140,6 +172,44 @@ class TestColumnAlignment:
 
         numpy.testing.assert_array_equal(sorted_al.inds, arr)
 
+    def test_sort_disjoint(self):
+        arr = numpy.array(
+            [
+                [1, 1, DASH, DASH],
+                [DASH, DASH, 43, 43],
+                [3, 3, DASH, DASH],
+                [2, 2, DASH, DASH],
+                [DASH, DASH, 44, 44],
+                [4, 4, DASH, DASH],
+            ]
+        )
+        structures = get_n_mocked_structures(4)
+        alignment = MultipleAlignment(structures, arr)
+        sorted_al = alignment.sort()
+        # assert rows with DASH in first two columns are at the end
+        assert numpy.all(sorted_al.inds[-2:, :2] == DASH)
+
+    def test_drop_empty_structures(self):
+        structures = get_n_mocked_structures(4)
+        arr = numpy.array([[DASH, 1, 1, 1], [DASH, 2, 2, 2]])
+        al1 = MultipleAlignment(structures, arr)
+        al2 = al1.drop_empty_structures()
+        assert al2.inds.shape == (2, 3)
+
+    def test_drop_empty_structures_to_pair(self):
+        structures = get_n_mocked_structures(4)
+        arr = numpy.array([[DASH, DASH, 1, 1], [DASH, DASH, 2, 2]])
+        al1 = MultipleAlignment(structures, arr)
+        al2 = al1.drop_empty_structures()
+        assert isinstance(al2, PairAlignment)
+
+    def test_drop_empty_structure_negative(self):
+        structures = get_n_mocked_structures(4)
+        arr = numpy.array([[DASH, DASH, DASH, 1], [DASH, DASH, DASH, 2]])
+        al1 = MultipleAlignment(structures, arr)
+        with pytest.raises(ValueError):
+            al1.drop_empty_structures()
+
     def test_get_aligned_inds(self):
         arr = numpy.array([[1, 1, 1, 1], [1, 2, DASH, DASH], [3, 3, 3, 3],])
         structures = get_n_mocked_structures(4)
@@ -151,22 +221,27 @@ class TestColumnAlignment:
             stc2: [1],
             stc3: [1],
         }
-        stc0_mer1 = alignment.get_inds_aligned_with(stc0, 1)
+        stc0_mer1 = alignment.get_inds_aligned_with(stc0, [1])
         assert stc0_mer1 == expected_stc0_mer1
 
         expected_stc1_mer2 = {stc0: [1]}
-        stc1_mer2 = alignment.get_inds_aligned_with(stc1, 2)
+        stc1_mer2 = alignment.get_inds_aligned_with(stc1, [2])
         assert stc1_mer2 == expected_stc1_mer2
 
         expected_stc0_mer3 = {stc: [3] for stc in structures[1:]}
-        stc0_mer3 = alignment.get_inds_aligned_with(stc0, 3)
+        stc0_mer3 = alignment.get_inds_aligned_with(stc0, [3])
         assert stc0_mer3 == expected_stc0_mer3
 
         with pytest.raises(KeyError):
-            alignment.get_inds_aligned_with(stc0, 42)
+            alignment.get_inds_aligned_with(stc0, [42])
 
 
 class TestJoinedAlignments:
+    def test_abstract_superclass_methods(self):
+        pair_alignments = get_3_pair_alignments()
+        joined_pairs = JoinedPairAlignments(pair_alignments)
+        assert AbstractJoinedPairAlignments.to_columns(joined_pairs) is None
+
     def test_join(self):
         pair_alignments1 = get_3_pair_alignments()
         alignment1 = JoinedPairAlignments(pair_alignments1)
@@ -233,6 +308,15 @@ class TestPairAlignment:
         pa = get_trivial_pair_alignment(stc1, stc2)
         return pa
 
+    def test_getitem(self):
+        stc1, stc2 = get_n_mocked_structures(2)
+        alignment = get_trivial_pair_alignment(stc1, stc2)
+        sub_al = alignment[3:8]
+        assert sub_al.inds.shape == (5, 2)  # 5 rows, 2 structures
+
+    def test_len(self, pair_alignment):
+        assert len(pair_alignment) == 10
+
     def test_prune(self):
         payload = numpy.array([[0, DASH], [1, 0]])
         alignment = PairAlignment([None, None], payload)
@@ -269,15 +353,6 @@ class TestPairAlignment:
         expected_arr = numpy.array([[2, 3]])
         numpy.testing.assert_array_equal(new_alignment.inds, expected_arr)
 
-    def test_limit(self, pair_alignment):
-        (stc3,) = get_n_mocked_structures(1, start=2)
-        with pytest.raises(ValueError):
-            pair_alignment.limit_to_structures(stc3)
-
-        new_pa = pair_alignment.limit_to_structures(*pair_alignment.structures)
-
-        assert new_pa is pair_alignment
-
     def test_equality(self, pair_alignment):
         very_similar_pa = get_trivial_pair_alignment(*pair_alignment.structures)
 
@@ -292,6 +367,12 @@ class TestPairAlignment:
         pa_different_mers.inds = pa_different_mers.inds[:3]
 
         assert not pa_different_mers == pair_alignment
+
+        assert pair_alignment == pair_alignment
+
+        stc1, stc2 = pair_alignment.structures
+        pa_w_different_order = get_trivial_pair_alignment(stc2, stc1)
+        assert pair_alignment == pa_w_different_order
 
     def test_transit_trivial(self):
         stc1, stc2, stc3 = get_n_mocked_structures(3)
@@ -315,6 +396,16 @@ class TestPairAlignment:
 
         assert pa1_3.inds.shape == (1, 2)
         assert DASH not in pa1_3.inds.ravel()
+
+    def test_transit_negative(self):
+        stc1, stc2, stc3, stc4 = get_n_mocked_structures(4)
+        al1 = get_trivial_pair_alignment(stc1, stc2)
+        al2 = get_trivial_pair_alignment(stc3, stc4)
+        al3 = get_trivial_pair_alignment(stc1, stc2)
+        with pytest.raises(ValueError):
+            al1.transit(al2)
+        with pytest.raises(ValueError):
+            al1.transit(al3)
 
     def test_consistency_positive(self):
         stc1, stc2 = get_n_mocked_structures(2)
