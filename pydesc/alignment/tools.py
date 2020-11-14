@@ -14,13 +14,11 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
-
-"""
-Structural alignment tools.
+"""Structural alignment tools.
 
 Contains classes required to solve structure alignment.
 
-created: 4.12.2014 - Tymoteusz 'hert' Oleniecki
+created: 4.12.2014 - Tymoteusz 'vdhert' Oleniecki
 """
 
 from pydesc.structure import AbstractDescriptor

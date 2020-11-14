@@ -3,11 +3,8 @@ from unittest.mock import MagicMock
 import numpy
 import pytest
 
-from pydesc.alignment.base import (
-    JoinedPairAlignments,
-    AbstractAlignment,
-    AbstractJoinedPairAlignments,
-)
+from pydesc.alignment.base import AbstractAlignment
+from pydesc.alignment.base import JoinedPairAlignments
 from pydesc.alignment.base import MultipleAlignment
 from pydesc.alignment.base import PairAlignment
 from pydesc.alignment.loaders import DASH
@@ -237,11 +234,6 @@ class TestColumnAlignment:
 
 
 class TestJoinedAlignments:
-    def test_abstract_superclass_methods(self):
-        pair_alignments = get_3_pair_alignments()
-        joined_pairs = JoinedPairAlignments(pair_alignments)
-        assert AbstractJoinedPairAlignments.to_columns(joined_pairs) is None
-
     def test_join(self):
         pair_alignments1 = get_3_pair_alignments()
         alignment1 = JoinedPairAlignments(pair_alignments1)

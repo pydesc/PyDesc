@@ -1,3 +1,21 @@
+# Copyright 2020 Tymoteusz 'vdhert' Oleniecki
+#
+# This file is part of PyDesc.
+#
+# PyDesc is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# PyDesc is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
+"""Classes writing alignments to files."""
+
 import csv
 from abc import ABC
 from abc import abstractmethod
@@ -10,40 +28,32 @@ import numpy
 from pydesc.alignment.base import DASH
 
 
-def get_segments(inds):
-    segments = {}
-    itr = iter(inds)
-    try:
-        starting_ind = next(itr)
-    except StopIteration:
-        return segments
-    for ind1, ind2 in zip(iter(inds), itr):
-        if ind1 + 1 == ind2:
-            continue
-        segments[starting_ind] = ind1
-        starting_ind = ind2
-    segments[starting_ind] = inds[-1]
-    return segments
-
-
-def format_pdb_segment(structure, pair):
-    start, end = pair
-    converter = structure.converter
-    pdb_start = converter.get_pdb_id(start)
-    pdb_end = converter.get_pdb_id(end)
-    start_string = pdb_start.format(chain=True)
-    end_string = pdb_end.format(chain=False)
-    string = f"{start_string}-{end_string}"
-    return string
-
-
 class AbstractSaver(ABC):
+    """Alignment saver interface."""
+
     @abstractmethod
     def save(self, stream, alignment, *, names=None):
+        """Write given alignment to given file-like object.
+
+        Args:
+            stream(file-like): object with write method.
+            alignment: Pair- or MultipleAlignment.
+            names(dict): map structure->label(string) telling saver how to substitute
+                structures with names. Must be passed as keyword argument.
+
+        """
         pass
 
 
 class CSVSaver(AbstractSaver):
+    """Class saving alignments as CSV (or similar) files.
+
+    Args:
+        delimiter(str): tab by default; string to be put between columns.
+        dash(str): string to be put as empty cell ("-" by default).
+
+    """
+
     def __init__(self, delimiter="\t", dash="-"):
         self.delimiter = delimiter
         self.dash = dash
@@ -56,10 +66,10 @@ class CSVSaver(AbstractSaver):
         names = [names.get(structure, structure.name) for structure in structures]
         writer.writerow(names)
         for row in alignment.iter_rows():
-            text_row = self.format_row(row, structures)
+            text_row = self._format_row(row, structures)
             writer.writerow(text_row)
 
-    def format_row(self, row, structures):
+    def _format_row(self, row, structures):
         text_row = []
         for ind, structure in zip(row, structures):
             if ind is DASH:
@@ -67,18 +77,26 @@ class CSVSaver(AbstractSaver):
             else:
                 pdb_id = structure.converter.get_pdb_id(ind)
                 letter_code = structure[ind].seq
-                text = self.format_id(pdb_id, letter_code)
+                text = self._format_id(pdb_id, letter_code)
             text_row.append(text)
         return text_row
 
     @staticmethod
-    def format_id(pdb_id, letter):
+    def _format_id(pdb_id, letter):
         icode = pdb_id.icode or ""
         ind = f"{pdb_id.ind}{icode}"
         return f"{pdb_id.chain}:{ind}:{letter}"
 
 
 class FASTASaver(AbstractSaver):
+    """Class saving alignments as FASTA files.
+
+    Args:
+        dash(str): string to be put as empty cell ("-" by default).
+        wrap_at(int): max length for single line of sequence.
+
+    """
+
     def __init__(self, dash="-", wrap_at=None):
         self.dash = dash
         self.wrap_at = wrap_at
@@ -92,7 +110,7 @@ class FASTASaver(AbstractSaver):
             inds = [ind for ind in column if ind is not DASH]
             segments = {}
             for k, group in groupby(inds, key=lambda ind: structure[ind].chain):
-                segments.update(get_segments(tuple(group)))
+                segments.update(self._get_segments(tuple(group)))
             coded_mers = [
                 self._get_mer_code(structure, ind, lower)
                 for ind, lower in zip(column, single_mer_rows)
@@ -104,12 +122,39 @@ class FASTASaver(AbstractSaver):
         for structure in structures:
             formatted_segments = []
             for pair in sorted(all_segments[structure].items()):
-                segment = format_pdb_segment(structure, pair)
+                segment = self._format_pdb_segment(structure, pair)
                 formatted_segments.append(segment)
             segments = ", ".join(formatted_segments)
             header = f">{structure.name} [{segments}]\n"
             stream.write(header)
             self._write_sequence(stream, sequences[structure])
+
+    @staticmethod
+    def _get_segments(inds):
+        segments = {}
+        itr = iter(inds)
+        try:
+            starting_ind = next(itr)
+        except StopIteration:
+            return segments
+        for ind1, ind2 in zip(iter(inds), itr):
+            if ind1 + 1 == ind2:
+                continue
+            segments[starting_ind] = ind1
+            starting_ind = ind2
+        segments[starting_ind] = inds[-1]
+        return segments
+
+    @staticmethod
+    def _format_pdb_segment(structure, pair):
+        start, end = pair
+        converter = structure.converter
+        pdb_start = converter.get_pdb_id(start)
+        pdb_end = converter.get_pdb_id(end)
+        start_string = pdb_start.format(chain=True)
+        end_string = pdb_end.format(chain=False)
+        string = f"{start_string}-{end_string}"
+        return string
 
     def _get_mer_code(self, structure, ind, lower_case):
         if ind is DASH:
@@ -129,6 +174,8 @@ class FASTASaver(AbstractSaver):
 
 
 class PALSaver(AbstractSaver):
+    """Class saving alignments as PAL(2.0) files."""
+
     def __init__(self):
         self.version = "2.0"
 

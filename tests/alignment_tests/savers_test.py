@@ -10,7 +10,6 @@ from pydesc.alignment.base import PairAlignment
 from pydesc.alignment.savers import CSVSaver
 from pydesc.alignment.savers import FASTASaver
 from pydesc.alignment.savers import PALSaver
-from pydesc.alignment.savers import get_segments
 from pydesc.alignment.loaders import PALLoader
 from pydesc.api.structure import get_structures_from_file
 
@@ -61,28 +60,6 @@ def make_full_trivial_alignment(stc1, stc2):
     return alignment
 
 
-class TestGetSegments:
-    def test_simple(self):
-        inds = [1, 2, 3, 10, 11, 12, 13]
-        result = get_segments(inds)
-        assert result[1] == 3
-        assert result[10] == 13
-
-    def test_empty(self):
-        result = get_segments([])
-        assert not result
-
-    def test_trailing(self):
-        inds = [1, 2, 3, 42]
-        result = get_segments(inds)
-        assert result[1] == 3
-        assert result[42] == 42
-        inds = [1, 42, 43, 44]
-        result = get_segments(inds)
-        assert result[1] == 1
-        assert result[42] == 44
-
-
 class TestCSVSaver:
     @pytest.mark.parametrize(
         "names, expected_header", [(None, "2BLL\t2BLL"), (["A", "B"], "A\tB")]
@@ -114,6 +91,26 @@ class TestCSVSaver:
 
 
 class TestFASTASaver:
+    def test__get_segments_simple(self):
+        inds = [1, 2, 3, 10, 11, 12, 13]
+        result = FASTASaver._get_segments(inds)
+        assert result[1] == 3
+        assert result[10] == 13
+
+    def test_get_segments_empty(self):
+        result = FASTASaver._get_segments([])
+        assert not result
+
+    def test_get_segments_trailing(self):
+        inds = [1, 2, 3, 42]
+        result = FASTASaver._get_segments(inds)
+        assert result[1] == 3
+        assert result[42] == 42
+        inds = [1, 42, 43, 44]
+        result = FASTASaver._get_segments(inds)
+        assert result[1] == 1
+        assert result[42] == 44
+
     def test_trivial(self, structure1, structure2):
         saver = FASTASaver()
         alignment = make_trivial_pair_w_dashes(structure1, structure2)

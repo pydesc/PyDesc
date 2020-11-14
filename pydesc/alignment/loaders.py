@@ -1,4 +1,21 @@
+# Copyright 2020 Tymoteusz 'vdhert' Oleniecki
+#
+# This file is part of PyDesc.
+#
+# PyDesc is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# PyDesc is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 """Alignment loader classes."""
+
 import csv
 import re
 from abc import ABC
@@ -15,6 +32,8 @@ from pydesc.numberconverter import PDBid
 
 
 def get_column_alignment_class(array):
+    """Given array of aligned inds, return class that best suits it or raise
+    ValueError for invalid array."""
     _, n_structures = array.shape
     if n_structures == 2:
         return PairAlignment
@@ -24,6 +43,8 @@ def get_column_alignment_class(array):
 
 
 class AbstractLoader(ABC):
+    """Common loader abstract superclass."""
+
     def __init__(self, path):
         self.path = path
         self._data = {}
@@ -33,18 +54,21 @@ class AbstractLoader(ABC):
 
     @property
     def data(self):
+        """Return alignment data read from alignment file."""
         if not self._read:
             self._read_file()
         return self._data
 
     @property
     def metadata(self):
+        """Return metadata read from alignment file."""
         if not self._read:
             self._read_file()
         return self._metadata
 
     @property
     def structure_labels(self):
+        """Return structure labels read from alignment file."""
         if self._structure_labels is None:
             self._read_file()
         return self._structure_labels
@@ -54,12 +78,28 @@ class AbstractLoader(ABC):
         self._read = True
 
     def read_metadata(self):
+        """Read meta data from alignment file, especially structure labels.
+
+        Metadata is returned as dict with guaranteed key "labels". Other data depends of
+        alignment file type.
+
+        """
         metadata = dict(self.metadata)
         metadata["labels"] = self.structure_labels
         return metadata
 
     @abstractmethod
     def load_alignment_mapping(self, structures_map):
+        """Load alignment mapping labels to structures as in given map.
+
+        Passing map lacking some labels present in alignment file will result in
+        loading partial alignment.
+
+        Args:
+            structures_map(dict): map with labels(strings) as keys and structures as
+            values.
+
+        """
         pass
 
     def _prepare_map_for_structures(self, structures):
@@ -67,12 +107,21 @@ class AbstractLoader(ABC):
         return structure_map
 
     def load_alignment(self, structures):
+        """Load alignment assuming labels correspond with given structures (order
+        matters).
+
+        If given list of structures is shorter, only as many columns will be loaded
+        as many structures were given.
+
+        """
         structure_map = self._prepare_map_for_structures(structures)
         alignment = self.load_alignment_mapping(structure_map)
         return alignment
 
 
 class CSVLoader(AbstractLoader):
+    """Loader able to read alignment in CSV (or similar) format."""
+
     def __init__(self, path, delimiter="\t"):
         super().__init__(path)
         self.delimiter = delimiter
@@ -163,16 +212,25 @@ class PALLoader(AbstractLoader):
         super()._read_file()
 
     def load_alignment_mapping(self, structures_map):
-        joined_pairs = self.load_partial_joined_pairs(structures_map)
+        joined_pairs = self.load_joined_pairs_mapping(structures_map)
         alignment = joined_pairs.to_columns()
         return alignment
 
     def load_joined_pairs(self, structures):
+        """Load alignment as container of pair alignments.
+
+        That is native approach for PAL format. Might be useful if single file stores
+        disjointed or inconsistent pair alignment, not multiple alignment separated
+        to particular pair alignments.
+
+        """
         structure_map = self._prepare_map_for_structures(structures)
-        alignment = self.load_partial_joined_pairs(structure_map)
+        alignment = self.load_joined_pairs_mapping(structure_map)
         return alignment
 
-    def load_partial_joined_pairs(self, structures_map):
+    def load_joined_pairs_mapping(self, structures_map):
+        """Method corresponding to load_alignment_mapping, but returning container
+        for pair alignments."""
         pair_alignments = []
         for header, ranges in self.data.items():
             try:
@@ -258,12 +316,17 @@ class PALLoader(AbstractLoader):
 
 
 class PALIdParser(ABC):
+    """Abstract PDB id parser for PAL loader."""
+
     @abstractmethod
     def parse_pdb_id(self, pdb_str):
+        """Parse given pdb id string."""
         pass
 
 
 class PALIdParserV1(PALIdParser):
+    """PDB id parser for PAL loader in version 1.0."""
+
     def __init__(self):
         self.pid_pattern = "([^0-9]*)([0-9]*)(.?)"
 
@@ -276,6 +339,8 @@ class PALIdParserV1(PALIdParser):
 
 
 class PALIdParserV2(PALIdParser):
+    """PDB id parser for PAL loader in version 2.0."""
+
     def __init__(self):
         self.long_pid_pattern = "([^:]*):([0-9]*)(.?)"
         self.short_pid_pattern = "([0-9]*)(.?)"
@@ -308,6 +373,7 @@ class FASTALoader(AbstractLoader):
 
     @property
     def ranges(self):
+        """Ranges stored in alignment file."""
         return self.metadata["ranges"]
 
     def _read_file(self):

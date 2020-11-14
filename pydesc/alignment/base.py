@@ -1,3 +1,19 @@
+# Copyright 2020 Tymoteusz 'vdhert' Oleniecki
+#
+# This file is part of PyDesc.
+#
+# PyDesc is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# PyDesc is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 """Basic classes storing alignments."""
 
 from abc import ABC
@@ -7,7 +23,32 @@ from collections import defaultdict
 import numpy
 
 
+def not_dash_if_possible(ind1, ind2):
+    """Pick int if int and DASH given, int if two equal ints or raise ValueError
+    otherwise."""
+    if ind1 is DASH:
+        return ind2
+    if ind2 is DASH:
+        return ind1
+    if ind1 == ind2:
+        return ind1
+    raise ValueError("Two different integers given.")
+
+
+def drop_single_mer_rows(array):
+    """Return new array without rows having only single mer."""
+    _, n_structures = array.shape
+    n_nans = numpy.count_nonzero(array == DASH, axis=1)
+    new_array = array[n_nans < (n_structures - 1)]
+    return new_array
+
+
+not_dash_if_possible = numpy.vectorize(not_dash_if_possible, otypes=[object])
+
+
 class _Dash:
+    """Singleton representing missing value in alignment."""
+
     def __repr__(self):
         return "<->"
 
@@ -21,43 +62,9 @@ class _Dash:
 DASH = _Dash()
 
 
-def not_dash_if_possible(ind1, ind2):
-    if ind1 is DASH:
-        return ind2
-    if ind2 is DASH:
-        return ind1
-    if ind1 == ind2:
-        return ind1
-    raise ValueError("Two different integers given.")
-
-
-not_dash_if_possible = numpy.vectorize(not_dash_if_possible, otypes=[object])
-
-
-def drop_single_mer_rows(array):
-    _, n_structures = array.shape
-    n_nans = numpy.count_nonzero(array == DASH, axis=1)
-    new_array = array[n_nans < (n_structures - 1)]
-    return new_array
-
-
-class AbstractJoinedPairAlignments(ABC):
-    @property
-    @abstractmethod
-    def pair_alignments(self):
-        pass
-
-    @abstractmethod
-    def to_columns(self):
-        pass
-
-    def join(self, other):
-        pair_alignments = set(other.pair_alignments)
-        pair_alignments |= set(self.pair_alignments)
-        return JoinedPairAlignments(tuple(pair_alignments))
-
-
 class AbstractAlignment(ABC):
+    """Abstract superclass for aligned pairs and larger sets of structures."""
+
     def __init__(self, structures, inds_rows):
         self.structures = tuple(structures)
         self.inds = inds_rows
@@ -90,12 +97,29 @@ class AbstractAlignment(ABC):
                 self.mer_map[structure][ind] = numpy.array(occurs, dtype=numpy.uint32)
 
     def iter_rows(self):
+        """Return iterator that runs over rows (returning arrays of pydesc inds)"""
         return iter(self.inds)
 
     def iter_columns(self):
+        """Return iterator that runs over columns (returning arrays of inds)
+        corresponding with structures."""
         return iter(self.inds.T)
 
     def get_inds_aligned_with(self, structure, inds):
+        """Return inds aligned with mers of given inds from given structure.
+
+        Args:
+            structure: one of aligned structures.
+            inds: sequence of inds present in both: given structure and alignment.
+
+        Returns:
+            dict: other than given structures as keys and list of inds (present in
+                key structure) as values. For structures not aligned with given mer
+                value will be an empty list. For inconsistent alignments this method
+                will list all inds aligned with given inconsistent (aligned with more
+                than one ind from other structure) mers.
+
+        """
         row_indices = set()
         for ind in inds:
             row_indices = row_indices.union(self.mer_map[structure][ind])
@@ -107,31 +131,57 @@ class AbstractAlignment(ABC):
         return aligned_map
 
     def prune(self):
+        """Return new alignment without single mer rows."""
         new_array = drop_single_mer_rows(self.inds)
         klass = type(self)
         new_alignment = klass(self.structures, new_array)
         return new_alignment
 
     def concatenate(self, other):
-        # adding rows (more aligned mers)
+        """Append rows from second alignment at the end of first one and return new
+        alignment.
+
+        Second alignment must align at least the same structures as self. That means
+        the same objects, not just structures loaded from the same file.
+
+        Args:
+            other: alignment aligning the same structures (or more).
+
+        Returns:
+            AbstractAlignment: instance of the same type as self with extra rows (
+            PairAlignment or MultipleAlignment).
+
+        """
         other_indices = other.get_structure_indices()
         column_inds = [other_indices[structure] for structure in self.structures]
         other_array = other.inds[:, column_inds]
         all_inds = numpy.concatenate((self.inds, other_array))
         inds = numpy.unique(all_inds, axis=0)
-        return MultipleAlignment(self.structures, inds)
+        klass = type(self)
+        return klass(self.structures, inds)
 
     def get_structure_indices(self):
+        """Return dict with structures as keys and their column indices as values."""
         indices = {structure: i for i, structure in enumerate(self.structures)}
         return indices
 
     def get_common_structures(self, other):
+        """Return set of structures common for this and given alignment."""
         self_structures = set(self.structures)
         other_structures = set(other.structures)
         common = self_structures & other_structures
         return common
 
     def sort(self):
+        """Return new alignment with sorted rows.
+
+        Rows are sorted first for longest aligned structure, then every other row is
+        inserted, if possible, to be form continuous bridge for leftmost structure.
+        In case of disjoint alignments -- shorter aligned fragments will be placed at
+        at the end (in random order, possibly mixed; in such case it is best to
+        separate disjoint fragments and sort them separately).
+
+        """
         longest_structure = max(self.mer_map, key=lambda stc: len(self.mer_map[stc]))
         stc_col_dct = self.get_structure_indices()
         column = stc_col_dct[longest_structure]
@@ -158,7 +208,9 @@ class AbstractAlignment(ABC):
         return alignment
 
 
-class PairAlignment(AbstractAlignment, AbstractJoinedPairAlignments):
+class PairAlignment(AbstractAlignment):
+    """Alignment of two structures."""
+
     def __init__(self, structures, inds_rows):
         if len(structures) != 2:
             raise ValueError("Pair alignment requires exactly two structures.")
@@ -182,11 +234,20 @@ class PairAlignment(AbstractAlignment, AbstractJoinedPairAlignments):
 
     @property
     def pair_alignments(self):
+        """List of pair alignments (in this case only containing this alignment)."""
         return [self]
 
     def transit(self, other):
-        # note that if some mers are aligned multiple times,
-        # arbitrary one will be picked
+        """Calculate new alignment assuming transition based on two alignments such
+        that both have single common structure.
+
+        Assuming that this alignment aligns structures A and B and other alignment
+        aligns structures B and C, create new alignment aligning A and C.
+
+        Note that if any of given alignment was inconsistent, i.e. aligned single mer
+        with two mers from other structure, single arbitrary mer will be picked.
+
+        """
         try:
             (common_stc,) = self.get_common_structures(other)
         except ValueError:
@@ -221,6 +282,12 @@ class PairAlignment(AbstractAlignment, AbstractJoinedPairAlignments):
         return transit_alignment
 
     def is_consistent_with(self, other):
+        """Return True if two pair alignments are not contradictory.
+
+        Only internally consistent alignments are allowed: those aligning single mer
+        with more than one mer from other structure will raise ValueError (lazy).
+
+        """
         common_structures = self.get_common_structures(other)
         if common_structures != set(self.structures):
             return True
@@ -245,16 +312,25 @@ class PairAlignment(AbstractAlignment, AbstractJoinedPairAlignments):
         return True
 
     def to_joined_pairs(self):
-        new_inds = drop_single_mer_rows(self.inds)
-        new_alignment = PairAlignment(self.structures, new_inds)
-        return new_alignment
+        """Return pruned version of this alignment (new object)."""
+        return self.prune()
 
     def to_columns(self):
+        """Return this alignment."""
         return self
 
 
 class MultipleAlignment(AbstractAlignment):
+    """Alignment of more than three structures."""
+
     def limit_to_structures(self, *structures):
+        """Return new alignment cropped to given structures.
+
+        Args:
+            *structures: any number of structures present in this alignment (objects
+            equality).
+
+        """
         if len(structures) < 2:
             msg = "At least two structure are necessary to perform this operation."
             raise ValueError(msg)
@@ -266,6 +342,7 @@ class MultipleAlignment(AbstractAlignment):
         return MultipleAlignment(structures, inds)
 
     def to_joined_pairs(self):
+        """Cast to series of PairAlignments and pack then to JoinedPairAlignments."""
         structure_indices = self.get_structure_indices()
         alignments = []
         for i, stc1 in enumerate(self.structures):
@@ -280,6 +357,29 @@ class MultipleAlignment(AbstractAlignment):
         return alignment
 
     def close(self):
+        """Calculate closure and return new, closed alignment.
+
+        Closure is possible for consistent alignments only, for others behaviours is
+        not predicted.
+
+        Examples:
+            Given alignment:
+            A   B   C
+            1   1   -
+            -   1   1
+            1   -   1
+            2   2   -
+            -   2   2
+            4   4   4
+            after closure it should be:
+            A   B   C
+            1   1   1
+            2   2   2
+            4   4   4
+            so this method deals with fully connected graphs as well as performs its
+            own transition to fully close circles
+
+        """
         # unexpected behaviour for inconsistent alignments
         seen_mers = {}
         new_rows = []
@@ -314,6 +414,8 @@ class MultipleAlignment(AbstractAlignment):
         return alignment
 
     def drop_empty_structures(self):
+        """Return new alignment without structures that had no aligned mers in this
+        one."""
         non_empty_cols = []
         for col_ind, column in enumerate(self.iter_columns()):
             if numpy.any(column != DASH):
@@ -332,15 +434,25 @@ class MultipleAlignment(AbstractAlignment):
         return alignment
 
 
-class JoinedPairAlignments(AbstractJoinedPairAlignments):
+class JoinedPairAlignments:
+    """Container for pair alignments."""
+
     def __init__(self, pair_alignments):
         self._pair_alignments = pair_alignments
 
     @property
     def pair_alignments(self):
+        """List of pair alignments."""
         return self._pair_alignments
 
     def limit_to_structures(self, *structures):
+        """Return new container storing only alignments aligning given structures.
+
+        Args:
+            *structures: any number of structures present in this alignment (objects
+            equality).
+
+        """
         alignments = []
         for alignment in self.pair_alignments:
             if set(alignment.structures).issubset(structures):
@@ -350,6 +462,12 @@ class JoinedPairAlignments(AbstractJoinedPairAlignments):
         return JoinedPairAlignments(alignments)
 
     def to_columns(self):
+        """Cast to MultipleAlignment.
+
+        Note that this method concatenates rows from each pair alignments at the end
+        of final MultipleAlignment and it might be necessary to close it.
+
+        """
         structures = set()
         length = 0
         for alignment in self.pair_alignments:
@@ -371,3 +489,9 @@ class JoinedPairAlignments(AbstractJoinedPairAlignments):
 
         alignment = MultipleAlignment(structures, array)
         return alignment
+
+    def join(self, other):
+        """Merge two sets of pair alignments (possibly changing their order)."""
+        pair_alignments = set(other.pair_alignments)
+        pair_alignments |= set(self.pair_alignments)
+        return JoinedPairAlignments(tuple(pair_alignments))
