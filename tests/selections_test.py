@@ -3,15 +3,26 @@ import os.path
 
 import pytest
 
-from pydesc import selection
-from pydesc.config import ConfigManager
+from pydesc.api.selection import get_selection_from_sub_structure
 from pydesc.chemistry.base import Mer
 from pydesc.chemistry.factories import CopyingFactor
 from pydesc.chemistry.factories import WrongAtomSetType
-from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Compound
+from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
+from pydesc.config import ConfigManager
+from pydesc.selection import AtomSetExactType
+from pydesc.selection import AtomSetName
+from pydesc.selection import ChainSelection
+from pydesc.selection import Everything
+from pydesc.selection import Nothing
+from pydesc.selection import Range
+from pydesc.selection import SelectionsComplement
+from pydesc.selection import SelectionsIntersection
+from pydesc.selection import SelectionsUnion
+from pydesc.selection import Selector
+from pydesc.selection import Set
 from pydesc.structure import StructureLoader
 from pydesc.structure.topology import AbstractStructure
 from pydesc.structure.topology import PartialStructure
@@ -34,6 +45,18 @@ def stc_2dlc(structures_dir):
     return sl.load_structures(path=pth)[0]
 
 
+def test_api(stc_2dlc):
+    sub_structure = stc_2dlc[10:20]
+    assert len(sub_structure) == 11
+    sele = get_selection_from_sub_structure(sub_structure)
+    assert isinstance(sele, Set)
+
+    expected_set = Everything().specify(stc_2dlc)
+    whole_sele = get_selection_from_sub_structure(stc_2dlc)
+
+    assert whole_sele.ids == expected_set.ids
+
+
 class SelectionTestBase:
     @staticmethod
     def assert_atoms(new_mer, old_mer):
@@ -43,10 +66,10 @@ class SelectionTestBase:
 
 
 class TestSelectorCreateNewStructure(SelectionTestBase):
-    picker = selection.Selector(CopyingFactor())
+    picker = Selector(CopyingFactor())
 
     def test_everything(self, structure):
-        sel = selection.Everything()
+        sel = Everything()
         new_structure = self.picker.create_new_structure(sel, structure)
         assert new_structure != structure
         for mer1, mer2 in zip(structure, new_structure):
@@ -65,7 +88,7 @@ class TestSelectorCreateNewStructure(SelectionTestBase):
     def test_set(self, structure):
         get_id = structure.converter.get_pdb_id
         ids = [get_id(mer.ind) for mer in tuple(structure)[:6]]
-        sel = selection.Set(ids)
+        sel = Set(ids)
         stc = self.picker.create_new_structure(sel, structure)
         assert isinstance(stc, AbstractStructure)
         assert len(stc) == 6
@@ -78,7 +101,7 @@ class TestSelectorCreateNewStructure(SelectionTestBase):
         start_mer, *dummy, end_mer = chain0
         start_pdb = get_id(start_mer.ind)
         end_pdb = get_id(end_mer.ind)
-        sel = selection.Range(start_pdb, end_pdb)
+        sel = Range(start_pdb, end_pdb)
         new_structure = self.picker.create_new_structure(sel, structure)
         assert len(new_structure) == len(chain0)
         self.assert_atoms(new_structure[0], chain0[0])
@@ -86,7 +109,7 @@ class TestSelectorCreateNewStructure(SelectionTestBase):
     def test_chain(self, structure):
         chain0 = structure.chains[0]
         chain_name = chain0.chain_name
-        sel = selection.ChainSelection(chain_name)
+        sel = ChainSelection(chain_name)
         new_structure = self.picker.create_new_structure(sel, structure)
         assert len(new_structure) == len(chain0)
         self.assert_atoms(new_structure[0], chain0[0])
@@ -94,38 +117,38 @@ class TestSelectorCreateNewStructure(SelectionTestBase):
     def test_mer_name(self, structure):
         names = {mer.name: mer for mer in structure}
         for name, mer in names.items():
-            sele = selection.AtomSetName(name)
+            sele = AtomSetName(name)
             new_structure = self.picker.create_new_structure(sele, structure)
             self.assert_atoms(new_structure[-1], mer)
 
     def test_mer_type(self, structure):
         types = {type(mer): mer for mer in structure}
         for type_, mer in types.items():
-            sele = selection.AtomSetExactType(type_)
+            sele = AtomSetExactType(type_)
             new_structure = self.picker.create_new_structure(sele, structure)
             self.assert_atoms(new_structure[-1], mer)
 
     def test_nothing(self, structure):
-        sele = selection.Nothing()
+        sele = Nothing()
         new_structure = self.picker.create_new_structure(sele, structure)
         assert len(new_structure) == 0
 
 
 class TestEverythingSelection(SelectionTestBase):
-    """Test methods from Everything selection."""
+    """Test methods from Everything """
 
     def test_specify(self, structure):
-        sel = selection.Everything().specify(structure)
-        assert type(sel) is selection.Set
+        sel = Everything().specify(structure)
+        assert type(sel) is Set
         assert len(tuple(sel)) == len(structure)
 
         segment_6 = PartialStructure(structure, tuple(structure)[:6])
-        sel = selection.Everything().specify(segment_6)
-        assert type(sel) is selection.Set
+        sel = Everything().specify(segment_6)
+        assert type(sel) is Set
         assert len(tuple(sel)) == 6
 
     def test_create_structure(self, structure):
-        sel = selection.Everything()
+        sel = Everything()
         new_structure = sel.create_structure(structure)
         assert new_structure == structure
         assert new_structure[0] is structure[0]
@@ -133,21 +156,21 @@ class TestEverythingSelection(SelectionTestBase):
 
 
 class TestSetSelection(SelectionTestBase):
-    """Test methods from Set type of selection."""
+    """Test methods from Set type of """
 
     def test_specify(self, structure):
         get_id = structure.converter.get_pdb_id
-        sel = selection.Set([get_id(mer.ind) for mer in tuple(structure)[:6]])
-        assert type(sel) is selection.Set
+        sel = Set([get_id(mer.ind) for mer in tuple(structure)[:6]])
+        assert type(sel) is Set
         assert len(tuple(sel)) == 6
 
         new_sel = sel.specify(structure)
-        assert type(new_sel) is selection.Set
+        assert type(new_sel) is Set
         assert len(tuple(new_sel)) == 6
 
     def test_create_structure(self, structure):
         get_id = structure.converter.get_pdb_id
-        sel = selection.Set([get_id(mer.ind) for mer in tuple(structure)[:6]])
+        sel = Set([get_id(mer.ind) for mer in tuple(structure)[:6]])
         new_structure = sel.create_structure(structure)
         assert isinstance(new_structure, AbstractStructure)
         assert len(new_structure) == 6
@@ -156,19 +179,19 @@ class TestSetSelection(SelectionTestBase):
 
 
 class TestRangeSelection:
-    """Test methods from Range selection."""
+    """Test methods from Range """
 
     @staticmethod
     def create_6_mer_range(structure):
         get_id = structure.converter.get_pdb_id
         start = get_id(structure[0].ind)
         end = get_id(structure[5].ind)
-        return selection.Range(start, end), start, end
+        return Range(start, end), start, end
 
     def test_range_specify(self, structure):
         range_selection, start, end = self.create_6_mer_range(structure)
         new_sel = range_selection.specify(structure)
-        assert type(new_sel) is selection.Set
+        assert type(new_sel) is Set
         assert len(tuple(new_sel)) == 6
         assert start in new_sel.ids
         assert end in new_sel.ids
@@ -199,7 +222,7 @@ class TestRangeSelection:
         assert str(get_id(17)) == "A19", msg
         assert str(get_id(18)) == "A24", msg
 
-        range_selection = selection.Range(get_id(16), get_id(19))
+        range_selection = Range(get_id(16), get_id(19))
         new_sel = range_selection.specify(stc)
 
         assert len(tuple(new_sel)) == 4
@@ -211,14 +234,14 @@ class TestChainSelection:
     def test_specify(self, structure):
         get_id = structure.converter.get_pdb_id
         for chain in structure.chains:
-            chain_selection = selection.ChainSelection(chain.chain_name)
+            chain_selection = ChainSelection(chain.chain_name)
             new_selection = chain_selection.specify(structure)
             assert len(tuple(new_selection)) == len(chain)
             for mer in chain:
                 assert get_id(mer.ind) in new_selection.ids
 
     def test_not_existing_chain(self, structure):
-        chain_selection = selection.ChainSelection("fake_name")
+        chain_selection = ChainSelection("fake_name")
         new_selection = chain_selection.specify(structure)
         assert len(tuple(new_selection)) == 0
 
@@ -234,7 +257,7 @@ class TestChainSelection:
 
         test_chain_name = max(chain_samples)
 
-        chain_selection = selection.ChainSelection(test_chain_name)
+        chain_selection = ChainSelection(test_chain_name)
 
         new_sel = chain_selection.specify(mixed_partial)
 
@@ -248,7 +271,7 @@ class TestAtomSetNameSelection:
         get_id = structure.converter.get_pdb_id
         mers = tuple(structure)[:6]
         for mer in mers:
-            mer_name_selection = selection.AtomSetName(mer.name)
+            mer_name_selection = AtomSetName(mer.name)
             new_selection = mer_name_selection.specify(structure)
             assert get_id(mer.ind) in new_selection
             assert len(tuple(new_selection)) >= 1
@@ -260,11 +283,11 @@ class TestAtomSetNameSelection:
 class TestAtomSetExactTypeSelection:
     def test_wrong_class(self):
         with pytest.raises(WrongAtomSetType):
-            selection.AtomSetExactType(type(None))
+            AtomSetExactType(type(None))
 
     def test_specify_residue(self, stc_2dlc):
         get_id = stc_2dlc.converter.get_pdb_id
-        residue_selection = selection.AtomSetExactType(Residue)
+        residue_selection = AtomSetExactType(Residue)
         residues_set = residue_selection.specify(stc_2dlc)
         assert len(tuple(residues_set)) > 0
         for mer in stc_2dlc.get_chain("X"):
@@ -274,7 +297,7 @@ class TestAtomSetExactTypeSelection:
 
     def test_specify_nucleotide(self, stc_2dlc):
         get_id = stc_2dlc.converter.get_pdb_id
-        nucleotide_selection = selection.AtomSetExactType(Nucleotide)
+        nucleotide_selection = AtomSetExactType(Nucleotide)
         nucleotides_set = nucleotide_selection.specify(stc_2dlc)
         assert len(tuple(nucleotides_set)) > 0
         for mer in stc_2dlc.get_chain("Y"):
@@ -283,12 +306,12 @@ class TestAtomSetExactTypeSelection:
             assert get_id(mer.ind) in nucleotides_set.ids
 
     def test_specify_ligand(self, stc_2dlc):
-        ligand_selection = selection.AtomSetExactType(Compound)
+        ligand_selection = AtomSetExactType(Compound)
         ligands_set = ligand_selection.specify(stc_2dlc)
         assert len(tuple(ligands_set)) > 0
 
     def test_specify_ion(self, stc_2dlc):
-        ion_selection = selection.AtomSetExactType(MonoatomicIon)
+        ion_selection = AtomSetExactType(MonoatomicIon)
         ions_set = ion_selection.specify(stc_2dlc)
         assert len(tuple(ions_set)) > 0
 
@@ -297,7 +320,7 @@ class TestNothing:
     """It is testing nothing, what did you expect?"""
 
     def test_specify(self, structure):
-        nothing_sel = selection.Nothing()
+        nothing_sel = Nothing()
         empty_set = nothing_sel.specify(structure)
         assert len(tuple(empty_set)) == 0
 
@@ -311,10 +334,10 @@ class TestComplexSelections:
         the_mer = max(structure, key=lambda mer: mer.is_chainable())
         test_name = the_mer.name
         test_type = type(the_mer)
-        sel1 = selection.AtomSetName(test_name)
-        sel2 = selection.AtomSetExactType(test_type)
+        sel1 = AtomSetName(test_name)
+        sel2 = AtomSetExactType(test_type)
         intersection = sel1 * sel2
-        assert isinstance(intersection, selection.SelectionsIntersection)
+        assert isinstance(intersection, SelectionsIntersection)
 
         set_sel = intersection.specify(structure)
         assert get_id(the_mer.ind) in set_sel.ids
@@ -325,27 +348,27 @@ class TestComplexSelections:
             pytest.skip("Not enough chains to perform test.")
         chain_sels = []
         for chain in structure.chains:
-            chain_sels.append(selection.ChainSelection(chain.chain_name))
+            chain_sels.append(ChainSelection(chain.chain_name))
 
-        union = selection.SelectionsUnion(chain_sels)
+        union = SelectionsUnion(chain_sels)
         new_sel = union.specify(structure)
 
         for mer in structure:
             assert get_id(mer.ind) in new_sel.ids
 
         union = chain_sels[0] + chain_sels[1]
-        assert isinstance(union, selection.SelectionsUnion)
+        assert isinstance(union, SelectionsUnion)
 
     def test_complement(self, stc_2dlc):
-        res_sel = selection.AtomSetExactType(Residue)
-        prot_chain = selection.ChainSelection("X")
+        res_sel = AtomSetExactType(Residue)
+        prot_chain = ChainSelection("X")
         diff = prot_chain - res_sel
-        assert isinstance(diff, selection.SelectionsComplement)
+        assert isinstance(diff, SelectionsComplement)
         new_sel = diff.specify(stc_2dlc)
         assert len(new_sel.ids) == 1  # single Mg ion
 
-        nuc_sel = selection.AtomSetExactType(Nucleotide)
-        nuc_chain = selection.ChainSelection("Y")
+        nuc_sel = AtomSetExactType(Nucleotide)
+        nuc_chain = ChainSelection("Y")
         diff2 = nuc_chain - nuc_sel
         new_stc = diff2.create_structure(stc_2dlc)
         assert len(new_stc) > 0
