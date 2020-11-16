@@ -54,9 +54,10 @@ class CSVSaver(AbstractSaver):
 
     """
 
-    def __init__(self, delimiter="\t", dash="-"):
+    def __init__(self, delimiter="\t", dash="-", sequence_dict=None):
         self.delimiter = delimiter
         self.dash = dash
+        self.seq_dct = sequence_dict
 
     def save(self, stream, alignment, *, names=None):
         if names is None:
@@ -76,10 +77,15 @@ class CSVSaver(AbstractSaver):
                 text = self.dash
             else:
                 pdb_id = structure.converter.get_pdb_id(ind)
-                letter_code = structure[ind].seq
+                letter_code = self._get_letter(structure[ind])
                 text = self._format_id(pdb_id, letter_code)
             text_row.append(text)
         return text_row
+
+    def _get_letter(self, mer):
+        if self.seq_dct is None:
+            return mer.seq
+        return self.seq_dct[mer.name]
 
     @staticmethod
     def _format_id(pdb_id, letter):
@@ -97,9 +103,10 @@ class FASTASaver(AbstractSaver):
 
     """
 
-    def __init__(self, dash="-", wrap_at=None):
+    def __init__(self, dash="-", wrap_at=None, sequence_dict=None):
         self.dash = dash
         self.wrap_at = wrap_at
+        self.seq_dct = sequence_dict
 
     def save(self, stream, alignment, *, names=None):
         sequences = {}
@@ -159,10 +166,15 @@ class FASTASaver(AbstractSaver):
     def _get_mer_code(self, structure, ind, lower_case):
         if ind is DASH:
             return self.dash
-        letter = structure[ind].seq
+        letter = self._get_letter(structure[ind])
         if lower_case:
             return letter.lower()
         return letter.upper()
+
+    def _get_letter(self, mer):
+        if self.seq_dct is None:
+            return mer.seq
+        return self.seq_dct[mer.name]
 
     def _write_sequence(self, stream, sequence):
         if self.wrap_at is None:

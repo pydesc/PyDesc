@@ -41,7 +41,8 @@ def get_loader(path):
         ".fasta": FASTALoader,
     }
     klass = class_dct.get(extension, FASTALoader)
-    loader = klass(path)
+    with open(path) as file_handler:
+        loader = klass(file_handler)
     return loader
 
 

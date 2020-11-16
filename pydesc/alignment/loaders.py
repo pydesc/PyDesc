@@ -422,16 +422,16 @@ class FASTALoader(AbstractLoader):
 
     @staticmethod
     def _parse_ranges(ranges_str):
-        range_pattern = r"\w+:\d+[^\d\]\[]?-\d+[^\d\]\[]?"
+        range_pattern = r"\w+:\d+[^\d,\]\[]?-\d+[^\d,\]\[]?"
         ranges = re.findall(range_pattern, ranges_str)
         range_pattern = r"(\w+):(\d+)(\D?)-(\d+)(\D?)"
         results = []
         for range_str in ranges:
             match = re.match(range_pattern, range_str)
             chain = match.group(1)
-            id1 = match.group(2)
+            id1 = int(match.group(2))
             icode1 = match.group(3) or None
-            id2 = match.group(4)
+            id2 = int(match.group(4))
             icode2 = match.group(5) or None
             pdb_id1 = PDBid((chain, id1, icode1))
             pdb_id2 = PDBid((chain, id2, icode2))
