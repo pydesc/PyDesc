@@ -290,7 +290,8 @@ class TestPALSaver:
         save_stream.seek(0)
         tmp_file = tmp_path / "test.pal"
         tmp_file.write_text(save_stream.read())
-        loader = PALLoader(str(tmp_file))
+        with open(tmp_file) as fh:
+            loader = PALLoader(fh)
 
         new_alignment = loader.load_alignment((structure1, structure4))
 

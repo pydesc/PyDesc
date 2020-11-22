@@ -18,9 +18,9 @@ def kinases(alignments_dir):
 @pytest.fixture(scope="session")
 def kinases_alignment(alignments_dir, kinases):
     path = alignments_dir / "pal" / "kinases3_dama.pal"
-    loader = PALLoader(path)
-
-    alignment = loader.load_alignment(kinases)
+    with open(path) as fh:
+        loader = PALLoader(fh)
+        alignment = loader.load_alignment(kinases)
     alignment = alignment.close()
     return alignment
 
@@ -29,10 +29,11 @@ def test_selections_sars(alignments_dir):
     stc_path = alignments_dir / "structures" / "sars_pair.pdb"
     structures = get_structures_from_file(stc_path)
     path = alignments_dir / "pal" / "sars_pair.pal"
-    loader = PALLoader(path)
+
+    with open(path) as file_:
+        loader = PALLoader(file_)
 
     alignment = loader.load_alignment(structures)
-
     selections_dct = get_selections(alignment)
 
     for structure, expected_inds in zip(alignment.structures, alignment.iter_columns()):

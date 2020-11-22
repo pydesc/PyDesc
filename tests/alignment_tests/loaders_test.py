@@ -20,10 +20,13 @@ class TestCSVLoader:
 
     def test_multi(self, csv_path):
         path = csv_path / "artificial_multi.csv"
-        loader = CSVLoader(path)
         structures = [MagicMock() for _ in range(4)]
         for mocked_structure in structures:
             mocked_structure.converter.get_ind.side_effect = [i for i in range(1, 7)]
+
+        with open(path) as fh:
+            loader = CSVLoader(fh)
+
         alignment = loader.load_alignment(structures)
 
         assert alignment.inds.shape == (6, 4)
@@ -55,32 +58,32 @@ class TestCSVLoader:
 
     def test_pair(self, csv_path):
         path = csv_path / "artificial_pair.csv"
-        loader = CSVLoader(path)
         structures = [MagicMock() for _ in range(2)]
-        alignment = loader.load_alignment(structures)
-
+        with open(path) as file_:
+            loader = CSVLoader(file_)
+            alignment = loader.load_alignment(structures)
         assert isinstance(alignment, PairAlignment)
 
     def test_no_content(self, csv_path):
         path = csv_path / "empty_pair.csv"
-        loader = CSVLoader(path)
+        with open(path) as fh:
+            loader = CSVLoader(fh)
         structures = [MagicMock(name=i) for i in range(2)]
-
         alignment = loader.load_alignment(structures)
-
         assert len(alignment) == 0
         assert len(alignment.structures) == 2
 
     def test_single_col(self, csv_path):
         path = csv_path / "single_col.csv"
-        loader = CSVLoader(path)
-
+        with open(path) as fh:
+            loader = CSVLoader(fh)
         with pytest.raises(ValueError):
             loader.load_alignment([MagicMock()])
 
     def test_load_some(self, csv_path):
         path = csv_path / "artificial_multi.csv"
-        loader = CSVLoader(path)
+        with open(path) as fh:
+            loader = CSVLoader(fh)
         stc_map = {k: MagicMock(name=k) for k in ("stc1", "stc3A")}
         alignment = loader.load_alignment_mapping(stc_map)
         assert isinstance(alignment, PairAlignment)
@@ -104,7 +107,8 @@ class TestPALLoader:
 
     def test_artificial_multi(self, artificial_multi_path, artificial_multi_structures):
         structures = artificial_multi_structures
-        loader = PALLoader(artificial_multi_path)
+        with open(artificial_multi_path) as fh:
+            loader = PALLoader(fh)
         metadata = loader.read_metadata()
         for mol in "MOL1", "MOL2", "MOL3":
             assert mol in metadata["labels"]
@@ -140,7 +144,8 @@ class TestPALLoader:
         structures = get_structures_from_file(stc_path)
         path = alignments_dir / "pal" / "sars_pair.pal"
 
-        loader = PALLoader(path)
+        with open(path) as fh:
+            loader = PALLoader(fh)
         alignment = loader.load_alignment(structures)
 
         assert isinstance(alignment, PairAlignment)
@@ -157,9 +162,10 @@ class TestPALLoader:
     def test_v2_v1(self, alignments_dir, artificial_multi_structures):
         structures = artificial_multi_structures
         path1 = alignments_dir / "pal" / "artificial_multi.pal"
-        loader1 = PALLoader(path1)
         path2 = alignments_dir / "pal" / "artificial_multi_v2.pal"
-        loader2 = PALLoader(path2)
+        with open(path1) as fh1, open(path2) as fh2:
+            loader1 = PALLoader(fh1)
+            loader2 = PALLoader(fh2)
 
         al1 = loader1.load_alignment(structures)
         al2 = loader2.load_alignment(structures)
@@ -168,14 +174,16 @@ class TestPALLoader:
         assert al1.structures == al2.structures
 
     def test_load_some(self, artificial_multi_path, artificial_multi_structures):
-        loader = PALLoader(artificial_multi_path)
+        with open(artificial_multi_path) as fh:
+            loader = PALLoader(fh)
         structures = artificial_multi_structures[:2]
         alignment = loader.load_alignment(structures)
         assert isinstance(alignment, PairAlignment)
 
     def test_load_lacking_chain(self, alignments_dir):
         path_wrong = alignments_dir / "pal" / "no_chain_when_needed.pal"
-        loader = PALLoader(path_wrong)
+        with open(path_wrong) as fh:
+            loader = PALLoader(fh)
         stc_path = alignments_dir / "structures" / "3g67.pdb"
         stc_3g67 = get_structures_from_file(stc_path)[0]
         mocked_structure = MagicMock()
@@ -187,7 +195,8 @@ class TestPALLoader:
         assert "matches none or more than one chain" in str(err_info.value)
 
         correct_path = alignments_dir / "pal" / "no_chain_when_needed_fixed.pal"
-        loader = PALLoader(correct_path)
+        with open(correct_path) as fh:
+            loader = PALLoader(fh)
         alignment = loader.load_alignment(structures)
         assert isinstance(alignment, PairAlignment)
 
@@ -212,11 +221,12 @@ class TestFASTALoader:
         return structures
 
     def test_artificial_multi(self, artificial_multi_path, artificial_multi_structures):
-        loader = FASTALoader(artificial_multi_path)
+        with open(artificial_multi_path) as fh:
+            loader = FASTALoader(fh)
         alignment = loader.load_alignment(artificial_multi_structures)
 
         for label in ("mol1", "mol2", "mol3_chainAB", "mol4", "mol5"):
-            assert label in loader.structure_labels
+            assert label in loader._structure_labels
 
         assert alignment.inds.shape == (4, 5)
 
@@ -244,21 +254,25 @@ class TestFASTALoader:
             "MOL2": sars_stc,
         }
 
-        fasta_loader = FASTALoader(fasta_path)
+        with open(fasta_path) as fh:
+            fasta_loader = FASTALoader(fh)
         fasta = fasta_loader.load_alignment_mapping(structures_map)
-        pal_loader = PALLoader(pal_path)
+        with open(pal_path) as fh:
+            pal_loader = PALLoader(fh)
         pal = pal_loader.load_alignment_mapping(structures_map)
 
         numpy.testing.assert_equal(fasta.inds, pal.inds)
         assert fasta.structures == pal.structures
 
     def test_load_some(self, artificial_multi_path, artificial_multi_structures):
-        loader = FASTALoader(artificial_multi_path)
+        with open(artificial_multi_path) as fh:
+            loader = FASTALoader(fh)
         alignment = loader.load_alignment(artificial_multi_structures[:2])
         assert isinstance(alignment, PairAlignment)
 
     def test_uneven(self, artificial_uneven_path, artificial_multi_structures):
-        loader = FASTALoader(artificial_uneven_path)
+        with open(artificial_uneven_path) as fh:
+            loader = FASTALoader(fh)
         stc1, stc2, stc3, _, _ = artificial_multi_structures
         stc_map = {
             "mol1": stc1,
@@ -272,6 +286,7 @@ class TestFASTALoader:
         assert "uneven" in str(err_info.value)
 
         stc_map.pop("mol2")
-        loader = FASTALoader(artificial_uneven_path)
+        with open(artificial_uneven_path) as fh:
+            loader = FASTALoader(fh)
         alignment = loader.load_alignment_mapping(stc_map)
         assert isinstance(alignment, PairAlignment)

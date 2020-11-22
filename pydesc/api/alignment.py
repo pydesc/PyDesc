@@ -18,6 +18,50 @@
 
 from pydesc.alignment.base import DASH
 from pydesc.api.selection import get_selection_from_sub_structure
+from pydesc.alignment.loaders import PALLoader, FASTALoader, CSVLoader
+from pathlib import Path
+
+
+def get_loader(path):
+    """Get loader for alignment in file with given path.
+
+    Args:
+        path(str, Path): path to alignment file (fasta, tsv/csv or pal).
+
+    Returns:
+        alignment loader bonded with given path.
+
+    """
+    path = Path(str(path))
+    extension = path.suffix
+    class_dct = {
+        ".pal": PALLoader,
+        ".tsv": CSVLoader,
+        ".csv": CSVLoader,
+        ".fasta": FASTALoader,
+    }
+    klass = class_dct.get(extension, FASTALoader)
+    loader = klass(path)
+    return loader
+
+
+def load_alignment(path, structures):
+    """Load alignment from file in given path with given structures.
+
+    Args:
+        path(str, Path): path to alignment file (fasta, tsv/csv or pal).
+        structures: list of structures or dict mapping labels to structures.
+
+    Returns:
+        alignment (multiple or pair).
+
+    """
+    loader = get_loader(path)
+    if isinstance(structures, dict):
+        alignment = loader.load_alignment_mapping(structures)
+    else:
+        alignment = loader.load_alignment(structures)
+    return alignment
 
 
 def get_selections(alignment):

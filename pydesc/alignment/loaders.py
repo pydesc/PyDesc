@@ -45,37 +45,16 @@ def get_column_alignment_class(array):
 class AbstractLoader(ABC):
     """Common loader abstract superclass."""
 
-    def __init__(self, path):
-        self.path = path
+    def __init__(self, file_handler):
+        self.file_handler = file_handler
         self._data = {}
         self._metadata = {}
         self._structure_labels = None
-        self._read = False
-
-    @property
-    def data(self):
-        """Return alignment data read from alignment file."""
-        if not self._read:
-            self._read_file()
-        return self._data
-
-    @property
-    def metadata(self):
-        """Return metadata read from alignment file."""
-        if not self._read:
-            self._read_file()
-        return self._metadata
-
-    @property
-    def structure_labels(self):
-        """Return structure labels read from alignment file."""
-        if self._structure_labels is None:
-            self._read_file()
-        return self._structure_labels
+        self._read_file()
 
     @abstractmethod
     def _read_file(self):
-        self._read = True
+        pass
 
     def read_metadata(self):
         """Read meta data from alignment file, especially structure labels.
@@ -84,8 +63,8 @@ class AbstractLoader(ABC):
         alignment file type.
 
         """
-        metadata = dict(self.metadata)
-        metadata["labels"] = self.structure_labels
+        metadata = dict(self._metadata)
+        metadata["labels"] = self._structure_labels
         return metadata
 
     @abstractmethod
@@ -103,7 +82,7 @@ class AbstractLoader(ABC):
         pass
 
     def _prepare_map_for_structures(self, structures):
-        structure_map = dict(zip(self.structure_labels, structures))
+        structure_map = dict(zip(self._structure_labels, structures))
         return structure_map
 
     def load_alignment(self, structures):
@@ -122,15 +101,14 @@ class AbstractLoader(ABC):
 class CSVLoader(AbstractLoader):
     """Loader able to read alignment in CSV (or similar) format."""
 
-    def __init__(self, path, delimiter="\t"):
-        super().__init__(path)
+    def __init__(self, file_handler, delimiter="\t"):
         self.delimiter = delimiter
+        super().__init__(file_handler)
 
     def _read_file(self):
-        with open(self.path) as csv_file:
-            reader = csv.reader(csv_file, delimiter=self.delimiter)
-            structures_labels = next(reader)
-            rows = [numpy.array(i) for i in reader if i]
+        reader = csv.reader(self.file_handler, delimiter=self.delimiter)
+        structures_labels = next(reader)
+        rows = [numpy.array(i) for i in reader if i]
         self._structure_labels = structures_labels
         self._data["rows"] = rows
         super()._read_file()
@@ -152,16 +130,16 @@ class CSVLoader(AbstractLoader):
         return converter.get_ind(pdb_id)
 
     def load_alignment_mapping(self, structures_map):
-        valid_labels = [i for i in self.structure_labels if i in structures_map]
+        valid_labels = [i for i in self._structure_labels if i in structures_map]
         converters = [structures_map[label].converter for label in valid_labels]
-        length = len(self.data["rows"])
+        length = len(self._data["rows"])
         array = numpy.empty((length, len(structures_map)), dtype=object)
         array_indices = [
             i
-            for i, label in enumerate(self.structure_labels)
+            for i, label in enumerate(self._structure_labels)
             if label in structures_map
         ]
-        for i, row in enumerate(self.data["rows"]):
+        for i, row in enumerate(self._data["rows"]):
             row = row[array_indices]
             row_pdb_ids = [self._parse_pdb_id(id_str) for id_str in row]
             iterator = zip(row_pdb_ids, converters)
@@ -174,10 +152,10 @@ class CSVLoader(AbstractLoader):
 
 
 class PALLoader(AbstractLoader):
-    def __init__(self, path):
-        super(PALLoader, self).__init__(path)
+    def __init__(self, file_handler):
         self.version = None
         self.id_parser = None
+        super(PALLoader, self).__init__(file_handler)
 
     @staticmethod
     def _get_id_parser(version):
@@ -188,27 +166,26 @@ class PALLoader(AbstractLoader):
         return dct[version]
 
     def _read_file(self):
-        with open(self.path) as file:
-            first_line = file.readline()
-            version_match = re.match("v:([0-9]+.[0-9]+)", first_line)
-            if version_match is not None:
-                self.version = version_match.group(1)
-                n_structures = int(file.readline())
-            else:
-                n_structures = int(first_line)
-                self.version = "1.0"
-            self.id_parser = self._get_id_parser(self.version)
-            labels = [file.readline().strip() for _ in range(n_structures)]
-            self._structure_labels = labels
-            while True:
-                header = file.readline()
-                if not header:
-                    break
-                if not header.startswith(">"):
-                    # not a header
-                    continue
-                n_lines = int(file.readline().replace("@", ""))
-                self._data[header] = [file.readline() for _ in range(n_lines)]
+        first_line = self.file_handler.readline()
+        version_match = re.match("v:([0-9]+.[0-9]+)", first_line)
+        if version_match is not None:
+            self.version = version_match.group(1)
+            n_structures = int(self.file_handler.readline())
+        else:
+            n_structures = int(first_line)
+            self.version = "1.0"
+        self.id_parser = self._get_id_parser(self.version)
+        labels = [self.file_handler.readline().strip() for _ in range(n_structures)]
+        self._structure_labels = labels
+        while True:
+            header = self.file_handler.readline()
+            if not header:
+                break
+            if not header.startswith(">"):
+                # not a header
+                continue
+            n_lines = int(self.file_handler.readline().replace("@", ""))
+            self._data[header] = [self.file_handler.readline() for _ in range(n_lines)]
         super()._read_file()
 
     def load_alignment_mapping(self, structures_map):
@@ -232,7 +209,7 @@ class PALLoader(AbstractLoader):
         """Method corresponding to load_alignment_mapping, but returning container
         for pair alignments."""
         pair_alignments = []
-        for header, ranges in self.data.items():
+        for header, ranges in self._data.items():
             try:
                 structures_subset = self._get_structures(header, structures_map)
             except KeyError:
@@ -365,38 +342,37 @@ class PALIdParserV2(PALIdParser):
 
 
 class FASTALoader(AbstractLoader):
-    def __init__(self, path, miss_match_characters=(".", "-")):
-        super().__init__(path)
+    def __init__(self, file_handler, miss_match_characters=".-"):
         self.mmc = miss_match_characters
-        self._metadata["#"] = {}
-        self._metadata["ranges"] = {}
+        super().__init__(file_handler)
 
     @property
     def ranges(self):
         """Ranges stored in alignment file."""
-        return self.metadata["ranges"]
+        return self._metadata["ranges"]
 
     def _read_file(self):
+        self._metadata["#"] = {}
+        self._metadata["ranges"] = {}
         structure_labels = []
-        with open(self.path) as fasta_file:
-            current_label = None
-            while True:
-                line = fasta_file.readline()
-                if not line:
-                    break  # eof
-                elif line.startswith("#"):
-                    continue  # comment
-                elif not line.strip():
-                    continue  # blanks
-                elif line.startswith(">"):
-                    label, comment, ranges = self._parse_label(line)
-                    structure_labels.append(label)
-                    current_label = label
-                    self._metadata["ranges"][label] = ranges
-                    self._metadata["#"][label] = comment
-                    continue
-                sequence = self._data.get(current_label, "")
-                self._data[current_label] = sequence + line.strip()
+        current_label = None
+        while True:
+            line = self.file_handler.readline()
+            if not line:
+                break  # eof
+            elif line.startswith("#"):
+                continue  # comment
+            elif not line.strip():
+                continue  # blanks
+            elif line.startswith(">"):
+                label, comment, ranges = self._parse_label(line)
+                structure_labels.append(label)
+                current_label = label
+                self._metadata["ranges"][label] = ranges
+                self._metadata["#"][label] = comment
+                continue
+            sequence = self._data.get(current_label, "")
+            self._data[current_label] = sequence + line.strip()
 
         self._structure_labels = structure_labels
         super()._read_file()
@@ -415,7 +391,7 @@ class FASTALoader(AbstractLoader):
             ranges = self._parse_ranges(self.ranges[label])
             mer_iterator = self._iter_inds(structure, ranges)
             mer_iterators[label] = mer_iterator
-        lengths = {len(self.data[label]) for label in structures_map}
+        lengths = {len(self._data[label]) for label in structures_map}
         if len(lengths) != 1:
             msg = "Sequences of given structures in fasta alignment file " "are uneven."
             raise ValueError(msg)
@@ -423,10 +399,10 @@ class FASTALoader(AbstractLoader):
         array = numpy.empty((length, len(structures_map)), dtype=object)
         structures = []
         ind = 0
-        for label in self.structure_labels:
+        for label in self._structure_labels:
             if label not in structures_map:
                 continue
-            sequence = self.data[label]
+            sequence = self._data[label]
             mer_i = mer_iterators[label]
             column = [self._get_ind(char, mer_i) for char in sequence]
             array[:, ind] = numpy.array(column)
