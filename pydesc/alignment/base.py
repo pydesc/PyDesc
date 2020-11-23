@@ -120,15 +120,35 @@ class AbstractAlignment(ABC):
                 than one ind from other structure) mers.
 
         """
+        aligned_rows = self._get_rows_aligned_with(structure, inds)
+        generator = zip(self.structures, aligned_rows.T)
+        aligned_map = {stc: inds[inds != DASH].tolist() for stc, inds in generator}
+        aligned_map = {k: v for k, v in aligned_map.items() if v and (k != structure)}
+        return aligned_map
+
+    def _get_rows_aligned_with(self, structure, inds):
         row_indices = set()
         for ind in inds:
             row_indices = row_indices.union(self.mer_map[structure][ind])
         row_indices = sorted(row_indices)
         aligned_rows = self.inds[row_indices]
-        generator = zip(self.structures, aligned_rows.T)
-        aligned_map = {stc: inds[inds != DASH].tolist() for stc, inds in generator}
-        aligned_map = {k: v for k, v in aligned_map.items() if v and (k != structure)}
-        return aligned_map
+        return aligned_rows
+
+    def extract_aligned_with(self, structure, inds):
+        """Create new alignment narrowed down to rows aligning mers with given inds from
+        given structure.
+
+        Args:
+            structure: structure aligned in this alignment.
+            inds: sequence of mer indices.
+
+        Returns:
+            pair or multiple alignment.
+
+        """
+        aligned_rows = self._get_rows_aligned_with(structure, inds)
+        alignment = type(self)(self.structures, aligned_rows)
+        return alignment
 
     def prune(self):
         """Return new alignment without single mer rows."""
@@ -137,7 +157,7 @@ class AbstractAlignment(ABC):
         new_alignment = klass(self.structures, new_array)
         return new_alignment
 
-    def concatenate(self, other):
+    def sum_rows(self, other):
         """Append rows from second alignment at the end of first one and return new
         alignment.
 
@@ -156,7 +176,7 @@ class AbstractAlignment(ABC):
         column_inds = [other_indices[structure] for structure in self.structures]
         other_array = other.inds[:, column_inds]
         all_inds = numpy.concatenate((self.inds, other_array))
-        inds = numpy.unique(all_inds, axis=0)
+        inds = numpy.vstack({tuple(row) for row in all_inds})
         klass = type(self)
         return klass(self.structures, inds)
 
@@ -322,6 +342,10 @@ class PairAlignment(AbstractAlignment):
 
 class MultipleAlignment(AbstractAlignment):
     """Alignment of more than three structures."""
+
+    def __repr__(self):
+        rows, cols = self.inds.shape
+        return f"<MultipleAlignment of {rows} mers ({cols} structures)>"
 
     def limit_to_structures(self, *structures):
         """Return new alignment cropped to given structures.

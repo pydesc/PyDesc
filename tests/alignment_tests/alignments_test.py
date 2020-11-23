@@ -95,7 +95,7 @@ class TestColumnAlignment:
         al2 = MultipleAlignment(structure_new_order, arr2)
 
         # WHEN
-        al3 = al1.concatenate(al2)
+        al3 = al1.sum_rows(al2)
 
         # THEN
         assert al3.inds.shape == (4, 3)
@@ -231,6 +231,23 @@ class TestColumnAlignment:
 
         with pytest.raises(KeyError):
             alignment.get_inds_aligned_with(stc0, [42])
+
+    def test_crop(self):
+        arr = numpy.array([[1, 1, DASH], [2, DASH, 42], [3, DASH, DASH], [4, 4, 4]])
+        structures = get_n_mocked_structures(3)
+        stc1, *_ = structures
+        alignment = MultipleAlignment(structures, arr)
+        cropped = alignment.extract_aligned_with(stc1, [1, 2])
+
+        expected_arr = numpy.array([[1, 1, DASH], [2, DASH, 42],])
+
+        assert len(cropped) == 2
+        numpy.testing.assert_array_equal(cropped.inds, expected_arr)
+
+    def test_repr(self, trivial_triple_alignment):
+        repr_str = repr(trivial_triple_alignment)
+        assert repr_str.startswith("<")
+        assert repr_str.endswith(">")
 
 
 class TestJoinedAlignments:
@@ -438,3 +455,24 @@ class TestPairAlignment:
 
         assert pa1.is_consistent_with(pa2)
         assert pa1.is_consistent_with(pa3)
+
+    def test_crop(self):
+        stc1, stc2 = get_n_mocked_structures(2)
+        arr = numpy.array([
+            [1, 0],
+            [1, 1],
+            [1, 2],
+            [3, 3],
+        ])
+        alignment = PairAlignment([stc1, stc2], arr)
+        cropped = alignment.extract_aligned_with(stc1, [1])
+        assert len(cropped) == 3
+        rows = [list(row) for row in cropped.iter_rows()]
+        assert [3, 3] not in rows
+        assert [1, 0] in rows
+        assert [1, 1] in rows
+
+    def test_repr(self, pair_alignment):
+        repr_str = repr(pair_alignment)
+        assert repr_str.startswith("<")
+        assert repr_str.endswith(">")
