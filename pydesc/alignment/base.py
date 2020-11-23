@@ -252,6 +252,9 @@ class PairAlignment(AbstractAlignment):
     def __hash__(self):
         return hash(self.structures)
 
+    def __repr__(self):
+        return f"<PairAlignment of {len(self)} rows>"
+
     @property
     def pair_alignments(self):
         """List of pair alignments (in this case only containing this alignment)."""
@@ -345,13 +348,13 @@ class MultipleAlignment(AbstractAlignment):
 
     def __repr__(self):
         rows, cols = self.inds.shape
-        return f"<MultipleAlignment of {rows} mers ({cols} structures)>"
+        return f"<MultipleAlignment of {rows} rows ({cols} structures)>"
 
-    def limit_to_structures(self, *structures):
+    def limit_to_structures(self, structures):
         """Return new alignment cropped to given structures.
 
         Args:
-            *structures: any number of structures present in this alignment (objects
+            structures: sequence of structures present in this alignment (objects
             equality).
 
         """

@@ -188,6 +188,13 @@ class PALLoader(AbstractLoader):
             self._data[header] = [self.file_handler.readline() for _ in range(n_lines)]
         super()._read_file()
 
+    def load_alignment(self, structures):
+        alignment = super().load_alignment(structures)
+        try:
+            return alignment.limit_to_structures(structures)
+        except AttributeError:
+            return alignment
+
     def load_alignment_mapping(self, structures_map):
         joined_pairs = self.load_joined_pairs_mapping(structures_map)
         alignment = joined_pairs.to_columns()

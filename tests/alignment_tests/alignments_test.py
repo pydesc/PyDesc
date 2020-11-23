@@ -109,8 +109,8 @@ class TestColumnAlignment:
         # WHEN
         with pytest.raises(ValueError):
             alignment.limit_to_structures(stc1)
-        new_pa = alignment.limit_to_structures(stc1, stc2)
-        new_ma = alignment.limit_to_structures(stc2, stc1, stc4)
+        new_pa = alignment.limit_to_structures([stc1, stc2])
+        new_ma = alignment.limit_to_structures([stc2, stc1, stc4])
 
         # THEN
         assert new_pa.inds.shape == (5, 2)

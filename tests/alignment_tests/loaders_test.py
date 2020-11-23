@@ -117,9 +117,9 @@ class TestPALLoader:
         assert len(joined_pairs.pair_alignments) == 3
 
         alignment = loader.load_alignment(structures)
-
         alignment_inds = alignment.inds
-        joined_pairs_inds = joined_pairs.to_columns().inds
+        joined_pair_as_columns = joined_pairs.to_columns()
+        joined_pairs_inds = joined_pair_as_columns.limit_to_structures(structures).inds
         numpy.testing.assert_array_equal(alignment_inds, joined_pairs_inds)
 
         def get_stc_calls(index):
