@@ -334,6 +334,15 @@ class PairAlignment(AbstractAlignment):
                     raise ValueError(msg)
         return True
 
+    def is_internally_consistent(self):
+        """Return True if no mer is aligned twice."""
+        for structure in self.structures:
+            structure_map = self.mer_map[structure]
+            no_alignments = {len(array) for array in structure_map.values()}
+            if no_alignments != {1}:
+                return False
+        return True
+
     def to_joined_pairs(self):
         """Return pruned version of this alignment (new object)."""
         return self.prune()
