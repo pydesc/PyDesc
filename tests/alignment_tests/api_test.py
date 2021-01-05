@@ -2,10 +2,16 @@ import numpy
 import pytest
 
 from pydesc.alignment.base import DASH
-from pydesc.alignment.loaders import PALLoader
+from pydesc.alignment.loaders import PALLoader, FASTALoader, CSVLoader
 from pydesc.api.alignment import get_partial_structures
-from pydesc.api.alignment import get_selections
+from pydesc.api.alignment import get_selections, get_loader, load_alignment
 from pydesc.api.structure import get_structures_from_file
+
+
+@pytest.fixture(scope="session")
+def kinases_al_pth(alignments_dir):
+    path = alignments_dir / "pal" / "kinases3_dama.pal"
+    return path
 
 
 @pytest.fixture(scope="session")
@@ -16,9 +22,8 @@ def kinases(alignments_dir):
 
 
 @pytest.fixture(scope="session")
-def kinases_alignment(alignments_dir, kinases):
-    path = alignments_dir / "pal" / "kinases3_dama.pal"
-    with open(path) as fh:
+def kinases_alignment(alignments_dir, kinases, kinases_al_pth):
+    with open(kinases_al_pth) as fh:
         loader = PALLoader(fh)
         alignment = loader.load_alignment(kinases)
     alignment = alignment.close()
@@ -68,3 +73,24 @@ def test_get_partial_structures(kinases_alignment):
     # order of columns is different
     lens = {len(item) for item in dct.values()}
     assert lens == {238, 47}
+
+
+@pytest.mark.parametrize("path,loader_type",
+                         [
+                             ("a.pal", PALLoader),
+                             ("a.fasta", FASTALoader),
+                             ("a.bla", FASTALoader),
+                             ("a.csv", CSVLoader),
+                             ("a.tsv", CSVLoader)
+                         ])
+def test_get_loader(path, loader_type, tmp_path):
+    pth = tmp_path / path
+    pth.write_text("10\ntest")
+    loader = get_loader(str(pth))
+    assert type(loader) == loader_type
+
+
+def test_load_alignment(kinases, kinases_al_pth, kinases_alignment):
+    alignment = load_alignment(kinases_al_pth, kinases).close()
+    numpy.testing.assert_array_equal(alignment.inds, kinases_alignment.inds)
+    assert alignment.structures == kinases_alignment.structures
