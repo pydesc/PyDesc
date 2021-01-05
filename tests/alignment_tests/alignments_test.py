@@ -249,6 +249,27 @@ class TestColumnAlignment:
         assert repr_str.startswith("<")
         assert repr_str.endswith(">")
 
+    def test_reorder(self):
+        stc1, stc2, stc3 = get_n_mocked_structures(3)
+        arr = numpy.array([[1, 1, 1], [2, DASH, 2], [DASH, 2, 2],])
+        alignment = MultipleAlignment([stc1, stc2, stc3], arr)
+        reordered_al = alignment.set_columns_order([stc2, stc1, stc3])
+        new_arr = reordered_al.inds
+        col1 = new_arr[:, 0]
+        col2 = new_arr[:, 1]
+        numpy.testing.assert_array_equal(col1, [1, DASH, 2])
+        numpy.testing.assert_array_equal(col2, [1, 2, DASH])
+
+    def test_reorder_negative(self, trivial_triple_alignment):
+        (stc4,) = get_n_mocked_structures(1)
+        stc1, stc2, stc3 = trivial_triple_alignment.structures
+        with pytest.raises(ValueError):
+            trivial_triple_alignment.set_columns_order([stc1, stc3, stc4])
+        with pytest.raises(ValueError):
+            trivial_triple_alignment.set_columns_order([stc1, stc2])
+        with pytest.raises(ValueError):
+            trivial_triple_alignment.set_columns_order([stc1, stc2, stc4])
+
 
 class TestJoinedAlignments:
     def test_join(self):
@@ -458,12 +479,7 @@ class TestPairAlignment:
 
     def test_crop(self):
         stc1, stc2 = get_n_mocked_structures(2)
-        arr = numpy.array([
-            [1, 0],
-            [1, 1],
-            [1, 2],
-            [3, 3],
-        ])
+        arr = numpy.array([[1, 0], [1, 1], [1, 2], [3, 3],])
         alignment = PairAlignment([stc1, stc2], arr)
         cropped = alignment.extract_aligned_with(stc1, [1])
         assert len(cropped) == 3
@@ -476,3 +492,12 @@ class TestPairAlignment:
         repr_str = repr(pair_alignment)
         assert repr_str.startswith("<")
         assert repr_str.endswith(">")
+
+    def test_internal_consistency_positive(self, pair_alignment):
+        assert pair_alignment.is_internally_consistent()
+
+    def test_internal_consistency_negative(self):
+        stc1, stc2 = get_n_mocked_structures(2)
+        arr = numpy.array([[1, 1], [1, 2], [3, 3]])
+        alignment = PairAlignment([stc1, stc2], arr)
+        assert not alignment.is_internally_consistent()

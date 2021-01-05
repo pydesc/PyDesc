@@ -75,14 +75,16 @@ def test_get_partial_structures(kinases_alignment):
     assert lens == {238, 47}
 
 
-@pytest.mark.parametrize("path,loader_type",
-                         [
-                             ("a.pal", PALLoader),
-                             ("a.fasta", FASTALoader),
-                             ("a.bla", FASTALoader),
-                             ("a.csv", CSVLoader),
-                             ("a.tsv", CSVLoader)
-                         ])
+@pytest.mark.parametrize(
+    "path,loader_type",
+    [
+        ("a.pal", PALLoader),
+        ("a.fasta", FASTALoader),
+        ("a.bla", FASTALoader),
+        ("a.csv", CSVLoader),
+        ("a.tsv", CSVLoader),
+    ],
+)
 def test_get_loader(path, loader_type, tmp_path):
     pth = tmp_path / path
     pth.write_text("10\ntest")

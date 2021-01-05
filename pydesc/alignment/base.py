@@ -83,6 +83,16 @@ class AbstractAlignment(ABC):
     def to_joined_pairs(self):
         pass
 
+    def set_columns_order(self, structures):
+        """Set order of columns to match given structure order."""
+        if set(structures) != set(self.structures):
+            msg = "All (and only) aligned structures should be passed."
+            raise ValueError(msg)
+        structures_inds = self.get_structure_indices()
+        new_order = [structures_inds[structure] for structure in structures]
+        klass = type(self)
+        return klass(structures, self.inds[:, new_order])
+
     def _fill_mer_map(self):
         mer_map = {structure: defaultdict(list) for structure in self.structures}
         for no, row in enumerate(self.inds):
