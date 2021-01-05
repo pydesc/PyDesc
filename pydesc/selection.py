@@ -231,11 +231,11 @@ class Range(Selection):
         ids = converter.ind2pdb[start_ind : end_ind + 1]
         return Set(list_of_pdb_ids=ids)
 
-    def create_segment(self, structure_obj):
+    def create_segment(self, structure):
         """Returns pydesc.structure.Segment."""
-        start_mer = structure_obj[self.start]
-        end_mer = structure_obj[self.end]
-        return Segment(structure_obj, start_mer, end_mer)
+        start_mer = structure.pdb_ids[self.start]
+        end_mer = structure.pdb_ids[self.end]
+        return Segment(structure, start_mer, end_mer)
 
 
 class AtomSetAttr(Selection, metaclass=ABCMeta):

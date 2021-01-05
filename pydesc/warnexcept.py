@@ -251,6 +251,10 @@ class WrongAtomSetType(Exception):
     pass
 
 
+class NotASlice(Exception):
+    pass
+
+
 class Info(Warning):
     """Class of warnings. Standard information. Printed by default."""
 

@@ -5,6 +5,7 @@ from Bio.PDB import PDBParser
 
 from pydesc import config
 from pydesc import numberconverter
+from pydesc.numberconverter import PDBid
 
 TWISTED_EXAMPLE = (
     (("b", 1, None), ("b", 1, "a"), ("b", 2, None), ("a", 8, None)),
@@ -103,3 +104,23 @@ class TestConverter:
 
         assert len(nc.pdb2ind) == 60
         assert len(nc.ind2pdb) == 60
+
+
+class TestPDBid:
+    def test_from_string_simple(self):
+        pdb_id = PDBid.create_from_string("A:12")
+        assert pdb_id.icode is None
+        assert pdb_id.chain == "A"
+        assert pdb_id.ind == 12
+
+    def test_from_string_icode(self):
+        pdb_id = PDBid.create_from_string("A:12i")
+        assert pdb_id.icode is "i"
+        assert pdb_id.chain == "A"
+        assert pdb_id.ind == 12
+
+    def test_from_string_long_chain(self):
+        pdb_id = PDBid.create_from_string("AB:12i")
+        assert pdb_id.icode is "i"
+        assert pdb_id.chain == "AB"
+        assert pdb_id.ind == 12
