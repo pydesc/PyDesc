@@ -186,6 +186,10 @@ class AtomSet:
 
     """
 
+    def __init_subclass__(cls, **kwargs):
+        """Create config cache for class."""
+        cls._config_cache = {}
+
     @classmethod
     def reset_config_cache(cls):
         """Resets cache of configuration settings in this class and all subclasses.

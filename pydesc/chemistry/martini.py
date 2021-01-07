@@ -36,6 +36,3 @@ class MartiniResidue(Mer):
             return self.atoms[f"SC{self_len - 1}"]
         except KeyError:
             return self.atoms["BB"]
-
-
-MartiniResidue.reset_config_cache()

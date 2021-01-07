@@ -56,7 +56,3 @@ class PTrace(Mer):
     """Phosphorus trace representation of nucleotides."""
 
     pass
-
-
-CATrace.reset_config_cache()
-PTrace.reset_config_cache()
