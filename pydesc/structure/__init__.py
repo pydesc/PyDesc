@@ -129,7 +129,10 @@ class StructureLoader:
             for mer_class in hits:
                 hits[mer_class] += int(mer_class in mer_dct)
 
-        winner = max(hits, key=lambda hit: hits[hit])
+        try:
+            winner = max(hits, key=lambda hit: hits[hit])
+        except ValueError:
+            winner = None
         others = self.atom_set_factory.other
         chain_mers = []
         for mer_dct, warns in mers:

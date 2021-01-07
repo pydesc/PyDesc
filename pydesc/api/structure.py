@@ -34,7 +34,7 @@ def get_structures(name, common_converter=False):
 
     Returns:
         : list of structures. There will be more than one structure if structure
-        contains more than one model (trajectory, biounit or NMR).
+        contains more than one model (trajectory, bio-unit or NMR).
 
     """
     sl = StructureLoader()
@@ -52,7 +52,7 @@ def get_structures_from_file(path, common_converter=False):
 
     Returns:
         : list of structures. There will be more than one structure if structure
-        contains more than one model (trajectory, biounit or NMR).
+        contains more than one model (trajectory, bio-unit or NMR).
 
     """
     sl = StructureLoader()
