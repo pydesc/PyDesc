@@ -35,6 +35,8 @@ def test_martini(martini_structure_path):
             [k for k in residue.atoms if "SC" in k], key=lambda name: int(name[-1])
         )
         assert residue.last_sc == residue.atoms[last_cs]
+        indicators = residue.representation
+        assert len(indicators) == 2
 
     assert len(stc.chains) == 2
     ch_A = stc.chains[0]
@@ -60,6 +62,8 @@ def test_ca_trace(structures_dir):
         diff = mpp - ca
         dist = numpy.sqrt(numpy.sum(diff * diff))
         assert pytest.approx(dist, 1.0)
+        indicators = mer.representation
+        assert len(indicators) == 2
 
 
 def test_p_trace(structures_dir):
@@ -69,3 +73,6 @@ def test_p_trace(structures_dir):
     (stc,) = loader.load_structures(path=stc_path)
     mer_type = max({type(i) for i in stc})
     assert mer_type is PTrace
+    for mer in stc:
+        indicators = mer.representation
+        assert len(indicators) == 1
