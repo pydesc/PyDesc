@@ -56,8 +56,8 @@ def test_ca_trace(structures_dir):
     assert mer_type is CATrace
     for mer in stc[1:251]:
         ca = mer.atoms["CA"].vector
-        cbx = mer.cbx.vector
-        diff = cbx - ca
+        mpp = mer.mpp.vector
+        diff = mpp - ca
         dist = numpy.sqrt(numpy.sum(diff * diff))
         assert pytest.approx(dist, 1.0)
 
