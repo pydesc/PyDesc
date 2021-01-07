@@ -275,7 +275,16 @@ class AtomSet:
     @property
     def representation(self):
         """Return PyDesc representation as list of atoms."""
-        return [getattr(self, indicator) for indicator in self.get_config("indicators")]
+        return [
+            self.get_point(indicator) for indicator in self.get_config("indicators")
+        ]
+
+    def get_point(self, name):
+        """Return atom or pseudoatom of given name."""
+        try:
+            return self.atoms[name]
+        except KeyError:
+            return getattr(self, name)
 
 
 class Mer(AtomSet):
