@@ -34,7 +34,8 @@ ConfigManager.warnings.quiet = True
 @pytest.fixture(scope="module")
 def structure(structure_file_w_type_short):
     sl = StructureLoader()
-    structure = sl.load_structures(path=structure_file_w_type_short)[0]
+    with open(structure_file_w_type_short) as fh:
+        structure = sl.load_structures([fh])[0]
     return structure
 
 
@@ -42,7 +43,9 @@ def structure(structure_file_w_type_short):
 def stc_2dlc(structures_dir):
     sl = StructureLoader()
     pth = os.path.join(structures_dir, "mixed", "2DLC.cif")
-    return sl.load_structures(path=pth)[0]
+    with open(pth) as fh:
+        stc = sl.load_structures([fh])[0]
+    return stc
 
 
 def test_api(stc_2dlc):
@@ -215,7 +218,8 @@ class TestRangeSelection:
     def test_range_on_discontinuity_chain(self, structures_dir):
         sl = StructureLoader()
         pth = os.path.join(structures_dir, "prots_only", "3NPU.pdb")
-        stc = sl.load_structures(path=pth)[0]
+        with open(pth) as fh:
+            stc = sl.load_structures([fh])[0]
         get_id = stc.converter.get_pdb_id
         # discontinuity occurs between A19 and A24 (1! res missing)
         msg = "Something is wrong with structure that supposed have broken " "backbone."

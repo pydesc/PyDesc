@@ -20,7 +20,8 @@ def test_martini(martini_structure_path):
     factory = BioPythonAtomSetFactory(classes=[MartiniResidue])
     loader = StructureLoader(atom_set_factory=factory)
     path = path_join(martini_structure_path, "gpcr_d.pdb")
-    stc = loader.load_structures(path=path)[0]
+    with open(path) as fh:
+        stc = loader.load_structures([fh])[0]
 
     assert len(stc) > 0
     for residue in stc:
@@ -53,7 +54,8 @@ def test_ca_trace(structures_dir):
     stc_path = path_join(structures_dir, "PorCA_only", "1KAN.pdb")
     factory = BioPythonAtomSetFactory(classes=[CATrace])
     loader = StructureLoader(atom_set_factory=factory)
-    (stc,) = loader.load_structures(path=stc_path)
+    with open(stc_path) as fh:
+        (stc,) = loader.load_structures([fh])
     mer_type = max({type(i) for i in stc})
     assert mer_type is CATrace
     for mer in stc[1:251]:
@@ -70,7 +72,8 @@ def test_p_trace(structures_dir):
     stc_path = path_join(structures_dir, "PorCA_only", "2AGN.pdb")
     factory = BioPythonAtomSetFactory(classes=[PTrace])
     loader = StructureLoader(atom_set_factory=factory)
-    (stc,) = loader.load_structures(path=stc_path)
+    with open(stc_path) as fh:
+        (stc,) = loader.load_structures([fh])
     mer_type = max({type(i) for i in stc})
     assert mer_type is PTrace
     for mer in stc:

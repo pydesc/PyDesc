@@ -1,5 +1,6 @@
 import pytest
 
+from pydesc.api.structure import get_structures_from_file
 from pydesc.api.trajectory import freeze_frame
 from pydesc.api.trajectory import from_frames
 from pydesc.chemistry.factories import CopyingFactor
@@ -8,7 +9,6 @@ from pydesc.chemistry.full_atom import Residue
 from pydesc.selection import AtomSetSubclass
 from pydesc.selection import Selector
 from pydesc.selection import Set
-from pydesc.structure import StructureLoader
 from pydesc.structure import TrajectoryLoader
 from pydesc.structure.topology import Structure
 from pydesc.structure.trajectory import Trajectory
@@ -27,8 +27,7 @@ class TestTrajectory:
             return cls.stcs[stc]
         except KeyError:
             pass
-        structure_loader = StructureLoader()
-        structures = structure_loader.load_structures(
+        structures = get_structures_from_file(
             path="tests/data/test_trajectories/topologies/%s.pdb" % stc
         )
         cls.stcs[stc] = structures[0]

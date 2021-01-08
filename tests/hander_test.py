@@ -10,7 +10,10 @@ class TestPDBHandler:
     @pytest.fixture(scope="function", autouse=True)
     def clear_cache(self):
         cache_dir = ConfigManager.dbhandler.cachedir
-        rmtree(cache_dir)
+        try:
+            rmtree(cache_dir)
+        except FileNotFoundError:
+            pass
         yield
         rmtree(cache_dir)
 

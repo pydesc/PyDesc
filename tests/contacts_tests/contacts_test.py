@@ -5,19 +5,18 @@ import numpy
 import pytest
 from scipy.sparse import dok_matrix
 
+from pydesc.api.structure import get_structures_from_file
 from pydesc.contacts.base import ContactsAlternative
 from pydesc.contacts.base import ContactsConjunction
 from pydesc.contacts.base import ContactsExclusiveDisjunction
 from pydesc.contacts.base import NotCriterion
 from pydesc.contacts.geometrical import PointsDistanceCriterion
-from pydesc.structure import StructureLoader
 
 
 @pytest.fixture
 def structure(structures_dir):
-    sl = StructureLoader()
     path_str = os.path.join(structures_dir, "rna_only", "1KIS.pdb")
-    (stc,) = sl.load_structures(path=path_str)
+    stc, = get_structures_from_file(path_str)
     return stc
 
 
