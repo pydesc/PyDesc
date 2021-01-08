@@ -15,13 +15,19 @@
 # You should have received a copy of the GNU General Public License
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 
-from pydesc.warnexcept import *
+import gzip
+import os.path
+import tarfile
+from contextlib import contextmanager
+from io import StringIO
 from urllib import request
 from urllib.error import HTTPError
-import os.path
-import gzip
-import tarfile
+
 from Bio.PDB import PDBParser
+
+from pydesc.config import ConfigManager
+from pydesc.warnexcept import Info
+from pydesc.warnexcept import warn
 
 try:
     from Bio.PDB import MMCIFParser
@@ -31,8 +37,6 @@ except ImportError:
         return None
 
     warn(Info("No MMCIFParser in Bio.PDB"))
-from pydesc.config import ConfigManager
-from io import StringIO
 
 ConfigManager.new_branch("dbhandler")
 ConfigManager.dbhandler.set_default("cachedir", "./biodb/")
@@ -59,7 +63,16 @@ class InvalidID(Exception):
     pass
 
 
-class DBHandler:
+class ContextManagerMixIn:
+    @contextmanager
+    def open(self, val):
+        files = self.get_file(val)
+        yield files
+        for file_ in files:
+            file_.close()
+
+
+class DBHandler(ContextManagerMixIn):
     def __init__(self, mode):
         self.mode = mode
 
@@ -119,7 +132,7 @@ class DBHandler:
         local_file.close()
 
     @validate_id
-    def get_file(self, val, mode=None):
+    def get_file(self, val):
         """Returns a handler to the file containing structure of choice.
 
         Arguments:
@@ -129,13 +142,12 @@ class DBHandler:
         Mode 2, if available, works the same way, but gets file from local copy of db. Requires additional settings in ConfigManager.
         In mode 3 handler access file from biodb without earlier attempt at getting file from other sources.
         """
-        mode = self.mode if mode is None else mode
         dct = {
             3: (self.assert_val, Info(f"Accessing cache to load {val}...")),
             2: (self.get_from_local_db, Info(f"Accessing local db to load {val}...")),
             1: (self.download_file, Info(f"Downloading {val} to cache...")),
         }
-        for i in mode:
+        for i in self.mode:
             try:
                 mth, info = dct[i]
                 warn(info, 4)
@@ -415,19 +427,17 @@ class BioUnitHandler(DBHandler):
                     return fh_list
 
 
-class MetaHandler:
+class MetaHandler(ContextManagerMixIn):
     def __init__(self, mode=(3, 2, 1)):
         self.mode = mode
 
-    def get_file(self, val, mode=(3, 2, 1)):
-
+    def get_file(self, val):
         db, dummy, filename = val.partition("://")
         db = db.lower()
+        mode = self.mode
 
         # repetitions for testing purposes only
         db_tuple = ("pdb+mmCIF", "cath", "scop")
-
-        mode = self.mode if mode is None else mode
 
         db_dict = {
             "cath": (CATHHandler(mode),),
@@ -460,8 +470,11 @@ class MetaHandler:
             for i, k in enumerate(db_tuple):
                 for hdlr in db_dict[k]:
                     try:
-                        return hdlr.get_file(db, mode)
+                        return hdlr.get_file(db)
                     except Exception as e:
+                        msg = f"Failed to load structure {val} from bd {k}"
+                        info = Info(msg)
+                        warn(info)
                         continue
             raise InvalidID("%s" % db)
 
