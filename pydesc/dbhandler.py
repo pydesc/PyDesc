@@ -63,10 +63,14 @@ class InvalidID(Exception):
     pass
 
 
+class OperationModeError(Exception):
+    pass
+
+
 class ContextManagerMixIn:
     @contextmanager
-    def open(self, val):
-        files = self.get_file(val)
+    def open(self, val, *args, **kwargs):
+        files = self.get_file(val, *args, **kwargs)
         yield files
         for file_ in files:
             file_.close()
@@ -84,11 +88,6 @@ class DBHandler(ContextManagerMixIn):
 
     def is_file_valid(self, fh):
         return True
-
-    @validate_id
-    @add_db_dir
-    def get_file_location(self, val):
-        return self.FileTemplate % val
 
     def assert_val(self, val):
         pth = self.get_file_location(val)
@@ -137,10 +136,6 @@ class DBHandler(ContextManagerMixIn):
 
         Arguments:
         val -- structure id.
-        mode -- list of subsequent access modes to be used by handler, by default set to None. If so initialisation argument is used as mode.
-        In mode 1 handler tries to download a new file (and overwrite the on ein biodb directory, if needed).
-        Mode 2, if available, works the same way, but gets file from local copy of db. Requires additional settings in ConfigManager.
-        In mode 3 handler access file from biodb without earlier attempt at getting file from other sources.
         """
         dct = {
             3: (self.assert_val, Info(f"Accessing cache to load {val}...")),
@@ -339,7 +334,7 @@ class CATHHandler(DBHandler):
 
 
 class BioUnitHandler(DBHandler):
-    def __init__(self, mode=(1, 2, 3)):
+    def __init__(self, mode=(1, 3)):
         self.db_name = "PDBBioUnit"
         self.url_template = "http://www.rcsb.org/pdb/files/%s.pdb%d.gz"
         DBHandler.__init__(self, mode)
@@ -365,7 +360,7 @@ class BioUnitHandler(DBHandler):
     @validate_id
     def download_file(self, val, unit):
         try:
-            u = request.urlopen(self.get_file_url(val, unit))
+            content = request.urlopen(self.get_file_url(val, unit))
         except HTTPError as e:
             if e.getcode() == 404:
                 raise InvalidID(4)
@@ -377,54 +372,59 @@ class BioUnitHandler(DBHandler):
         if not os.path.isdir(dir_name):
             os.makedirs(dir_name)
 
-        buf = u.read()
+        buf = content.read()
 
         if not self.is_file_valid(buf):
             raise InvalidID(5)
 
-        local_file = open(self.get_file_location(val, unit), "w")
+        local_file = open(self.get_file_location(val, unit), "wb")
         local_file.write(buf)
         local_file.close()
 
     @validate_id
-    def get_file(self, val, unit, mode=(3, 2, 1)):
-        import gzip
-
+    def get_file(self, val, unit=None):
         if unit is not None:
-            try:
-                if mode == 1:
-                    raise
-                print((self.get_file_location(val, unit)))
-                fh = gzip.open(self.get_file_location(val, unit), "r")
-                print((val + "_" + str(unit) + ": accessing local copy..."))
-            except:
-                if mode == 2:
-                    raise Exception(
-                        "No local "
-                        + str(val)
-                        + " file. Check path or change access mode."
+            return self._get_file_unit(val, unit)
+        unit = 1
+        fh_list = []
+        while True:
+            unit_handlers = self._get_file_unit(val, unit)
+            if unit_handlers is None:
+                if not fh_list:
+                    msg = (
+                        f"No local {val} biounit files. "
+                        f"Check path or change access mode."
                     )
-                self.download_file(val, unit)
-                print(("Downloading " + val + "_" + str(unit) + "..."))
-                fh = gzip.open(self.get_file_location(val, unit), "r")
-            return [fh]
+                    raise ValueError(msg)
+                return fh_list
+            fh_list.extend(unit_handlers)
+            unit += 1
 
-        else:
-            unit = 1
-            fh_list = []
-            while True:
-                try:
-                    print(mode)
-                    fh_list.append(self.get_file(val, unit, mode))
-                    unit += 1
-                except:
-                    if not fh_list:
-                        raise Exception(
-                            "No local "
-                            + str(val)
-                            + " biounit files. Check path or change access mode."
-                        )
-                    return fh_list
+    def _get_file_unit(self, val, unit):
+        result = []
+        if 3 in self.mode:
+            warn(Info(f"Accessing local copy of {val}/{unit}..."))
+            try:
+                fh = gzip.open(self.get_file_location(val, unit), "r")
+            except FileNotFoundError:
+                warn(Info("No local copy found."))
+            else:
+                result.append(fh)
+                warn(Info("Done."))
+                return result
+        if 1 in self.mode:
+            warn(Info(f"Downloading {val}/{unit}..."))
+            try:
+                self.download_file(val, unit)
+            except Exception as e:
+                warn(Info(f"Failed due to {type(e)}:{str(e)}"))
+            else:
+                fh = gzip.open(self.get_file_location(val, unit), "r")
+                result.append(fh)
+                warn(Info("Done."))
+                return result
+        if 2 in self.mode:
+            raise OperationModeError("BioUnit handler cannot operate in mode 2.")
 
 
 class MetaHandler(ContextManagerMixIn):
@@ -434,11 +434,9 @@ class MetaHandler(ContextManagerMixIn):
     def get_file(self, val):
         db, dummy, filename = val.partition("://")
         db = db.lower()
-        mode = self.mode
 
-        # repetitions for testing purposes only
         db_tuple = ("pdb+mmCIF", "cath", "scop")
-
+        mode = self.mode
         db_dict = {
             "cath": (CATHHandler(mode),),
             "pdb": (PDBHandler(mode),),
@@ -452,31 +450,29 @@ class MetaHandler(ContextManagerMixIn):
             if db == "unit":
                 filename, dummy, unit = filename.partition("/")
                 if not unit:
-                    # when unitDB is to be searched, but no particular unit was given
-                    return BioUnitHandler().get_file(filename, None, mode)
-                # downloading particular units from unitDB
-                return BioUnitHandler().get_file(filename, int(unit), mode)
+                    return BioUnitHandler().get_file(filename, None)
+                return BioUnitHandler().get_file(filename, int(unit))
 
             # when source is given and it is NOT unit
-            for hdlr in db_dict[db]:
+            for handler in db_dict[db]:
                 try:
-                    return hdlr.get_file(filename, mode)
+                    return handler.get_file(filename)
                 except InvalidID:
                     continue
             raise InvalidID
 
         # if no source -- lookup goes in order given by db_tuple
-        else:
-            for i, k in enumerate(db_tuple):
-                for hdlr in db_dict[k]:
-                    try:
-                        return hdlr.get_file(db)
-                    except Exception as e:
-                        msg = f"Failed to load structure {val} from bd {k}"
-                        info = Info(msg)
-                        warn(info)
-                        continue
-            raise InvalidID("%s" % db)
+        filename = db
+        for i, db in enumerate(db_tuple):
+            for handler in db_dict[db]:
+                try:
+                    return handler.get_file(filename)
+                except Exception as e:
+                    msg = f"Failed to load structure {val} from bd {db}"
+                    info = Info(msg)
+                    warn(info)
+                    continue
+        raise InvalidID("%s" % db)
 
 
 class MetaParser:
@@ -487,7 +483,8 @@ class MetaParser:
         for prsr in self.parsers:
             try:
                 return prsr.get_structure(stc, file, *args, **kwargs)
-            except ValueError:  # the only exception known to be raised when proper mmCIF is passed to PDBParser
+            except ValueError:  # the only exception known to be raised when
+                # proper mmCIF is passed to PDBParser
                 file.seek(0)
                 continue
         raise ValueError(
