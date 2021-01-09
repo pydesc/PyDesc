@@ -36,7 +36,7 @@ class TestProteinDescriptor:
         """Test building descriptors with default side chain geometrical
         center distance criterion."""
         pth = os.path.join(structures_dir, protein_file)
-        s, = get_structures_from_file(pth)
+        (s,) = get_structures_from_file(pth)
 
         if max(list(map(len, s.chains))) < 10:
             pytest.skip("Structure %s has chains below 10 mers long, " "thus skipping.")

@@ -62,7 +62,7 @@ def test_golden_standard_pydesc_criterion_protein(protein_file, cmaps_dir):
     path_str = os.path.join(cmaps_dir, "%s_default.cmp" % structure_name)
     with open(path_str, "rb") as fh:
         expected = pickle.load(fh)
-    structure, = get_structures_from_file(protein_file)
+    (structure,) = get_structures_from_file(protein_file)
     cm_calc = ContactMapCalculator(structure, get_default_protein_criterion())
     cm = cm_calc.calculate_contact_map()
     res = {frozenset(k): v for k, v in list(cm._contacts.items())}
@@ -81,7 +81,7 @@ def test_golden_standard_rc_protein(protein_file, cmaps_dir):
     path_str = os.path.join(cmaps_dir, "%s_rc.cmp" % structure_name)
     with open(path_str, "rb") as fh:
         golden_cmap_dict = pickle.load(fh)
-    structure, = get_structures_from_file(protein_file)
+    (structure,) = get_structures_from_file(protein_file)
     cm_calc = ContactMapCalculator(
         structure=structure, contact_criterion=get_rc_distance_criterion(),
     )
@@ -94,7 +94,7 @@ def test_golden_standard_rc_protein(protein_file, cmaps_dir):
 
 @pytest.mark.system
 def test_1no5_default_criteria_cmap():
-    structure, = get_structures("1no5")
+    (structure,) = get_structures("1no5")
 
     cmc = ContactMapCalculator(structure, get_default_protein_criterion())
     cmap = cmc.calculate_contact_map()
