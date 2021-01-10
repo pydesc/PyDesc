@@ -2,13 +2,12 @@ from pathlib import Path
 
 import mdtraj
 
-import pydesc.dbhandler
-import pydesc.geometry
 from pydesc import warnexcept
 from pydesc.chemistry.factories import BioPythonAtomSetFactory
 from pydesc.chemistry.factories import MDTrajAtomSetFactory
 from pydesc.config import ConfigManager
 from pydesc.numberconverter import NumberConverterFactory
+from pydesc.parsers import MetaParser
 from pydesc.structure.topology import Chain
 from pydesc.structure.topology import Structure
 from pydesc.structure.trajectory import Trajectory
@@ -35,9 +34,7 @@ class StructureLoader:
     """
 
     def __init__(
-        self,
-        parser=pydesc.dbhandler.MetaParser(QUIET=True),
-        atom_set_factory=BioPythonAtomSetFactory(),
+        self, parser=MetaParser(QUIET=True), atom_set_factory=BioPythonAtomSetFactory(),
     ):
         self.parser = parser
         self.atom_set_factory = atom_set_factory

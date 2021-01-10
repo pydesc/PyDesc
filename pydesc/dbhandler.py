@@ -23,20 +23,9 @@ from io import StringIO
 from urllib import request
 from urllib.error import HTTPError
 
-from Bio.PDB import PDBParser
-
 from pydesc.config import ConfigManager
 from pydesc.warnexcept import Info
 from pydesc.warnexcept import warn
-
-try:
-    from Bio.PDB import MMCIFParser
-except ImportError:
-
-    def MMCIFParser(*a, **ka):
-        return None
-
-    warn(Info("No MMCIFParser in Bio.PDB"))
 
 ConfigManager.new_branch("dbhandler")
 ConfigManager.dbhandler.set_default("cachedir", "./biodb/")
@@ -473,21 +462,3 @@ class MetaHandler(ContextManagerMixIn):
                     warn(info)
                     continue
         raise InvalidID("%s" % db)
-
-
-class MetaParser:
-    def __init__(self, *args, **kwargs):
-        self.parsers = [PDBParser(*args, **kwargs), MMCIFParser(*args, **kwargs)]
-
-    def get_structure(self, stc, file, *args, **kwargs):
-        for prsr in self.parsers:
-            try:
-                return prsr.get_structure(stc, file, *args, **kwargs)
-            except ValueError:  # the only exception known to be raised when
-                # proper mmCIF is passed to PDBParser
-                file.seek(0)
-                continue
-        raise ValueError(
-            "None of parsers could get %s structure. Tried: %s."
-            % (stc, ", ".join([type(i).__name__ for i in self.parsers]))
-        )
