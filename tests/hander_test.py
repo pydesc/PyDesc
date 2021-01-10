@@ -20,14 +20,18 @@ class TestPDBHandler:
         yield
         rmtree(cache_dir)
 
-    def test_download(self):
+    def test_pdb_access(self):
+        # download
         handler = PDBHandler(mode=[1])
-
         files = handler.get_file("1no5")
-
         assert len(files) == 1
         reading = files[0].read()
         assert 1672 == reading.count("ATOM")
+
+        # local
+        handler = PDBHandler(mode=[3])
+        files = handler.get_file("1no5")
+        assert len(files) == 1
 
     def test_mmcif_download(self):
         handler = MMCIFHandler(mode=[1])
