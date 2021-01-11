@@ -1,20 +1,13 @@
-"""
-Classes that represents molecular structures and their substructures.
-
-created: 10.07.2013 - , Tymoteusz 'hert' Oleniecki
-"""
-
-import os.path
+from pathlib import Path
 
 import mdtraj
 
-import pydesc.dbhandler
-import pydesc.geometry
 from pydesc import warnexcept
 from pydesc.chemistry.factories import BioPythonAtomSetFactory
 from pydesc.chemistry.factories import MDTrajAtomSetFactory
 from pydesc.config import ConfigManager
 from pydesc.numberconverter import NumberConverterFactory
+from pydesc.parsers import MetaParser
 from pydesc.structure.topology import Chain
 from pydesc.structure.topology import Structure
 from pydesc.structure.trajectory import Trajectory
@@ -34,8 +27,6 @@ class StructureLoader:
     """Loads structures from the databases using a given designation.
 
     Args:
-        handler: object with "get_file(code: str)" method able to deliver a file-like
-            object.
         parser: file parser returning BioPython's structures.
         atom_set_factory: factory able to produce AtomSet instances from BioPython
             residues.
@@ -43,56 +34,102 @@ class StructureLoader:
     """
 
     def __init__(
-        self,
-        handler=pydesc.dbhandler.MetaHandler(),
-        parser=pydesc.dbhandler.MetaParser(QUIET=True),
-        atom_set_factory=BioPythonAtomSetFactory(),
+        self, parser=MetaParser(QUIET=True), atom_set_factory=BioPythonAtomSetFactory(),
     ):
-        self.handler = handler
         self.parser = parser
         self.atom_set_factory = atom_set_factory
 
-    def _get_files_and_path(self, code, path):
-        """Return path and list of open handlers to pdb files to be read.
+    def load_structures(self, file_handlers, common_converter=False):
+        """Returns a list of Structure instances and the NumberConverter
+        instance.
 
-        Arguments:
-            code -- code passed by user (str or None if local file was passed).
-            path -- path to local file.
+        Args:
+            file_handlers: sequence of file-like objects to load structures from.
+            common_converter(bool): determines if all models should have common id
+                converter. If set to True, inds for all residues with the same
+                PDB id will also be the same (cross-model, cross-file).
+                Meant to facilitate work with different conformations of the same
+                molecule or set of mutants with short inserts.
+                False by default.
+
+        Returns:
+            list: Structure instances.
+
         """
-        if path is None:
-            open_files = self.handler.get_file(code)
-        else:
-            open_files = [open(path)]
-        path = open_files[0].name
-        return path, open_files
+
+        def get_converter():
+            if not common_converter:
+                return nc_factory.from_pdb_models([model])
+            return converter
+
+        self._assert_is_list(file_handlers)
+        warnexcept.set_filters()
+        models, paths = self._get_models_n_paths(file_handlers)
+        nc_factory = NumberConverterFactory()
+        if common_converter:
+            converter = nc_factory.from_pdb_models(models)
+        structures = []
+        for model, path in zip(models, paths):
+            converter = get_converter()
+            structure = self.create_structure(model, path, converter)
+            structures.append(structure)
+
+        return structures
 
     @staticmethod
-    def _get_code(code, path):
-        """Return PDB structure code.
+    def _assert_is_list(handlers):
+        try:
+            n_files = len(handlers)
+        except TypeError:
+            msg = (
+                f"StructureLoader takes list of file handlers as an argument."
+                f"Make sure file-like objects are in sequence, even if there is "
+                f"only one object."
+            )
+            raise ValueError(msg)
+        else:
+            if n_files < 1:
+                msg = f"At least 1 file handler required, {n_files} passed."
+                raise ValueError(msg)
 
-        Arguments:
-            code -- None is it should be read from path, code otherwise.
-            path -- path to a file or None.
-        """
-        if code is None:
-            code, dummy_ext = os.path.splitext(os.path.basename(path))
-        if code.find("://") != -1:
-            dummy_db, code = code.split("://")
-        return code
+    def _get_models_n_paths(self, files):
+        """Return list of models read from given PDB files."""
+        models = []
+        paths = []
+        for handler in files:
+            path = self._get_path(handler)
+            name = self._get_name(path)
+            with handler:
+                pdb_structure = self.parser.get_structure(name, handler)
+            new_models = [pdb_model for pdb_model in pdb_structure]
+            models.extend(new_models)
+            paths.extend([path] * len(new_models))
+        return models, paths
 
-    def _get_models(self, files, code):
-        """Return list of models read from PDB files in given list.
+    @staticmethod
+    def _get_path(file_handler):
+        file_path = Path(file_handler.name)
+        return file_path
+
+    @staticmethod
+    def _get_name(file_path):
+        """Return structure name."""
+        name = file_path.stem
+        return name
+
+    def create_structure(self, model, path, converter):
+        """Return structure for given model
 
         Argument:
-            files -- list of open PDB file handlers.
-            code -- code to be passed to parser.
+            model -- Bio.PDB model.
+            path -- path to pdb file storing the structure.
+            converter -- id converter for structure to be created.
         """
-        models = []
-        for handler in files:
-            with handler:
-                pdb_structure = self.parser.get_structure(code, handler)
-            models.extend([pdb_model for pdb_model in pdb_structure])
-        return models
+        name = model.get_full_id()[0]
+        structure = Structure(name, path, converter)
+        chains = [self.create_chain(pdb_chain, structure) for pdb_chain in model]
+        structure.finalize(chains)
+        return structure
 
     def create_chain(self, pdb_chain, structure):
         """Return Chain instance.
@@ -142,57 +179,6 @@ class StructureLoader:
 
         return Chain(structure, pdb_chain.get_id(), chain_mers)
 
-    def create_structure(self, model, path, converter):
-        """Return structure for given model
-
-        Argument:
-            model -- Bio.PDB model.
-            path -- path to pdb file storing the structure.
-            converter -- id converter for structure to be created.
-        """
-        name = model.get_full_id()[0]
-        structure = Structure(name, path, converter)
-
-        chains = [self.create_chain(pdb_chain, structure) for pdb_chain in model]
-
-        structure.finalize(chains)
-        return structure
-
-    def load_structures(self, code=None, path=None, common_converter=False):
-        """Returns a list of Structure instances and the NumberConverter
-        instance.
-
-        Arguments:
-        code -- string, database designation of the structure.
-        path -- string; path to file to be opened.
-
-        To choose specific database in case of MetaHandler code should be
-        given in following format:
-        "<database_name>://<structure_code>", e.g.
-        "PDB://1no5".
-        To choose specific BioUnit type "<bio unit_ ode>/<number>", e.g.
-        "Unit://1no5/1"
-        in case of MetaHandler or
-        "1no5/1"
-        in case of UnitHandler.
-        """
-        warnexcept.set_filters()
-        path, open_files = self._get_files_and_path(code, path)
-        code = self._get_code(code, path)
-        models = self._get_models(open_files, code)
-        if common_converter:
-            converter = NumberConverterFactory().from_pdb_models(models)
-        else:
-            nc_factory = NumberConverterFactory()
-        structures = []
-        for model in models:
-            if not common_converter:
-                converter = nc_factory.from_pdb_models([model])
-            structure = self.create_structure(model, path, converter)
-            structures.append(structure)
-
-        return structures
-
 
 class TrajectoryLoader:
     """Trajectory loading class."""
@@ -208,7 +194,7 @@ class TrajectoryLoader:
     def load_trajectory(self, trajectory_path, structure_obj):
         """Create Trajectory instance loaded from given path for topology in given
         structure instance."""
-        md_trajectory = mdtraj.load(trajectory_path, top=structure_obj.path)
+        md_trajectory = mdtraj.load(trajectory_path, top=str(structure_obj.path))
         trajectory_obj = self.create_trajectory(md_trajectory, structure_obj)
         return trajectory_obj
 

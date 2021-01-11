@@ -201,7 +201,6 @@ class AtomSet:
     @classmethod
     def get_config(cls, prop_name):
         """Return given setting from configuration manager."""
-
         try:
             return cls._config_cache[prop_name]
         except KeyError:
