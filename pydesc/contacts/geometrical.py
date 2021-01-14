@@ -20,7 +20,8 @@ import numpy
 from scipy.spatial.distance import cdist
 
 from pydesc.contacts.base import ContactCriterion
-from pydesc.warnexcept import warn, Info
+from pydesc.warnexcept import Info
+from pydesc.warnexcept import warn
 
 
 def get_inds(atom_sets):
@@ -58,8 +59,8 @@ def get_distance_matrix(atom_sets1, atom_sets2, point):
         appropriate (pseudo)atoms.
 
     """
-    points1 = numpy.array([getattr(atom_set, point).vector for atom_set in atom_sets1])
-    points2 = numpy.array([getattr(atom_set, point).vector for atom_set in atom_sets2])
+    points1 = numpy.array([atom_set.get_point(point).vector for atom_set in atom_sets1])
+    points2 = numpy.array([atom_set.get_point(point).vector for atom_set in atom_sets2])
     try:
         dist_mtx = cdist(points1, points2)
     except ValueError:
