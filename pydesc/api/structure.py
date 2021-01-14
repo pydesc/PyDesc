@@ -62,7 +62,7 @@ def get_structures_from_file(path, common_converter=False):
     path = Path(path)
     sl = StructureLoader()
     if not path.is_file():
-        raise ValueError("Given path does not lead to a file.")
+        raise ValueError(f"Given path does not lead to a file: {path}.")
     with open(path) as file_:
         structures = sl.load_structures([file_], common_converter=common_converter)
     return structures
