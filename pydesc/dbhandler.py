@@ -181,7 +181,9 @@ class DBHandler(ContextManagerMixIn, ABC):
                 Info(f"Accessing cache to load {entry_id}..."),
             ),
             2: (
-            self.get_from_local_db, Info(f"Accessing local db to load {entry_id}...")),
+                self.get_from_local_db,
+                Info(f"Accessing local db to load {entry_id}..."),
+            ),
             1: (self.download_file, Info(f"Downloading {entry_id} to cache...")),
         }
         for i in self.mode:
@@ -215,6 +217,7 @@ class DBHandler(ContextManagerMixIn, ABC):
 
 class SCOPHandler(DBHandler):
     """Handler providing PDB files from SCOP database."""
+
     def __init__(self, mode=0):
         self.db_name = "scop"
         self.url_template = (
@@ -227,11 +230,11 @@ class SCOPHandler(DBHandler):
             return False
 
         if (
-                entry_id[0] != "d"
-                or not entry_id[1].isdigit()
-                or not entry_id[2:4].isalnum()
-                or not (entry_id[5].isalnum() or entry_id[5] in ["_", "."])
-                or not (entry_id[6].isalnum() or entry_id[6] == "_")
+            entry_id[0] != "d"
+            or not entry_id[1].isdigit()
+            or not entry_id[2:4].isalnum()
+            or not (entry_id[5].isalnum() or entry_id[5] in ["_", "."])
+            or not (entry_id[6].isalnum() or entry_id[6] == "_")
         ):
             return False
         return super().is_id_valid(entry_id)
@@ -271,15 +274,15 @@ class PDBHandler(DBHandler):
     @validate_id
     def get_from_local_db(self, entry_id):
         with gzip.open(
-                ConfigManager.dbhandler.pdb_handler
-                + "data/structures/divided/pdb/%s/pdb%s.ent.gz" % (
-                entry_id[1:3], entry_id)
+            ConfigManager.dbhandler.pdb_handler
+            + "data/structures/divided/pdb/%s/pdb%s.ent.gz" % (entry_id[1:3], entry_id)
         ) as f:
             self.save_stream(f, entry_id)
 
 
 class MMCIFHandler(PDBHandler):
     """Handler providing mmCIF files from RCSB Protein Data Bank."""
+
     def __init__(self, mode=(1, 2, 3)):
         self.db_name = "mmCIF"
         self.url_template = "http://www.rcsb.org/pdb/files/%s.cif"
@@ -358,6 +361,7 @@ class PDBBundleHandler(DBHandler):
 
 class CATHHandler(DBHandler):
     """Handler providing PDB files from CATH database."""
+
     def __init__(self, mode=(1, 2, 3)):
         self.db_name = "CATH"
         # unpublished path, subject to change w/o notice
@@ -380,6 +384,7 @@ class CATHHandler(DBHandler):
 
 class BioUnitHandler(DBHandler):
     """Handler providing PDB files from RCSB Protein Data Bank BioUnit."""
+
     def __init__(self, mode=(1, 3)):
         self.db_name = "PDBBioUnit"
         self.url_template = "http://www.rcsb.org/pdb/files/%s.pdb%d.gz"
