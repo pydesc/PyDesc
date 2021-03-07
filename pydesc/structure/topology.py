@@ -236,15 +236,6 @@ class AbstractStructure(metaclass=ABCMeta):
         """Returns (sub)structure sequence (one letter code)."""
         return self._map_mers_with_attr("seq")
 
-    def save_pdb(self, path):  # TODO: move to separate class
-        """Writes (sub)structure into pdb file.
-
-        Arguments:
-        path -- string; path to new file.
-        """
-        with open(path, "w") as file_:
-            file_.write(self.create_pdb_string().read())
-
 
 class Structure(AbstractStructure):
     """Representation of molecular structure of the protein or the
