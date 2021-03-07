@@ -1,4 +1,3 @@
-import os.path
 from unittest.mock import MagicMock
 
 import numpy
@@ -10,6 +9,7 @@ from pydesc.alignment.loaders import CSVLoader
 from pydesc.alignment.loaders import DASH
 from pydesc.alignment.loaders import FASTALoader
 from pydesc.alignment.loaders import PALLoader
+from pydesc.alignment.loaders import XMLLoader
 from pydesc.api.structure import get_structures_from_file
 
 
@@ -293,3 +293,28 @@ class TestFASTALoader:
             loader = FASTALoader(fh)
         alignment = loader.load_alignment_mapping(stc_map)
         assert isinstance(alignment, PairAlignment)
+
+
+class TestXMLLoader:
+    @pytest.fixture(scope="session")
+    def sisy_sample(self, alignments_dir):
+        path = alignments_dir / "xml" / "AL00051392.xml"
+        return path
+
+    @pytest.fixture(scope="session")
+    def sisy_structures(self, alignments_dir):
+        stcs = []
+        for stc in ("1xi3A", "2tpsA", "1yadA"):
+            pth = alignments_dir / "structures" / f"{stc}.pdb"
+            (stc_obj,) = get_structures_from_file(pth)
+            stcs.append(stc_obj)
+        return stcs
+
+    def test_sisy_sample(self, sisy_sample, sisy_structures):
+        with open(sisy_sample) as fh:
+            loader = XMLLoader(fh)
+
+        alignment = loader.load_alignment(sisy_structures)
+
+        assert len(alignment) == 168
+        numpy.testing.assert_array_equal(alignment.inds[0], [6, 17, 1])
