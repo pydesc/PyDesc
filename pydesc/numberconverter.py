@@ -184,7 +184,7 @@ class PDBid(tuple):
 
         Argument:
             pdb_id -- string in format <chain>:<pdb_number><pdb_insertion_code>,
-        e.g. C12A.
+        e.g. C:12A.
         """
         match = re.match("^(.*):([0-9]*)([^0-9])?$", pdb_id)
         if match is None:
@@ -325,4 +325,4 @@ class NumberConverter:
         try:
             return self.pdb2ind[pdb_id]
         except KeyError:
-            raise UnknownPDBid("Given PDB was not present in structure.")
+            raise UnknownPDBid(f"Given PDB id ({pdb_id}) was not present in structure.")
