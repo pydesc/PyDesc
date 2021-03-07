@@ -225,7 +225,10 @@ class TestFASTALoader:
             loader = FASTALoader(fh)
         alignment = loader.load_alignment(artificial_multi_structures)
 
-        for label in ("mol1", "mol2", "mol3_chainAB", "mol4", "mol5"):
+        ranges = loader.read_metadata()["ranges"]
+        assert ranges["mol1.A"] == "[A:2-4]"
+
+        for label in ("mol1.A", "mol2", "mol3_chainAB", "mol4", "mol5"):
             assert label in loader._structure_labels
 
         assert alignment.inds.shape == (4, 5)

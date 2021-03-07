@@ -386,9 +386,9 @@ class FASTALoader(AbstractLoader):
 
     @staticmethod
     def _parse_label(label_line):
-        match = re.match(r">(\w*)[ \t]*([\w ]*)(\[.*])?", label_line)
-        label = match.group(1)
-        comment = match.group(2)
+        match = re.match(r">([^ \t]*)[ \t]*([^\[]*)(\[.*])?", label_line)
+        label = match.group(1).strip()
+        comment = match.group(2).strip()
         ranges = match.group(3) or "[]"
         return label, comment, ranges
 
