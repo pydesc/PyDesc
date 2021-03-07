@@ -22,6 +22,7 @@ from abc import ABC
 from abc import abstractmethod
 
 import numpy
+from xml.etree import ElementTree
 
 from pydesc.alignment.base import DASH
 from pydesc.alignment.base import JoinedPairAlignments
@@ -152,6 +153,8 @@ class CSVLoader(AbstractLoader):
 
 
 class PALLoader(AbstractLoader):
+    """Loader able to read alignments in PAL (Pydesc ALignments) files."""
+
     def __init__(self, file_handler):
         self.version = None
         self.id_parser = None
@@ -349,7 +352,16 @@ class PALIdParserV2(PALIdParser):
 
 
 class FASTALoader(AbstractLoader):
-    def __init__(self, file_handler, miss_match_characters=".-"):
+    """Loader for FASTA structural alignment files.
+
+    Args:
+        file_handler: file-like object reading fasta file.
+        miss_match_characters: sequence of characters used to mark miss match. By
+            default: "-", "*" and ".".
+
+    """
+
+    def __init__(self, file_handler, miss_match_characters=".-*"):
         self.mmc = miss_match_characters
         super().__init__(file_handler)
 
@@ -458,3 +470,49 @@ class FASTALoader(AbstractLoader):
             _ = next(iterator)
             return DASH
         return next(iterator)
+
+
+class XMLLoader(AbstractLoader):
+    """Loader able to load XML alignments as used by Berbalk et. al. (2009)."""
+
+    def _read_file(self):
+        root = ElementTree.fromstring(self.file_handler.read())
+        if len(tuple(root.iter("alternative"))) > 1:
+            msg = "Reading alignments with more than one alternative is not supported."
+            raise ValueError(msg)
+        self._structure_labels = [item.text for item in root.iter("member")]
+        self._data["rows"] = []
+        for row in root.iter("row"):
+            entry = [meq.text.strip() for meq in row]
+            self._data["rows"].append(entry)
+        for description in root.iter("description"):
+            for item in description:
+                self._metadata[item.tag] = item.text
+
+    def load_alignment_mapping(self, structures_map):
+        structures = [structures_map[label] for label in self._structure_labels]
+        converters = [stc.converter for stc in structures]
+        length = len(self._data["rows"])
+        array = numpy.empty((length, len(structures_map)), dtype=object)
+        for i, row in enumerate(self._data["rows"]):
+            ids = [self._parse_meq(entry) for entry in row]
+            inds = list(map(self._get_ind, converters, ids))
+            array[i] = inds
+        klass = get_column_alignment_class(array)
+        alignment = klass(structures, array)
+        return alignment
+
+    @staticmethod
+    def _parse_meq(string):
+        if set(string) == {"-"}:
+            return None
+        ind_ic, _, chain = string.split(":")
+        ind = int(ind_ic[:-1])
+        icode = ind_ic[-1].strip() or None
+        return PDBid([chain, ind, icode])
+
+    @staticmethod
+    def _get_ind(converter, pdb_id):
+        if pdb_id is None:
+            return DASH
+        return converter.get_ind(pdb_id)
