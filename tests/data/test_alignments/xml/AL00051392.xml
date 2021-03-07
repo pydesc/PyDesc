@@ -1,0 +1,186 @@
+<?xml version="1.0"?>
+<multiple-alignment n="3" altalg="1">
+<description>
+<source>Sisyphus DB v 1.3</source>
+<aname>AL00051392</aname>
+<aid>113</aid>
+<cid>1164, 1165, 1166</cid>
+</description>
+<members ipath="/Users/pawel/tmp/STRA_EVAL/SISY-multiple/PDB">
+<member>1xi3A</member>
+<member>2tpsA</member>
+<member>1yadA</member>
+</members>
+<alternative id="1" eqr="168">
+<mequivalences n="168">
+<row><meq>   8 :K:A</meq><meq>  27 :S:A</meq><meq>   2 :E:A</meq></row>
+<row><meq>   9 :L:A</meq><meq>  28 :V:A</meq><meq>   3 :L:A</meq></row>
+<row><meq>  10 :Y:A</meq><meq>  29 :Y:A</meq><meq>   4 :H:A</meq></row>
+<row><meq>  11 :V:A</meq><meq>  30 :F:A</meq><meq>   5 :A:A</meq></row>
+<row><meq>  12 :I:A</meq><meq>  31 :I:A</meq><meq>   6 :I:A</meq></row>
+<row><meq>  13 :T:A</meq><meq>  32 :M:A</meq><meq>   7 :T:A</meq></row>
+<row><meq>  19 :P:A</meq><meq>  40 :D:A</meq><meq>  15 :E:A</meq></row>
+<row><meq>  20 :E:A</meq><meq>  41 :P:A</meq><meq>  16 :L:A</meq></row>
+<row><meq>  21 :V:A</meq><meq>  42 :V:A</meq><meq>  17 :A:A</meq></row>
+<row><meq>  22 :E:A</meq><meq>  43 :T:A</meq><meq>  18 :R:A</meq></row>
+<row><meq>  23 :S:A</meq><meq>  44 :V:A</meq><meq>  19 :I:A</meq></row>
+<row><meq>  24 :V:A</meq><meq>  45 :V:A</meq><meq>  20 :I:A</meq></row>
+<row><meq>  25 :R:A</meq><meq>  46 :Q:A</meq><meq>  21 :I:A</meq></row>
+<row><meq>  26 :E:A</meq><meq>  47 :K:A</meq><meq>  22 :T:A</meq></row>
+<row><meq>  27 :A:A</meq><meq>  48 :A:A</meq><meq>  23 :I:A</meq></row>
+<row><meq>  28 :L:A</meq><meq>  49 :L:A</meq><meq>  24 :Q:A</meq></row>
+<row><meq>  29 :E:A</meq><meq>  50 :K:A</meq><meq>  25 :N:A</meq></row>
+<row><meq>  31 :G:A</meq><meq>  52 :G:A</meq><meq>  26 :E:A</meq></row>
+<row><meq>  32 :A:A</meq><meq>  53 :A:A</meq><meq>  27 :V:A</meq></row>
+<row><meq>  33 :T:A</meq><meq>  54 :T:A</meq><meq>  28 :D:A</meq></row>
+<row><meq>  34 :A:A</meq><meq>  55 :L:A</meq><meq>  29 :F:A</meq></row>
+<row><meq>  35 :I:A</meq><meq>  56 :Y:A</meq><meq>  30 :I:A</meq></row>
+<row><meq>  36 :Q:A</meq><meq>  57 :Q:A</meq><meq>  31 :H:A</meq></row>
+<row><meq>  37 :M:A</meq><meq>  58 :F:A</meq><meq>  32 :I:A</meq></row>
+<row><meq>  38 :R:A</meq><meq>  59 :R:A</meq><meq>  33 :R:A</meq></row>
+<row><meq>  39 :I:A</meq><meq>  60 :E:A</meq><meq>  34 :E:A</meq></row>
+<row><meq>  40 :K:A</meq><meq>  61 :K:A</meq><meq>  35 :R:A</meq></row>
+<row><meq>  45 :R:A</meq><meq>  69 :E:A</meq><meq>  40 :A:A</meq></row>
+<row><meq>  46 :E:A</meq><meq>  70 :A:A</meq><meq>  41 :D:A</meq></row>
+<row><meq>  47 :M:A</meq><meq>  71 :R:A</meq><meq>  42 :I:A</meq></row>
+<row><meq>  48 :Y:A</meq><meq>  72 :I:A</meq><meq>  43 :L:A</meq></row>
+<row><meq>  49 :E:A</meq><meq>  73 :K:A</meq><meq>  44 :K:A</meq></row>
+<row><meq>  50 :I:A</meq><meq>  74 :F:A</meq><meq>  45 :L:A</meq></row>
+<row><meq>  51 :G:A</meq><meq>  75 :A:A</meq><meq>  46 :L:A</meq></row>
+<row><meq>  52 :K:A</meq><meq>  76 :E:A</meq><meq>  47 :D:A</meq></row>
+<row><meq>  53 :T:A</meq><meq>  77 :K:A</meq><meq>  48 :L:A</meq></row>
+<row><meq>  54 :L:A</meq><meq>  78 :A:A</meq><meq>  49 :I:A</meq></row>
+<row><meq>  64 :L:A</meq><meq>  88 :P:A</meq><meq>  58 :K:A</meq></row>
+<row><meq>  65 :F:A</meq><meq>  89 :F:A</meq><meq>  59 :L:A</meq></row>
+<row><meq>  66 :F:A</meq><meq>  90 :I:A</meq><meq>  60 :V:A</meq></row>
+<row><meq>  67 :V:A</meq><meq>  91 :V:A</meq><meq>  61 :M:A</meq></row>
+<row><meq>  68 :D:A</meq><meq>  92 :N:A</meq><meq>  62 :N:A</meq></row>
+<row><meq>  69 :D:A</meq><meq>  93 :D:A</meq><meq>  63 :G:A</meq></row>
+<row><meq>  70 :R:A</meq><meq>  94 :D:A</meq><meq>  64 :R:A</meq></row>
+<row><meq>  71 :V:A</meq><meq>  95 :V:A</meq><meq>  65 :V:A</meq></row>
+<row><meq>  72 :D:A</meq><meq>  96 :E:A</meq><meq>  66 :D:A</meq></row>
+<row><meq>  73 :V:A</meq><meq>  97 :L:A</meq><meq>  67 :I:A</meq></row>
+<row><meq>  74 :A:A</meq><meq>  98 :A:A</meq><meq>  68 :A:A</meq></row>
+<row><meq>  75 :L:A</meq><meq>  99 :L:A</meq><meq>  69 :L:A</meq></row>
+<row><meq>  76 :A:A</meq><meq> 100 :N:A</meq><meq>  70 :F:A</meq></row>
+<row><meq>  77 :V:A</meq><meq> 101 :L:A</meq><meq>  71 :S:A</meq></row>
+<row><meq>  78 :D:A</meq><meq> 102 :K:A</meq><meq>  72 :T:A</meq></row>
+<row><meq>  79 :A:A</meq><meq> 103 :A:A</meq><meq>  73 :I:A</meq></row>
+<row><meq>  80 :D:A</meq><meq> 104 :D:A</meq><meq>  74 :H:A</meq></row>
+<row><meq>  81 :G:A</meq><meq> 105 :G:A</meq><meq>  75 :R:A</meq></row>
+<row><meq>  82 :V:A</meq><meq> 106 :I:A</meq><meq>  76 :V:A</meq></row>
+<row><meq>  83 :Q:A</meq><meq> 107 :H:A</meq><meq>  77 :Q:A</meq></row>
+<row><meq>  84 :L:A</meq><meq> 108 :I:A</meq><meq>  78 :L:A</meq></row>
+<row><meq>  85 :G:A</meq><meq> 109 :G:A</meq><meq>  79 :P:A</meq></row>
+<row><meq>  86 :P:A</meq><meq> 110 :Q:A</meq><meq>  80 :S:A</meq></row>
+<row><meq>  87 :E:A</meq><meq> 111 :E:A</meq><meq>  81 :G:A</meq></row>
+<row><meq>  88 :D:A</meq><meq> 112 :D:A</meq><meq>  82 :S:A</meq></row>
+<row><meq>  89 :M:A</meq><meq> 113 :A:A</meq><meq>  83 :F:A</meq></row>
+<row><meq>  90 :P:A</meq><meq> 114 :N:A</meq><meq>  84 :S:A</meq></row>
+<row><meq>  91 :I:A</meq><meq> 115 :A:A</meq><meq>  85 :P:A</meq></row>
+<row><meq>  92 :E:A</meq><meq> 116 :K:A</meq><meq>  86 :K:A</meq></row>
+<row><meq>  93 :V:A</meq><meq> 117 :E:A</meq><meq>  87 :Q:A</meq></row>
+<row><meq>  94 :A:A</meq><meq> 118 :V:A</meq><meq>  88 :I:A</meq></row>
+<row><meq>  95 :K:A</meq><meq> 119 :R:A</meq><meq>  89 :R:A</meq></row>
+<row><meq>  96 :E:A</meq><meq> 120 :A:A</meq><meq>  90 :A:A</meq></row>
+<row><meq>  97 :I:A</meq><meq> 121 :A:A</meq><meq>  91 :R:A</meq></row>
+<row><meq>  98 :A:A</meq><meq> 122 :I:A</meq><meq>  92 :F:A</meq></row>
+<row><meq>  99 :P:A</meq><meq> 123 :G:A</meq><meq>  93 :P:A</meq></row>
+<row><meq> 100 :N:A</meq><meq> 124 :D:A</meq><meq>  94 :H:A</meq></row>
+<row><meq> 101 :L:A</meq><meq> 125 :M:A</meq><meq>  95 :L:A</meq></row>
+<row><meq> 102 :I:A</meq><meq> 126 :I:A</meq><meq>  96 :H:A</meq></row>
+<row><meq> 103 :I:A</meq><meq> 127 :L:A</meq><meq>  97 :I:A</meq></row>
+<row><meq> 104 :G:A</meq><meq> 128 :G:A</meq><meq>  98 :G:A</meq></row>
+<row><meq> 105 :A:A</meq><meq> 129 :V:A</meq><meq>  99 :R:A</meq></row>
+<row><meq> 106 :S:A</meq><meq> 130 :S:A</meq><meq> 100 :S:A</meq></row>
+<row><meq> 107 :V:A</meq><meq> 131 :A:A</meq><meq> 101 :V:A</meq></row>
+<row><meq> 108 :Y:A</meq><meq> 132 :H:A</meq><meq> 102 :H:A</meq></row>
+<row><meq> 109 :S:A</meq><meq> 133 :T:A</meq><meq> 103 :S:A</meq></row>
+<row><meq> 110 :L:A</meq><meq> 134 :M:A</meq><meq> 104 :L:A</meq></row>
+<row><meq> 111 :E:A</meq><meq> 135 :S:A</meq><meq> 105 :E:A</meq></row>
+<row><meq> 112 :E:A</meq><meq> 136 :E:A</meq><meq> 106 :E:A</meq></row>
+<row><meq> 113 :A:A</meq><meq> 137 :V:A</meq><meq> 107 :A:A</meq></row>
+<row><meq> 114 :L:A</meq><meq> 138 :K:A</meq><meq> 108 :V:A</meq></row>
+<row><meq> 115 :E:A</meq><meq> 139 :Q:A</meq><meq> 109 :Q:A</meq></row>
+<row><meq> 116 :A:A</meq><meq> 140 :A:A</meq><meq> 110 :A:A</meq></row>
+<row><meq> 117 :E:A</meq><meq> 141 :E:A</meq><meq> 111 :E:A</meq></row>
+<row><meq> 118 :K:A</meq><meq> 142 :E:A</meq><meq> 112 :K:A</meq></row>
+<row><meq> 119 :K:A</meq><meq> 143 :D:A</meq><meq> 113 :E:A</meq></row>
+<row><meq> 120 :G:A</meq><meq> 144 :G:A</meq><meq> 114 :D:A</meq></row>
+<row><meq> 121 :A:A</meq><meq> 145 :A:A</meq><meq> 115 :A:A</meq></row>
+<row><meq> 122 :D:A</meq><meq> 146 :D:A</meq><meq> 116 :D:A</meq></row>
+<row><meq> 123 :Y:A</meq><meq> 147 :Y:A</meq><meq> 117 :Y:A</meq></row>
+<row><meq> 124 :L:A</meq><meq> 148 :V:A</meq><meq> 118 :V:A</meq></row>
+<row><meq> 125 :G:A</meq><meq> 149 :G:A</meq><meq> 119 :L:A</meq></row>
+<row><meq> 126 :A:A</meq><meq> 150 :L:A</meq><meq> 120 :F:A</meq></row>
+<row><meq> 127 :G:A</meq><meq> 151 :G:A</meq><meq> 121 :G:A</meq></row>
+<row><meq> 128 :S:A</meq><meq> 152 :P:A</meq><meq> 122 :H:A</meq></row>
+<row><meq> 129 :V:A</meq><meq> 153 :I:A</meq><meq> 123 :V:A</meq></row>
+<row><meq> 130 :F:A</meq><meq> 154 :Y:A</meq><meq> 124 :F:A</meq></row>
+<row><meq> 142 :G:A</meq><meq> 167 :G:A</meq><meq> 136 :G:A</meq></row>
+<row><meq> 143 :L:A</meq><meq> 168 :V:A</meq><meq> 137 :V:A</meq></row>
+<row><meq> 144 :E:A</meq><meq> 169 :S:A</meq><meq> 138 :S:A</meq></row>
+<row><meq> 145 :G:A</meq><meq> 170 :L:A</meq><meq> 139 :L:A</meq></row>
+<row><meq> 146 :L:A</meq><meq> 171 :I:A</meq><meq> 140 :L:A</meq></row>
+<row><meq> 147 :R:A</meq><meq> 172 :E:A</meq><meq> 141 :S:A</meq></row>
+<row><meq> 148 :K:A</meq><meq> 173 :A:A</meq><meq> 142 :D:A</meq></row>
+<row><meq> 149 :I:A</meq><meq> 174 :V:A</meq><meq> 143 :I:A</meq></row>
+<row><meq> 150 :V:A</meq><meq> 175 :R:A</meq><meq> 144 :K:A</meq></row>
+<row><meq> 151 :E:A</meq><meq> 176 :R:A</meq><meq> 145 :Q:A</meq></row>
+<row><meq> 152 :S:A</meq><meq> 177 :Q:A</meq><meq> 146 :R:A</meq></row>
+<row><meq> 153 :V:A</meq><meq> 179 :I:A</meq><meq> 147 :I:A</meq></row>
+<row><meq> 154 :K:A</meq><meq> 180 :S:A</meq><meq> 148 :S:A</meq></row>
+<row><meq> 155 :I:A</meq><meq> 181 :I:A</meq><meq> 149 :I:A</meq></row>
+<row><meq> 156 :P:A</meq><meq> 182 :P:A</meq><meq> 150 :P:A</meq></row>
+<row><meq> 157 :V:A</meq><meq> 183 :I:A</meq><meq> 151 :V:A</meq></row>
+<row><meq> 158 :V:A</meq><meq> 184 :V:A</meq><meq> 152 :I:A</meq></row>
+<row><meq> 159 :A:A</meq><meq> 185 :G:A</meq><meq> 153 :A:A</meq></row>
+<row><meq> 160 :I:A</meq><meq> 186 :I:A</meq><meq> 154 :I:A</meq></row>
+<row><meq> 161 :G:A</meq><meq> 187 :G:A</meq><meq> 155 :G:A</meq></row>
+<row><meq> 162 :G:A</meq><meq> 188 :G:A</meq><meq> 156 :G:A</meq></row>
+<row><meq> 163 :I:A</meq><meq> 189 :I:A</meq><meq> 157 :M:A</meq></row>
+<row><meq> 164 :N:A</meq><meq> 190 :T:A</meq><meq> 158 :T:A</meq></row>
+<row><meq> 165 :K:A</meq><meq> 191 :I:A</meq><meq> 159 :P:A</meq></row>
+<row><meq> 166 :D:A</meq><meq> 192 :D:A</meq><meq> 160 :D:A</meq></row>
+<row><meq> 167 :N:A</meq><meq> 193 :N:A</meq><meq> 161 :R:A</meq></row>
+<row><meq> 168 :A:A</meq><meq> 194 :A:A</meq><meq> 162 :L:A</meq></row>
+<row><meq> 169 :R:A</meq><meq> 195 :A:A</meq><meq> 163 :R:A</meq></row>
+<row><meq> 170 :E:A</meq><meq> 196 :P:A</meq><meq> 164 :D:A</meq></row>
+<row><meq> 171 :V:A</meq><meq> 197 :V:A</meq><meq> 165 :V:A</meq></row>
+<row><meq> 172 :L:A</meq><meq> 198 :I:A</meq><meq> 166 :K:A</meq></row>
+<row><meq> 173 :K:A</meq><meq> 199 :Q:A</meq><meq> 167 :Q:A</meq></row>
+<row><meq> 174 :T:A</meq><meq> 200 :A:A</meq><meq> 168 :A:A</meq></row>
+<row><meq> 175 :G:A</meq><meq> 201 :G:A</meq><meq> 169 :G:A</meq></row>
+<row><meq> 176 :V:A</meq><meq> 202 :A:A</meq><meq> 170 :A:A</meq></row>
+<row><meq> 177 :D:A</meq><meq> 203 :D:A</meq><meq> 171 :D:A</meq></row>
+<row><meq> 178 :G:A</meq><meq> 204 :G:A</meq><meq> 172 :G:A</meq></row>
+<row><meq> 179 :I:A</meq><meq> 205 :V:A</meq><meq> 173 :I:A</meq></row>
+<row><meq> 180 :A:A</meq><meq> 206 :S:A</meq><meq> 174 :A:A</meq></row>
+<row><meq> 181 :V:A</meq><meq> 207 :M:A</meq><meq> 175 :V:A</meq></row>
+<row><meq> 182 :I:A</meq><meq> 208 :I:A</meq><meq> 176 :M:A</meq></row>
+<row><meq> 183 :S:A</meq><meq> 209 :S:A</meq><meq> 177 :S:A</meq></row>
+<row><meq> 184 :A:A</meq><meq> 210 :A:A</meq><meq> 178 :G:A</meq></row>
+<row><meq> 185 :V:A</meq><meq> 211 :I:A</meq><meq> 179 :I:A</meq></row>
+<row><meq> 186 :M:A</meq><meq> 212 :S:A</meq><meq> 180 :F:A</meq></row>
+<row><meq> 187 :G:A</meq><meq> 213 :Q:A</meq><meq> 181 :S:A</meq></row>
+<row><meq> 188 :A:A</meq><meq> 214 :A:A</meq><meq> 182 :S:A</meq></row>
+<row><meq> 189 :E:A</meq><meq> 215 :E:A</meq><meq> 183 :A:A</meq></row>
+<row><meq> 190 :D:A</meq><meq> 216 :D:A</meq><meq> 184 :E:A</meq></row>
+<row><meq> 191 :V:A</meq><meq> 217 :P:A</meq><meq> 185 :P:A</meq></row>
+<row><meq> 192 :R:A</meq><meq> 218 :E:A</meq><meq> 186 :L:A</meq></row>
+<row><meq> 193 :K:A</meq><meq> 219 :S:A</meq><meq> 187 :E:A</meq></row>
+<row><meq> 194 :A:A</meq><meq> 220 :A:A</meq><meq> 188 :A:A</meq></row>
+<row><meq> 195 :T:A</meq><meq> 221 :A:A</meq><meq> 189 :A:A</meq></row>
+<row><meq> 196 :E:A</meq><meq> 222 :R:A</meq><meq> 190 :R:A</meq></row>
+<row><meq> 197 :E:A</meq><meq> 223 :K:A</meq><meq> 191 :R:A</meq></row>
+<row><meq> 198 :L:A</meq><meq> 224 :F:A</meq><meq> 192 :Y:A</meq></row>
+<row><meq> 199 :R:A</meq><meq> 225 :R:A</meq><meq> 193 :S:A</meq></row>
+<row><meq> 200 :K:A</meq><meq> 226 :E:A</meq><meq> 194 :R:A</meq></row>
+<row><meq> 201 :I:A</meq><meq> 227 :E:A</meq><meq> 195 :K:A</meq></row>
+<row><meq> 202 :V:A</meq><meq> 228 :I:A</meq><meq> 196 :L:A</meq></row>
+<row><meq> 203 :E:A</meq><meq> 229 :Q:A</meq><meq> 197 :K:A</meq></row>
+<row><meq> 204 :E:A</meq><meq> 230 :T:A</meq><meq> 198 :E:A</meq></row>
+<row><meq> 205 :V:A</meq><meq> 231 :Y:A</meq><meq> 199 :M:A</meq></row>
+</mequivalences>
+</alternative>
+</multiple-alignment>
