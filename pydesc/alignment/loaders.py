@@ -423,7 +423,18 @@ class FASTALoader(AbstractLoader):
                 continue
             sequence = self._data[label]
             mer_i = mer_iterators[label]
-            column = [self._get_ind(char, mer_i) for char in sequence]
+            try:
+                column = [self._get_ind(char, mer_i) for char in sequence]
+            except StopIteration:
+                structure = structures_map[label]
+                msg = (
+                    f"Not enough mers in structure {structure} to cover sequence "
+                    f"labeled {label} in alignment file. "
+                    f"That might be due to incomplete mers that were not loaded "
+                    f"as mers. Consider loading structure with other "
+                    f"representation, like P- or CA-trace."
+                )
+                raise IndexError(msg)
             array[:, ind] = numpy.array(column)
             structures.append(structures_map[label])
             ind += 1
