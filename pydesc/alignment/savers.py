@@ -26,6 +26,7 @@ from itertools import zip_longest
 import numpy
 
 from pydesc.alignment.base import DASH
+from pydesc.warnexcept import MerCodeError
 
 
 class AbstractSaver(ABC):
@@ -166,7 +167,17 @@ class FASTASaver(AbstractSaver):
     def _get_mer_code(self, structure, ind, lower_case):
         if ind is DASH:
             return self.dash
-        letter = self._get_letter(structure[ind])
+        try:
+            letter = self._get_letter(structure[ind])
+        except KeyError:
+            pdb_id = structure.converter.get_pdb_id(ind)
+            msg = (
+                f"Mer {str(pdb_id)} from structure {structure} has unknown one"
+                f"letter code."
+                f"Try adding its name to map in configuration or to sequence_dict"
+                f"passed to this alignment saver."
+            )
+            raise MerCodeError(msg)
         if lower_case:
             return letter.lower()
         return letter.upper()

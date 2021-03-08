@@ -236,6 +236,13 @@ class WrongAtomSetType(Exception):
     pass
 
 
+class MerCodeError(Exception):
+    """Raised when non-standard residue or nucleotide cannot be translated to
+    code, usually when getting chain sequence."""
+
+    pass
+
+
 class NotASlice(Exception):
     pass
 
