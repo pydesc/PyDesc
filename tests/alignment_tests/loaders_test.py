@@ -216,7 +216,9 @@ class TestFASTALoader:
     def artificial_multi_structures(self):
         structures = [MagicMock(name=f"mol{i}") for i in range(5)]
         for stc in structures[:4]:
-            stc.__getitem__.return_value = [MagicMock(ind=i) for i in range(10, 15)]
+            mer_list = [MagicMock(ind=i) for i in range(10, 15)]
+            stc.__getitem__.return_value = mer_list
+            stc.__iter__.return_value = iter(mer_list)
         structures[-1].__getitem__.return_value = [MagicMock(ind=1), MagicMock(ind=2)]
         return structures
 

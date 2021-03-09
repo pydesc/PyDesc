@@ -464,9 +464,9 @@ class FASTALoader(AbstractLoader):
     @staticmethod
     def _iter_inds(structure, ranges):
         if not ranges:
-            first = structure.converter.ind2pdb[0]
-            last = structure.converter.ind2pdb[-1]
-            ranges = ((first, last),)
+            for mer in structure:
+                yield mer.ind
+            return
         converter = structure.converter
         for start_id, end_id in ranges:
             start = converter.get_ind(start_id)
