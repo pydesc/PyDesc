@@ -87,6 +87,8 @@ class TestCSVLoader:
         stc_map = {k: MagicMock(name=k) for k in ("stc1", "stc3A")}
         alignment = loader.load_alignment_mapping(stc_map)
         assert isinstance(alignment, PairAlignment)
+        for stc in alignment.structures:
+            assert stc in stc_map.values()
 
 
 class TestPALLoader:

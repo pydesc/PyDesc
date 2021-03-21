@@ -262,8 +262,10 @@ class NumberConverterFactory:
             id_counter = Counter(first_model_ids)
             repeated_ids = [pdb_id for pdb_id in id_counter if id_counter[pdb_id] > 1]
             repeated_ids = ", ".join(map(str, repeated_ids))
-            msg = f"More than one mer or ligand has the same sequence number " \
-                  f"({repeated_ids})."
+            msg = (
+                f"More than one mer or ligand has the same sequence number "
+                f"({repeated_ids})."
+            )
             raise ValueError(msg)
         converter = NumberConverter(models_ids[0])
 
