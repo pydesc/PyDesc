@@ -445,9 +445,9 @@ class FASTALoader(AbstractLoader):
 
     @staticmethod
     def _parse_ranges(ranges_str):
-        range_pattern = r"\w+:\d+[^\d,\]\[]?-\d+[^\d,\]\[]?"
+        range_pattern = r"\w+:-?\d+[^\d,\]\[]?--?\d+[^\d,\]\[]?"
         ranges = re.findall(range_pattern, ranges_str)
-        range_pattern = r"(\w+):(\d+)(\D?)-(\d+)(\D?)"
+        range_pattern = r"(\w+):(-?\d+)(\D?)-(-?\d+)(\D?)"
         results = []
         for range_str in ranges:
             match = re.match(range_pattern, range_str)
