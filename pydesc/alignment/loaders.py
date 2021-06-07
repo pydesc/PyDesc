@@ -132,13 +132,13 @@ class CSVLoader(AbstractLoader):
 
     def load_alignment_mapping(self, structures_map):
         valid_labels = [i for i in self._structure_labels if i in structures_map]
-        converters = [structures_map[label].converter for label in valid_labels]
+        structures = [structures_map[label] for label in valid_labels]
+        converters = [structure.converter for structure in structures]
         length = len(self._data["rows"])
-        array = numpy.empty((length, len(structures_map)), dtype=object)
+        array = numpy.empty((length, len(valid_labels)), dtype=object)
+        all_labels = self._structure_labels
         array_indices = [
-            i
-            for i, label in enumerate(self._structure_labels)
-            if label in structures_map
+            i for i, label in enumerate(all_labels) if label in structures_map
         ]
         for i, row in enumerate(self._data["rows"]):
             row = row[array_indices]
@@ -149,7 +149,7 @@ class CSVLoader(AbstractLoader):
             ]
             array[i] = row_inds
         alignment_class = get_column_alignment_class(array)
-        return alignment_class(structures_map, array)
+        return alignment_class(structures, array)
 
 
 class PALLoader(AbstractLoader):
