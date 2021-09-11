@@ -116,7 +116,7 @@ class CSVLoader(AbstractLoader):
 
     @staticmethod
     def _parse_pdb_id(id_str):
-        match = re.match("([^:]+):([0-9]*)([^0-9,:]?)", id_str)
+        match = re.match("([^:]+):(-?[0-9]*)([^0-9,:]?)", id_str)
         if match is None:
             return None
         chain = match.group(1)
@@ -132,13 +132,13 @@ class CSVLoader(AbstractLoader):
 
     def load_alignment_mapping(self, structures_map):
         valid_labels = [i for i in self._structure_labels if i in structures_map]
-        converters = [structures_map[label].converter for label in valid_labels]
+        structures = [structures_map[label] for label in valid_labels]
+        converters = [structure.converter for structure in structures]
         length = len(self._data["rows"])
-        array = numpy.empty((length, len(structures_map)), dtype=object)
+        array = numpy.empty((length, len(valid_labels)), dtype=object)
+        all_labels = self._structure_labels
         array_indices = [
-            i
-            for i, label in enumerate(self._structure_labels)
-            if label in structures_map
+            i for i, label in enumerate(all_labels) if label in structures_map
         ]
         for i, row in enumerate(self._data["rows"]):
             row = row[array_indices]
@@ -149,7 +149,7 @@ class CSVLoader(AbstractLoader):
             ]
             array[i] = row_inds
         alignment_class = get_column_alignment_class(array)
-        return alignment_class(structures_map, array)
+        return alignment_class(structures, array)
 
 
 class PALLoader(AbstractLoader):
@@ -423,7 +423,18 @@ class FASTALoader(AbstractLoader):
                 continue
             sequence = self._data[label]
             mer_i = mer_iterators[label]
-            column = [self._get_ind(char, mer_i) for char in sequence]
+            try:
+                column = [self._get_ind(char, mer_i) for char in sequence]
+            except StopIteration:
+                structure = structures_map[label]
+                msg = (
+                    f"Not enough mers in structure {structure} to cover sequence "
+                    f"labeled {label} in alignment file. "
+                    f"That might be due to incomplete mers that were not loaded "
+                    f"as mers. Consider loading structure with other "
+                    f"representation, like P- or CA-trace."
+                )
+                raise IndexError(msg)
             array[:, ind] = numpy.array(column)
             structures.append(structures_map[label])
             ind += 1
@@ -434,9 +445,9 @@ class FASTALoader(AbstractLoader):
 
     @staticmethod
     def _parse_ranges(ranges_str):
-        range_pattern = r"\w+:\d+[^\d,\]\[]?-\d+[^\d,\]\[]?"
+        range_pattern = r"\w+:-?\d+[^\d,\]\[]?--?\d+[^\d,\]\[]?"
         ranges = re.findall(range_pattern, ranges_str)
-        range_pattern = r"(\w+):(\d+)(\D?)-(\d+)(\D?)"
+        range_pattern = r"(\w+):(-?\d+)(\D?)-(-?\d+)(\D?)"
         results = []
         for range_str in ranges:
             match = re.match(range_pattern, range_str)
@@ -453,9 +464,9 @@ class FASTALoader(AbstractLoader):
     @staticmethod
     def _iter_inds(structure, ranges):
         if not ranges:
-            first = structure.converter.ind2pdb[0]
-            last = structure.converter.ind2pdb[-1]
-            ranges = ((first, last),)
+            for mer in structure:
+                yield mer.ind
+            return
         converter = structure.converter
         for start_id, end_id in ranges:
             start = converter.get_ind(start_id)

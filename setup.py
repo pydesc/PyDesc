@@ -184,9 +184,7 @@ setup(
     test_suite="tests_legacy",
     shlibs=shlibs,
     install_requires=[
-        "biopython == 1.76",
-        "numpy == 1.18.3",
-        "scipy == 1.4.1",
-        "mdtraj == 1.9.3",
+        "biopython",
+        "mdtraj",
     ],
 )

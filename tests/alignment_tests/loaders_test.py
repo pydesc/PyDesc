@@ -87,6 +87,8 @@ class TestCSVLoader:
         stc_map = {k: MagicMock(name=k) for k in ("stc1", "stc3A")}
         alignment = loader.load_alignment_mapping(stc_map)
         assert isinstance(alignment, PairAlignment)
+        for stc in alignment.structures:
+            assert stc in stc_map.values()
 
 
 class TestPALLoader:
@@ -214,10 +216,13 @@ class TestFASTALoader:
 
     @pytest.fixture(scope="session")
     def artificial_multi_structures(self):
-        structures = [MagicMock(name=f"mol{i}") for i in range(5)]
+        structures = [MagicMock(name=f"mol{i}") for i in range(6)]
         for stc in structures[:4]:
-            stc.__getitem__.return_value = [MagicMock(ind=i) for i in range(10, 15)]
-        structures[-1].__getitem__.return_value = [MagicMock(ind=1), MagicMock(ind=2)]
+            mer_list = [MagicMock(ind=i) for i in range(10, 15)]
+            stc.__getitem__.return_value = mer_list
+            stc.__iter__.return_value = iter(mer_list)
+        structures[-2].__getitem__.return_value = [MagicMock(ind=1), MagicMock(ind=2)]
+        structures[-1].__getitem__.return_value = [MagicMock(ind=i) for i in range(-8, -3)]
         return structures
 
     def test_artificial_multi(self, artificial_multi_path, artificial_multi_structures):
@@ -228,17 +233,17 @@ class TestFASTALoader:
         ranges = loader.read_metadata()["ranges"]
         assert ranges["mol1.A"] == "[A:2-4]"
 
-        for label in ("mol1.A", "mol2", "mol3_chainAB", "mol4", "mol5"):
+        for label in ("mol1.A", "mol2", "mol3_chainAB", "mol4", "mol5", "mol6"):
             assert label in loader._structure_labels
 
-        assert alignment.inds.shape == (4, 5)
+        assert alignment.inds.shape == (4, 6)
 
         expected = numpy.array(
             [
-                [DASH, DASH, DASH, 10.0, 1.0],
-                [10.0, 11.0, DASH, 11.0, 2.0],
-                [11.0, 12.0, 10.0, 12.0, 1.0],
-                [12.0, 13.0, 11.0, 13.0, DASH],
+                [DASH, DASH, DASH, 10, 1, -8],
+                [10, 11, DASH, 11, 2, -7],
+                [11, 12, 10, 12, 1, -6],
+                [12, 13, 11, 13, DASH, DASH],
             ]
         )
         numpy.testing.assert_equal(alignment.inds, expected)
@@ -276,7 +281,7 @@ class TestFASTALoader:
     def test_uneven(self, artificial_uneven_path, artificial_multi_structures):
         with open(artificial_uneven_path) as fh:
             loader = FASTALoader(fh)
-        stc1, stc2, stc3, _, _ = artificial_multi_structures
+        stc1, stc2, stc3, _, _, _ = artificial_multi_structures
         stc_map = {
             "mol1": stc1,
             "mol2": stc2,

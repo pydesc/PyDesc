@@ -1,4 +1,2 @@
-biopython==1.76
-mdtraj==1.9.3
-numpy==1.18.3
-scipy==1.4.1
+biopython
+mdtraj

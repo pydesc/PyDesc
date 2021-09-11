@@ -26,6 +26,7 @@ from itertools import zip_longest
 import numpy
 
 from pydesc.alignment.base import DASH
+from pydesc.warnexcept import MerCodeError
 
 
 class AbstractSaver(ABC):
@@ -166,15 +167,32 @@ class FASTASaver(AbstractSaver):
     def _get_mer_code(self, structure, ind, lower_case):
         if ind is DASH:
             return self.dash
-        letter = self._get_letter(structure[ind])
+        try:
+            letter = self._get_letter(structure[ind])
+        except (KeyError, AttributeError):
+            # KeyError when name not in config
+            # AttributeError when it is ligand, not mer
+            pdb_id = structure.converter.get_pdb_id(ind)
+            mer = structure[ind]
+            msg = (
+                f"Mer {str(pdb_id)} from structure {structure} has unknown one"
+                f"letter code. "
+                f"If it is a modified mer and was not loaded as mer, consider "
+                f"passing sequence_dict to this alignment saver. "
+                f"In any case consider adding mapping for name '{mer.name}' "
+                f"to `ConfigManager.chemistry.mer.additional_code`."
+            )
+            raise MerCodeError(msg)
         if lower_case:
             return letter.lower()
         return letter.upper()
 
     def _get_letter(self, mer):
-        if self.seq_dct is None:
+        try:
+            return self.seq_dct[mer.name]
+        except (KeyError, TypeError):
+            # TypeError when seq_dct is None
             return mer.seq
-        return self.seq_dct[mer.name]
 
     def _write_sequence(self, stream, sequence):
         if self.wrap_at is None:
