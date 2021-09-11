@@ -116,7 +116,7 @@ class CSVLoader(AbstractLoader):
 
     @staticmethod
     def _parse_pdb_id(id_str):
-        match = re.match("([^:]+):([0-9]*)([^0-9,:]?)", id_str)
+        match = re.match("([^:]+):(-?[0-9]*)([^0-9,:]?)", id_str)
         if match is None:
             return None
         chain = match.group(1)
