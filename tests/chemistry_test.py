@@ -184,7 +184,7 @@ class TestResidue(AtomSetTest):
             del mer.dynamic_features["angles"]
             psi1, phi1 = angs
             psi2, phi2 = mer.angles
-            assert pytest.approx(psi1) == psi2
+            assert pytest.approx(psi1, abs=1.0e-4) == psi2
             assert pytest.approx(phi1) == phi2
 
     def test_bb_average(self, protein_file, structures_dir):
