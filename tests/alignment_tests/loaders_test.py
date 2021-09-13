@@ -5,8 +5,8 @@ import pytest
 
 from pydesc.alignment.base import MultipleAlignment
 from pydesc.alignment.base import PairAlignment
-from pydesc.alignment.loaders import CSVLoader
 from pydesc.alignment.loaders import DASH
+from pydesc.alignment.loaders import CSVLoader
 from pydesc.alignment.loaders import FASTALoader
 from pydesc.alignment.loaders import PALLoader
 from pydesc.alignment.loaders import XMLLoader
@@ -222,7 +222,9 @@ class TestFASTALoader:
             stc.__getitem__.return_value = mer_list
             stc.__iter__.return_value = iter(mer_list)
         structures[-2].__getitem__.return_value = [MagicMock(ind=1), MagicMock(ind=2)]
-        structures[-1].__getitem__.return_value = [MagicMock(ind=i) for i in range(-8, -3)]
+        structures[-1].__getitem__.return_value = [
+            MagicMock(ind=i) for i in range(-8, -3)
+        ]
         return structures
 
     def test_artificial_multi(self, artificial_multi_path, artificial_multi_structures):

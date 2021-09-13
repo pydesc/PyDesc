@@ -1,6 +1,7 @@
-import numpy
 from abc import ABCMeta
 from functools import reduce
+
+import numpy
 
 from pydesc.config import ConfigManager
 from pydesc.structure.topology import AbstractStructure

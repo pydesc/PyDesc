@@ -22,17 +22,17 @@ Interface to descriptor procedures written in C.
 created: 25.12.2013 - Maciek Dziubinski
 """
 
-import pkg_resources
-import os
-
 import ctypes
 import ctypes.util
-import pydesc.structure as structure
+import os
+
+import pkg_resources
+
+import pydesc
 import pydesc.chemistry as monomer
 import pydesc.contacts.contactmap as contactmap
 import pydesc.contacts.contacts as contacts
-import pydesc
-
+import pydesc.structure as structure
 import pydesc.util.typesdictionary as typesdictionary
 
 

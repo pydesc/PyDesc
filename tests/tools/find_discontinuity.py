@@ -1,7 +1,8 @@
-from pydesc.structure import StructureLoader as SL
-
-from tests.conftest import PDB_FILES_DICT, TEST_STRUCTURES_DIR
 import os.path
+
+from pydesc.structure import StructureLoader as SL
+from tests.conftest import PDB_FILES_DICT
+from tests.conftest import TEST_STRUCTURES_DIR
 
 sl = SL()
 

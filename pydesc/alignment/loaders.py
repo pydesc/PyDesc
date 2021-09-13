@@ -20,9 +20,9 @@ import csv
 import re
 from abc import ABC
 from abc import abstractmethod
+from xml.etree import ElementTree
 
 import numpy
-from xml.etree import ElementTree
 
 from pydesc.alignment.base import DASH
 from pydesc.alignment.base import JoinedPairAlignments

@@ -1,7 +1,7 @@
+import traceback
 from os import path
 
 import pytest
-import traceback
 
 TEST_PATH = path.dirname(path.abspath(__file__))
 DOC_PATH = path.realpath(path.join(TEST_PATH, "..", "doc"))

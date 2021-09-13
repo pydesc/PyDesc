@@ -2,9 +2,13 @@ import numpy
 import pytest
 
 from pydesc.alignment.base import DASH
-from pydesc.alignment.loaders import PALLoader, FASTALoader, CSVLoader
+from pydesc.alignment.loaders import CSVLoader
+from pydesc.alignment.loaders import FASTALoader
+from pydesc.alignment.loaders import PALLoader
+from pydesc.api.alignment import get_loader
 from pydesc.api.alignment import get_partial_structures
-from pydesc.api.alignment import get_selections, get_loader, load_alignment
+from pydesc.api.alignment import get_selections
+from pydesc.api.alignment import load_alignment
 from pydesc.api.structure import get_structures_from_file
 
 

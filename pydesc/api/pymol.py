@@ -33,8 +33,9 @@ created: 19.09.2013 - , Tymoteusz 'hert' Oleniecki
 """
 
 from pymol import cmd
-from pydesc.structure.files import PDBWriter
+
 from pydesc.selection import Everything
+from pydesc.structure.files import PDBWriter
 
 
 def _fmt(string):

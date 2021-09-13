@@ -11,7 +11,6 @@ from pydesc.parsers import MetaParser
 from pydesc.structure.topology import Chain
 from pydesc.structure.topology import Structure
 from pydesc.structure.trajectory import Trajectory
-from pydesc.structure.trajectory import Trajectory
 
 # pylint: disable=no-member
 ConfigManager.new_branch("element")

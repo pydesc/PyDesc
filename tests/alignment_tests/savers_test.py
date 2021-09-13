@@ -7,10 +7,10 @@ import pytest
 from pydesc.alignment.base import DASH
 from pydesc.alignment.base import MultipleAlignment
 from pydesc.alignment.base import PairAlignment
+from pydesc.alignment.loaders import PALLoader
 from pydesc.alignment.savers import CSVSaver
 from pydesc.alignment.savers import FASTASaver
 from pydesc.alignment.savers import PALSaver
-from pydesc.alignment.loaders import PALLoader
 from pydesc.api.structure import get_structures_from_file
 
 

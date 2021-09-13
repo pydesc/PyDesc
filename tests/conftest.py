@@ -3,10 +3,10 @@ from pathlib import Path
 
 import pytest
 
-from pydesc.config import ConfigManager
 from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
+from pydesc.config import ConfigManager
 
 ConfigManager.warnings.class_filters.UnknownParticleName = "ignore"
 ConfigManager.warnings.class_filters.Info = "ignore"
