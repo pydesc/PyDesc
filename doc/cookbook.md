@@ -790,7 +790,32 @@ In case of other features that requires calculation, but are not represented by
 
 ## Substructures
 
-TBD
+Analysis of biomolecule structure often requires picking up only subset of mers present
+ in a biopolymer.
+PyDesc enables multiple ways of picking up such subsets, depending on their purpose:
+ they can be created by slicing structures (described "Simple usage" in this section),
+  based on selections (see
+ [selections](#selections)) or alignments (see [alignments](#alignments)) or
+ calculated based on contact maps (like descriptors, see 
+ [this subsection](#descriptors)).
+
+There are many types of substructures in PyDesc.
+Some of them are used internally by library, some may be useful to users:
+* chains -- subset of mers marked with common chain name.
+* segment -- any subset of subsequent chainable mers.
+* element -- special subclass of segments of specific length, typically 5.
+  Elements are crucial part of local descriptors.
+  They are meant for internal usage.
+* contacts -- pair of elements making up descriptors.
+  They, too, are meant for internal usage.
+* local descriptor ("descriptors" for short) -- pivotal type of substructures used by 
+  structural alignment methods implemented in PyDesc library.
+  Descriptors can be interesting objects to study, but they are implemented for sake of
+  aforementioned methods.
+* partial structures -- any other subset of mers coming from single structure.
+
+Chains, segments and partial structures will probably be most commonly encountered while
+ working with structures in PyDesc.
 
 ### Configuration
 
@@ -802,7 +827,150 @@ TBD
 
 ### Simple usage
 
-TBD
+Getting chain is different from getting other structures, but easy, so that is where we
+ will begin:
+
+#### Getting chains
+
+```python
+from pydesc.api.structure import get_structures
+
+structure, = get_structures("1no5")
+for chain in structure.chains:
+    print(chain.chain_name, len(chain))
+chain_a = structure.get_chain("A")
+
+assert chain_a.chain_name == "A"
+assert len(chain_a) == 106
+```
+
+Chains contain all atom sets that were marked with particular chain name.
+ That includes ligands.
+ To get only chainable atom sets, learn about [selections](#selections).
+ Names of chains are case-sensitive and can be longer than one letter.
+
+#### Ranges and lists of indices
+
+Method of getting substructure used internally by PyDesc, but also available for users
+ is via structure (or substructure) indexing.
+ To utilise that, one needs to know mers index numbers.
+ Those are assigned to mers in context of the whole structure, thus it differs from
+ indexing of python data structures like lists, tuples and arrays.
+
+```python
+from pydesc.api.structure import get_structures
+
+structure, = get_structures("1no5")     # two chains: A (106 mers) and B (108 mers)
+segment = structure[12: 23]
+same_segment = structure[[i for i in range(12, 24)]]
+partial_structure = structure[90: 120]
+chain_b = structure.get_chain("B")
+segment_b = chain_b[106: 207]
+
+single_slice = structure[1:1]
+assert segment[-1].ind == 23            # different from python lists
+assert type(segment).__name__ == "Segment"
+assert type(partial_structure).__name__ == "PartialStructure"
+assert type(segment_b) == type(segment)
+assert type(single_slice) == type(segment)
+```
+
+Indexing `structure[12: 23]` returns a segment, because all mers in that range are 
+ residues (so they are chainable) and they are subsequent in chemical chain.
+That is not true for range 90-120, which contains residues, ions and complex ligand  
+ from chain "A" and residues from chain "B".
+
+This method is used internally by PyDesc.
+ It is fast, but might be inconvenient for users, because:
+ * It requires mers' indices, not PDB ids.
+ * It expects mers' indices IN STRUCTURE, not their index in given substructure.
+    Note that `chain_b[106]` returns the first mer in that substructure.
+
+It also includes the "stop" index mer into returned structure.
+ It also means that slice starting and ending on the same mer index returns segment
+ instead of (maybe) expected single mer in `structure[1:1]`.
+ That is, given atom set of index `1` is a mer, and not ligand, in which case partial
+ structure would be returned.
+ That behaviour is helpful during automatic segment creation, when it assured that 
+ slicing returns iterable object containing mers and ligands.
+
+If so, how can one get atom set of known PDB id or of known index in substructure
+(e.g. first mer in chain)?
+Let us start with the latter.
+
+ To do this, simply convert a substructure of choice to list or tuple:
+```python
+from pydesc.api.structure import get_structures
+
+structure, = get_structures("1no5")
+chain_b = structure.get_chain("B")
+first_chain_b_mer = tuple(chain_b)[0]
+
+assert first_chain_b_mer.ind == 106
+
+for atom_set in chain_b:
+    print(atom_set)
+```
+Substructure, even partial structures, are iterable and preserve order of atom sets
+ from original structure.
+ What is more, they are sets -- single mer will not occur more than once in any 
+ substructure.
+ Bear that in mind, as it might lead to unexpected behaviour when using iterable as 
+ index:
+
+```python
+from pydesc.api.structure import get_structures
+
+structure, = get_structures("1no5")
+inds = [1, 2, 3, 1]
+part = structure[inds]
+assert len(part) != len(inds)
+
+single_mer_part = structure[[1]]
+assert type(part) == type(single_mer_part)
+```
+Index `1` occurred twice in given list, so it was reduced.
+
+Similarly to slice referring to only one atom set, iterable with only one element
+ returns segment or partial structure, not a single mer.
+
+#### Indexing with PDB ids
+
+That kind of indexing requires parsing PDB ids and using number converter, so it takes 
+ more time than using bare indexing.
+Each structure and its substructure has PDB indexer attached to it as `pdb_ids` 
+ attribute.
+It enables all the types of indexing enabled by regular indexing method:
+* single id
+* list of ids
+* slice
+
+And more, because it also accepts wild cards.
+In example below all those modes are utilised to get some substructures that we 
+ have seen in previous examples and more.
+```python
+
+from pydesc.api.structure import get_structures
+
+structure, = get_structures("1no5")
+
+mer_A22 = structure.pdb_ids["A:22"]             # particular mer
+chain_b = structure.pdb_ids["B:"]               # chain wild card
+mers_no_22 = structure.pdb_ids["22"]            # mer id wild card
+segment = structure.pdb_ids["A:18": "A:23"]     # range
+chain_a_residues = structure.pdb_ids[: "A:105"] # range with implicit start
+partial = structure.pdb_ids[["A:12", "A:14", "B:45"]]
+
+assert len(partial) == 3
+```
+
+Using wild cards in slices and lists of PDB ids is not served.
+
+~~~
+Note that wild card for chain ends with ":".
+Chain names can be numbers too, so this is needed to distinguish between mer and 
+chain wild cards.
+~~~
 
 ### Descriptors
 
