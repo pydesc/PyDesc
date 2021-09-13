@@ -1,5 +1,6 @@
 import math
 import operator
+import re
 from abc import ABCMeta
 from abc import abstractmethod
 
@@ -34,21 +35,60 @@ class PDBidGetter:
         self.structure = structure
 
     def __getitem__(self, item):
-        try:
-            # TODO: serve slices and lists
-            raise NotASlice
-        except NotASlice:
-            if isinstance(item, str) or isinstance(item, PDBid):
-                return self._get_mer(item)
-            return self._get_iterable(item)
+        if isinstance(item, PDBid):
+            return self._get_mer(item)
+        elif isinstance(item, slice):
+            return self._get_slice(item)
+        elif self._is_full_pdbid(item):
+            return self._get_mer(item)
+        elif self._is_chain_wildcard(item):
+            return self.structure.get_chain(item[:1])
+        elif self._is_mer_wildcard(item):
+            item = self._resolve_mer_wildcard(item)
+        return self._get_iterable(item)
 
-    def _get_iterable(self, iterable):
-        inds = [self._get_ind(key) for key in iterable]
-        return self.structure[inds]
+    def _is_mer_wildcard(self, item):
+        try:
+            return bool(re.match("[0-9]+[^0-9]?", item))
+        except TypeError:
+            return False
+
+    def _is_full_pdbid(self, item):
+        pattern = ".+:[0-9]+[^0-9]?"
+        try:
+            return bool(re.match(pattern, item))
+        except TypeError:
+            return False
+
+    def _is_chain_wildcard(self, item):
+        pattern = ".+:"
+        try:
+            return bool(re.match(pattern, item))
+        except TypeError:
+            return False
+
+    def _resolve_mer_wildcard(self, item):
+        all_ids = self.converter.ind2pdb
+        ids = [pdbid for pdbid in all_ids if pdbid.format() == item]
+        return ids
+
+    def _get_slice(self, key):
+        start = self._get_ind(key.start) if key.start is not None else None
+        stop = self._get_ind(key.stop) if key.stop is not None else None
+        return self.structure[start:stop]
 
     def _get_mer(self, key):
         ind = self._get_ind(key)
         return self.structure[ind]
+
+    def _get_iterable(self, iterable):
+        try:
+            inds = [self._get_ind(key) for key in iterable]
+        except ValueError:
+            items = ", ".join([str(i) for i in iterable])
+            msg = f"Indexing by iterable expects only full PDB ids, but got:\n{items}"
+            raise ValueError(msg)
+        return self.structure[inds]
 
     def _get_ind(self, key):
         try:
