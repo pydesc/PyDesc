@@ -244,6 +244,8 @@ class MerCodeError(Exception):
 
 
 class NotASlice(Exception):
+    """Raised when given object is not a slice."""
+
     pass
 
 
