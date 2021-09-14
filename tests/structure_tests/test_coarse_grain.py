@@ -1,5 +1,3 @@
-from os.path import join as path_join
-
 import numpy
 import pytest
 
@@ -13,13 +11,13 @@ from pydesc.structure import StructureLoader
 
 @pytest.fixture(scope="session")
 def martini_structure_path(structures_dir):
-    return path_join(structures_dir, "martini")
+    return structures_dir / "martini"
 
 
 def test_martini(martini_structure_path):
     factory = BioPythonAtomSetFactory(classes=[MartiniResidue])
     loader = StructureLoader(atom_set_factory=factory)
-    path = path_join(martini_structure_path, "gpcr_d.pdb")
+    path = martini_structure_path / "gpcr_d.pdb"
     with open(path) as fh:
         stc = loader.load_structures([fh])[0]
 
@@ -51,7 +49,7 @@ def test_martini(martini_structure_path):
 
 
 def test_ca_trace(structures_dir):
-    stc_path = path_join(structures_dir, "PorCA_only", "1KAN.pdb")
+    stc_path = structures_dir / "PorCA_only" / "1KAN.pdb"
     factory = BioPythonAtomSetFactory(classes=[CATrace])
     loader = StructureLoader(atom_set_factory=factory)
     with open(stc_path) as fh:
@@ -69,7 +67,7 @@ def test_ca_trace(structures_dir):
 
 
 def test_p_trace(structures_dir):
-    stc_path = path_join(structures_dir, "PorCA_only", "2AGN.pdb")
+    stc_path = structures_dir / "PorCA_only" / "2AGN.pdb"
     factory = BioPythonAtomSetFactory(classes=[PTrace])
     loader = StructureLoader(atom_set_factory=factory)
     with open(stc_path) as fh:

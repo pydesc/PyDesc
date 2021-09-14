@@ -1,12 +1,11 @@
 import traceback
-from os import path
+from pathlib import Path
 
 import pytest
 
-TEST_PATH = path.dirname(path.abspath(__file__))
-DOC_PATH = path.realpath(path.join(TEST_PATH, "..", "doc"))
-
-COOKBOOK_PATH = path.join(DOC_PATH, "cookbook.md")
+TEST_PATH = Path(__file__).parent
+DOC_PATH = TEST_PATH / ".." / "doc"
+COOKBOOK_PATH = DOC_PATH / "cookbook.md"
 
 
 def read_cookbook_lines():

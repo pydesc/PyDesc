@@ -1,4 +1,3 @@
-import os.path
 import pickle
 from unittest.mock import MagicMock
 
@@ -41,8 +40,8 @@ def contact_map2(structure):
     return cmap
 
 
-def test_gc_contact_map(structure_file_w_type):
-    structures = get_structures_from_file(structure_file_w_type)
+def test_gc_contact_map(any_structure_file):
+    structures = get_structures_from_file(any_structure_file)
 
     for structure in structures:
         cm_calc = ContactMapCalculator(
@@ -57,9 +56,9 @@ def test_gc_contact_map(structure_file_w_type):
 
 @pytest.mark.system
 def test_golden_standard_pydesc_criterion_protein(protein_file, cmaps_dir):
-    fname = os.path.split(protein_file)[1]
-    structure_name = os.path.splitext(fname)[0]
-    path_str = os.path.join(cmaps_dir, "%s_default.cmp" % structure_name)
+    fname = protein_file.name
+    structure_name = protein_file.stem
+    path_str = cmaps_dir / ("%s_default.cmp" % structure_name)
     with open(path_str, "rb") as fh:
         expected = pickle.load(fh)
     (structure,) = get_structures_from_file(protein_file)
@@ -76,9 +75,9 @@ def test_golden_standard_pydesc_criterion_protein(protein_file, cmaps_dir):
 
 @pytest.mark.system
 def test_golden_standard_rc_protein(protein_file, cmaps_dir):
-    fname = os.path.split(protein_file)[1]
-    structure_name = os.path.splitext(fname)[0]
-    path_str = os.path.join(cmaps_dir, "%s_rc.cmp" % structure_name)
+    fname = protein_file.name
+    structure_name = protein_file.stem
+    path_str = cmaps_dir / ("%s_rc.cmp" % structure_name)
     with open(path_str, "rb") as fh:
         golden_cmap_dict = pickle.load(fh)
     (structure,) = get_structures_from_file(protein_file)

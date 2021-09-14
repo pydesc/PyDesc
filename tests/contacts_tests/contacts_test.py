@@ -1,4 +1,3 @@
-import os.path
 from unittest.mock import MagicMock
 
 import numpy
@@ -15,7 +14,7 @@ from pydesc.contacts.geometrical import PointsDistanceCriterion
 
 @pytest.fixture
 def structure(structures_dir):
-    path_str = os.path.join(structures_dir, "rna_only", "1KIS.pdb")
+    path_str = structures_dir / "rna_only" / "1KIS.pdb"
     (stc,) = get_structures_from_file(path_str)
     return stc
 

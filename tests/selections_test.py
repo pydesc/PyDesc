@@ -1,5 +1,4 @@
 import itertools
-import os.path
 
 import pytest
 
@@ -32,9 +31,9 @@ ConfigManager.warnings.quiet = True
 
 
 @pytest.fixture(scope="module")
-def structure(structure_file_w_type_short):
+def structure(any_structure_file):
     sl = StructureLoader()
-    with open(structure_file_w_type_short) as fh:
+    with open(any_structure_file) as fh:
         structure = sl.load_structures([fh])[0]
     return structure
 
@@ -42,7 +41,7 @@ def structure(structure_file_w_type_short):
 @pytest.fixture(scope="module")
 def stc_2dlc(structures_dir):
     sl = StructureLoader()
-    pth = os.path.join(structures_dir, "mixed", "2DLC.cif")
+    pth = structures_dir / "mixed" / "2DLC.cif"
     with open(pth) as fh:
         stc = sl.load_structures([fh])[0]
     return stc
@@ -217,7 +216,7 @@ class TestRangeSelection:
     @pytest.mark.system
     def test_range_on_discontinuity_chain(self, structures_dir):
         sl = StructureLoader()
-        pth = os.path.join(structures_dir, "prots_only", "3NPU.pdb")
+        pth = structures_dir / "prots_only" / "3NPU.pdb"
         with open(pth) as fh:
             stc = sl.load_structures([fh])[0]
         get_id = stc.converter.get_pdb_id
