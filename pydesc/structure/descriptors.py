@@ -9,17 +9,17 @@ from pydesc.structure.topology import Contact
 from pydesc.structure.topology import ElementChainable
 from pydesc.structure.topology import ElementOther
 from pydesc.structure.topology import Segment
+from pydesc.warnexcept import ElementCreationFail
 
 
 class ElementFactory:
     @staticmethod
-    def build(mer, derived_from):
+    def build(derived_from, mer):
         """Static builder.
 
         Returns appropriate Element subclass instance.
 
         Argument:
-        mer -- instance of pydesc.monomer.Monomer.
         """
         if mer.is_chainable():
             return ElementChainable(derived_from, mer)
@@ -29,8 +29,10 @@ class ElementFactory:
 class DescriptorBuilderDriver:
     """Descriptor building driver."""
 
-    @staticmethod
-    def build(structure_obj, central_element, contact_map):
+    def __init__(self, builder):
+        self.builder = builder
+
+    def build(self, derived_from, central_element, contact_map):
         """Create descriptor builder and return built descriptor.
 
         Arguments:
@@ -40,17 +42,15 @@ class DescriptorBuilderDriver:
          is taken.
 
         """
-        builder = DescriptorBuilder()
-        builder.set_derived_from(structure_obj)
-        builder.set_central_element(central_element)
-        builder.create_contacts(central_element, contact_map)
-        builder.set_mers()
-        builder.set_segments()
-        builder.set_elements()
-        return builder.build()
+        self.builder.set_derived_from(derived_from)
+        self.builder.set_central_element(central_element)
+        self.builder.create_contacts(central_element, contact_map)
+        self.builder.set_mers()
+        self.builder.set_segments()
+        self.builder.set_elements()
+        return self.builder.build()
 
-    @classmethod
-    def create_descriptors(cls, structure_obj, contact_map):
+    def create_descriptors(self, structure_obj, contact_map):
         """Static method that creates all possible Descriptor instances for
         a given (sub)structure.
 
@@ -62,8 +62,8 @@ class DescriptorBuilderDriver:
 
         def mk_desc(mer):
             try:
-                central_element = ElementFactory.build(mer, structure_obj)
-                descriptor = cls.build(structure_obj, central_element, contact_map)
+                central_element = ElementFactory.build(structure_obj, mer)
+                descriptor = self.build(structure_obj, central_element, contact_map)
                 return descriptor
             except (ElementCreationFail):
                 return
@@ -86,8 +86,8 @@ class DescriptorBuilder(metaclass=ABCMeta):
     def build(self):
         """Build descriptor using set attributes."""
         data = (
-            self.central_element,
             self.mers,
+            self.central_element,
             self.elements,
             self.segments,
             self.contacts,
@@ -120,20 +120,14 @@ class DescriptorBuilder(metaclass=ABCMeta):
         from is taken.
         """  # TODO: fix
         stc = element_obj.derived_from
-        central_mer = element_obj.central_monomer
+        central_mer = element_obj.central_mer
         contacts_ = sorted(contact_map.get_atom_set_contacts(central_mer.ind))
 
         def create_contact(payload):
-            """Returns Contact or None if failed to create one.
-
-            Argument:
-            input_ -- tuple containing: ind_1, ind_2 -- mers inds, value --
-            contact value.
-            """
             ind_2, value = payload
             try:
-                element_1 = ElementFactory.build(central_mer, stc)
-                element_2 = ElementFactory.build(stc[ind_2], stc)
+                element_1 = ElementFactory.build(stc, central_mer)
+                element_2 = ElementFactory.build(stc, stc[ind_2])
                 return Contact(element_1, element_2)
             except ElementCreationFail:
                 return
@@ -175,17 +169,15 @@ class DescriptorBuilder(metaclass=ABCMeta):
 
     def set_elements(self):
         """Fills initial attrs elements and elements_values."""
-        neighbours = {self.central_element.central_monomer: []}
+        neighbours = {self.central_element.central_mer: []}
         elements = {}
         for con in self.contacts:
             element1, element2 = con.elements
             for el1, el2 in zip((element1, element2), (element2, element1)):
-                elements[el1.central_monomer] = el1
-                neighbours.setdefault(el1.central_monomer, []).append(
-                    el2.central_monomer
-                )
+                elements[el1.central_mer] = el1
+                neighbours.setdefault(el1.central_mer, []).append(el2.central_mer)
         self.elements = sorted(
-            list(elements.values()), key=lambda elm: elm.central_monomer.ind
+            list(elements.values()), key=lambda elm: elm.central_mer.ind
         )
 
 
@@ -196,7 +188,7 @@ class Descriptor(AbstractStructure):
     according to a given ContactMap ContactCriterion.
     """
 
-    def __init__(self, central_element, mers, elements, segments, contacts):
+    def __init__(self, mers, central_element, elements, segments, contacts):
         """Descriptor constructor.
 
         Arguments:
@@ -213,8 +205,10 @@ class Descriptor(AbstractStructure):
 
     @property
     def cm_pid(self):
-        """Returns PDB id of central element central monomer as string."""
-        return str(self.central_element.central_monomer.pid)
+        """Returns PDB id of central element central mer as string."""
+        ind = self.central_element.central_mer.ind
+        pdb_id = self.derived_from.converter.get_pdb_id(ind)
+        return pdb_id
 
     def __repr__(self):
         return "<Descriptor of %s:%s>" % (str(self.derived_from), self.cm_pid)

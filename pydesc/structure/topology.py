@@ -206,16 +206,12 @@ class AbstractStructure(metaclass=ABCMeta):
         """Returns number of mers present in current structure."""
         return len(self._mers)
 
-    def next_mer(self, monomer_obj):
-        """Returns next monomer available in current structure for given
-        monomer.
-
-        Argument:
-        monomer_obj -- instance of pydesc.monomer.Monomer.
-        """
+    def next_mer(self, mer):
+        """Returns next mer available in current structure for given
+        mer."""
         try:
-            if monomer_obj.next_mer in self:
-                return monomer_obj.next_mer
+            if mer.next_mer in self:
+                return mer.next_mer
             return None
         except AttributeError:
             return None
@@ -488,12 +484,12 @@ class Segment(AbstractStructure):
 
     @property
     def start(self):
-        """Returns first segment monomer."""
+        """Returns first segment mer."""
         return self._mers[0]
 
     @property
     def end(self):
-        """Returns last segment monomer."""
+        """Returns last segment mer."""
         return self._mers[-1]
 
     def adjusted_number(self):
@@ -569,16 +565,14 @@ class AbstractElement(AbstractStructure, metaclass=ABCMeta):
         """Element constructor.
 
         Argument:
-        mer -- instance of appropriate pydesc.monomer.Monomer subclass.
         """
         AbstractStructure.__init__(self, derived_from)
-        self.central_monomer = mer
+        self.central_mer = mer
 
     def __repr__(self, mode=0):
-        return "<%s of %s>" % (
-            str(self.__class__.__name__),
-            str(self.derived_from.converter.get_pdb_id(self.central_monomer.ind)),
-        )
+        name = self.__class__.__name__
+        pdb_id = str(self.derived_from.converter.get_pdb_id(self.central_mer.ind))
+        return f"<{name} of {pdb_id}>"
 
 
 class ElementChainable(AbstractElement, Segment):
@@ -601,7 +595,7 @@ class ElementChainable(AbstractElement, Segment):
         length = ConfigManager.element.element_chainable_length
         if not length % 2 == 1:
             raise ValueError("Length of chainable element should be odd.")
-        mers = [self.central_monomer]
+        mers = [self.central_mer]
         for _ in range(length // 2):
             start = mers[0]
             end = mers[-1]
@@ -625,7 +619,6 @@ class ElementOther(AbstractElement):
         """Element constructor.
 
         Argument:
-        mer -- instance of any pydesc.monomer.MonomerOther subclass.
         """
         super().__init__(mer, derived_from)
 
@@ -648,7 +641,7 @@ class Contact(AbstractStructure):
                 "Impossible to create contact instance with elements derived "
                 "from different structures"
             )
-        if element1.central_monomer.ind == element2.central_monomer.ind:
+        if element1.central_mer.ind == element2.central_mer.ind:
             raise ValueError("Impossible to create contact using one element")
         AbstractStructure.__init__(self, element1.derived_from)
         self._mers = numpy.array([*element1, *element2], dtype=object)
@@ -663,7 +656,7 @@ class Contact(AbstractStructure):
         return self.get_other_element(val)
 
     def __repr__(self):
-        items = sorted(i.central_monomer.ind for i in self.elements)
+        items = sorted(i.central_mer.ind for i in self.elements)
         return "<Contact of %i and %i elements>" % tuple(items)
 
     def get_other_element(self, element_obj):
@@ -686,4 +679,4 @@ class Contact(AbstractStructure):
 
         This property is required by contacts.DescriptorCriterion.
         """
-        return cmap.get_contact_value(*[i.central_monomer.ind for i in self.elements])
+        return cmap.get_contact_value(*[i.central_mer.ind for i in self.elements])

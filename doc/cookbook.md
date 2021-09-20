@@ -105,9 +105,9 @@ Basis for any study one can perform using PyDesc is loading structure.
 ### Configuration
 
 ```python
-from pydesc.config import ConfigManager
 import pydesc.chemistry
 import pydesc.dbhandler
+from pydesc.config import ConfigManager
 
 ConfigManager.dbhandler.cachedir
 ConfigManager.dbhandler.pdb_handler
@@ -176,8 +176,8 @@ Note that `load_structures` method takes list of file handlers, as it can read f
 To get files from a remote database, an additional database handler is needed:
 
 ```python
-from pydesc.structure import StructureLoader
 from pydesc.dbhandler import MetaHandler
+from pydesc.structure import StructureLoader
 
 handler = MetaHandler()
 structure_loader = StructureLoader()
@@ -222,8 +222,8 @@ Mode "2" works only for PDB database (so `PDBHandler` and `MMCIFHandler`), but r
  a synchronised copy od PDB and setting `ConfigManager.dbhandler.pdb_handler` path.
 
 ```python
-from pydesc.dbhandler import MMCIFHandler
 from pydesc.dbhandler import MetaHandler
+from pydesc.dbhandler import MMCIFHandler
 from pydesc.dbhandler import PDBHandler
 
 meta = MetaHandler(mode=[3, 1])
@@ -273,9 +273,10 @@ That means `MetaParser` tries both parsers when loading a file, which does not
 Both parsers contained in `MetaParser` are set to not log any warnings.
 
 ```python
+from Bio.PDB import MMCIFParser
+
 from pydesc.parsers import MetaParser
 from pydesc.structure import StructureLoader
-from Bio.PDB import MMCIFParser
 
 file_parser = MetaParser(QUIET=False)
 structure_loader = StructureLoader(parser=file_parser)
@@ -568,8 +569,8 @@ Residues in this representation consist of `BB` pseudoatom representing backbone
 #### Martini configuration
 
 ```python
-from pydesc.config import ConfigManager
 import pydesc.chemistry.martini
+from pydesc.config import ConfigManager
 
 ConfigManager.chemistry.martiniresidue.bb_bond_threshold
 ConfigManager.chemistry.martiniresidue.backbone_atoms
@@ -638,8 +639,8 @@ In the example above `MonoatomicIon` and `Ligand` are also included, as structur
 #### BB-trace configuration
 
 ```python
-from pydesc.config import ConfigManager
 import pydesc.chemistry.bbtrace
+from pydesc.config import ConfigManager
 
 ConfigManager.chemistry.catrace.bb_bond_threshold
 ConfigManager.chemistry.catrace.backbone_atoms
@@ -974,7 +975,55 @@ chain wild cards.
 
 ### Descriptors
 
-TBD
+Descriptors of local structure (DLS; yeah, we are aware of potential here), or 
+ descriptors for short, are subsets of atom sets.
+ To define them, we first need to define "element" and "contact".
+
+Element is defined for its central atom set.
+ If that atom set is a ligand, element is equal to that atom set.
+ For mers element contains its central mer and *n* preceding and *n* following mers.
+ So it is a segment of length *2n + 1*, defined for its *n*th + 1 (central) mer.
+
+Contact is union of two elements, which central mers are in contact, according to 
+ given contact criterion.
+ It is not said what criterion exactly, but PyDesc do use some criteria by default
+ (see [this section](#pre-defined-criteria) for more details).
+ We are mostly interested in mer-to-mer contacts, but contacts mer-to-ligand,
+ mer-to-solvent and any other between solvent, ligands and mers are possible to 
+ calculate with PyDesc.
+ Complex criteria are possible, e.g. alternative of mer-to-mer and mer-to-ligand etc.
+
+Now, DLS is a union of all contacts possible to create for given central mer with given
+ contact criterion.
+
+By now it should be clear, that creation of any descriptor requires contact map.
+Getting all components together is rather tidious.
+
+Simple example:
+```python
+from pydesc.api.structure import get_structures
+from pydesc.api.cmaps import calculate_contact_map
+from pydesc.structure.descriptors import ElementFactory
+from pydesc.structure.descriptors import DescriptorBuilderDriver
+from pydesc.structure.descriptors import DescriptorBuilder
+
+structure, = get_structures("1no5")
+cmap = calculate_contact_map(structure)
+
+mer = structure[22]
+element = ElementFactory().build(structure, mer)
+descriptor = DescriptorBuilderDriver(DescriptorBuilder()).build(structure, element, cmap)
+
+print(len(descriptor))
+for atom_set in descriptor:
+    print(atom_set.ind)
+print(descriptor.elements)
+print(descriptor.contacts)
+print(descriptor.segments)
+assert descriptor.central_element.central_mer.ind == 22
+assert descriptor.cm_pid == ("A", 28, None)
+
+```
 
 ## Trajectories
 
@@ -1628,8 +1677,8 @@ In this case first block of code in fast, vectorized calculation of distances be
  This particular class is useless as it is much more convenient to use
   `PointsDistanceCriterion` like this:
 ```python
-from pydesc.contacts.geometrical import PointsDistanceCriterion
 from pydesc.chemistry.full_atom import Residue
+from pydesc.contacts.geometrical import PointsDistanceCriterion
 from pydesc.selection import AtomSetSubclass
 
 criterion = PointsDistanceCriterion("CA", 5.25, 0.75)
@@ -1694,8 +1743,8 @@ Formats available for writing:
 ### Configuration
 
 ```python
-from pydesc.config import ConfigManager
 import pydesc.chemistry
+from pydesc.config import ConfigManager
 
 ConfigManager.chemistry.mer.code
 ConfigManager.chemistry.mer.additional_code
@@ -2109,8 +2158,8 @@ There is also method `set_columns_order` not shown in example above.
  Here is an example utilising parts of multiple alignment known from paragraphs above:
 
 ```python
-from pydesc.api.structure import get_structures_from_file
 from pydesc.api.alignment import load_alignment
+from pydesc.api.structure import get_structures_from_file
 
 pdb_path = "tests/data/test_alignments/structures/kinases5_dama.pdb"
 structures = get_structures_from_file(pdb_path)     # 1LUF, 2SRC, 1BO1, 1CDK, 1IA9
@@ -2176,9 +2225,9 @@ Analysing alignments requires understanding alignment objects and there are no m
  First part of the example is the same chain of operations:
 
 ```python
-from pydesc.api.structure import get_structures_from_file
-from pydesc.api.alignment import load_alignment
 from pydesc.alignment.base import DASH
+from pydesc.api.alignment import load_alignment
+from pydesc.api.structure import get_structures_from_file
 
 pdb_path = "tests/data/test_alignments/structures/kinases5_dama.pdb"
 structures = get_structures_from_file(pdb_path)     # 1LUF, 2SRC, 1BO1, 1CDK, 1IA9
@@ -2373,8 +2422,8 @@ In example below we have single PDB file with 5 structures and some alignment of
  alignment to pass correct structures.
 
 ```python
-from pydesc.api.structure import get_structures_from_file
 from pydesc.alignment.loaders import PALLoader
+from pydesc.api.structure import get_structures_from_file
 
 pdb_path = "tests/data/test_alignments/structures/kinases5_dama.pdb"
 structures = get_structures_from_file(pdb_path)     
