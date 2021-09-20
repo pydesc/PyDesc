@@ -50,26 +50,6 @@ class DescriptorBuilderDriver:
         self.builder.set_elements()
         return self.builder.build()
 
-    def create_descriptors(self, structure_obj, contact_map):
-        """Static method that creates all possible Descriptor instances for
-        a given (sub)structure.
-
-        Arguments:
-        structure_obj -- any AbstractStructure subclass instance
-        contact_map -- ContactMap instance that will be submitted to
-        AbstractDescriptor.__init__ method, initially set to None.
-        """
-
-        def mk_desc(mer):
-            try:
-                central_element = ElementFactory.build(structure_obj, mer)
-                descriptor = self.build(structure_obj, central_element, contact_map)
-                return descriptor
-            except (ElementCreationFail):
-                return
-
-        return [mk_desc(mer) for mer in structure_obj]
-
 
 class DescriptorBuilder(metaclass=ABCMeta):
     """Builder-like class preparing data to create descriptor."""
