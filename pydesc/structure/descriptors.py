@@ -65,9 +65,7 @@ class DescriptorBuilderDriver:
                 central_element = ElementFactory.build(mer, structure_obj)
                 descriptor = cls.build(structure_obj, central_element, contact_map)
                 return descriptor
-            except (TypeError, ValueError, AttributeError):
-                # TODO: it looks like it was catching too much -- investigate,
-                #  e.g. on 4NJ6
+            except (ElementCreationFail):
                 return
 
         return [mk_desc(mer) for mer in structure_obj]
@@ -114,7 +112,7 @@ class DescriptorBuilder(metaclass=ABCMeta):
 
     def create_contacts(self, element_obj, contact_map):
         """Create star topology contacts for central mer of given element.
-        
+
         Arguments:
         element_obj -- ElementChainable instance.
         contact_map -- instance of contact map. Set on None by default. If 
@@ -137,13 +135,11 @@ class DescriptorBuilder(metaclass=ABCMeta):
                 element_1 = ElementFactory.build(central_mer, stc)
                 element_2 = ElementFactory.build(stc[ind_2], stc)
                 return Contact(element_1, element_2)
-            except (ValueError,):
-                # TypeError is raised during creation of Contacts based on
-                # pairs of mers that cannot be used to create Elements
-                # ValueError -- non chainable or too close to terminus
+            except ElementCreationFail:
                 return
 
-        self.contacts = [create_contact(cnt) for cnt in contacts_]
+        contact_objects = [create_contact(cnt) for cnt in contacts_]
+        self.contacts = [contact for contact in contact_objects if contact is not None]
 
     def set_segments(self):  # TODO: nightmare code -- fix it please
         """Fills initial attr segments."""

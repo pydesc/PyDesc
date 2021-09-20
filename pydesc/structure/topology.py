@@ -12,6 +12,7 @@ import pydesc.geometry
 from pydesc.config import ConfigManager
 from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import DiscontinuityError
+from pydesc.warnexcept import ElementCreationFail
 from pydesc.warnexcept import NotASlice
 from pydesc.warnexcept import WrongElement
 from pydesc.warnexcept import warn
@@ -608,10 +609,10 @@ class ElementChainable(AbstractElement, Segment):
                 mers = [start.prev_mer, *mers, end.next_mer]
             except AttributeError:
                 msg = f"Element creation failed for mer {mer.ind}"
-                raise ValueError(msg)
+                raise ElementCreationFail(msg)
         if mers.count(None) != 0:
             msg = f"Element creation failed for mer {mer.ind}"
-            raise ValueError(msg)
+            raise ElementCreationFail(msg)
         self._mers = numpy.array(mers, dtype=object)
 
 
