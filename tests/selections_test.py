@@ -222,8 +222,8 @@ class TestRangeSelection:
         get_id = stc.converter.get_pdb_id
         # discontinuity occurs between A19 and A24 (1! res missing)
         msg = "Something is wrong with structure that supposed have broken " "backbone."
-        assert str(get_id(17)) == "A19", msg
-        assert str(get_id(18)) == "A24", msg
+        assert str(get_id(17)) == "A:19", msg
+        assert str(get_id(18)) == "A:24", msg
 
         range_selection = Range(get_id(16), get_id(19))
         new_sel = range_selection.specify(stc)

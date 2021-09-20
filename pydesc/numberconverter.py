@@ -152,9 +152,10 @@ class PDBid(tuple):
     """
 
     def __str__(self):
-        chain = "?" if self.chain is None else self.chain
+        chain = "*" if self.chain is None else self.chain
         icode = "" if self.icode is None else self.icode
-        return (chain + str(self.ind) + icode).strip()
+        string = f"{chain}:{self.ind}{icode.strip()}"
+        return string
 
     def format(self, chain=False):
         """Get id as string with or without chain."""
