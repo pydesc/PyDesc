@@ -997,15 +997,17 @@ Now, DLS is a union of all contacts possible to create for given central mer wit
  contact criterion.
 
 By now it should be clear, that creation of any descriptor requires contact map.
-Getting all components together is rather tidious.
+Getting all components together is rather tedious, which is reflected in complexity of 
+ creation process.
+ It is easier to use api convenience functions.
+ Full process is presented below:
 
-Simple example:
 ```python
-from pydesc.api.structure import get_structures
 from pydesc.api.cmaps import calculate_contact_map
-from pydesc.structure.descriptors import ElementFactory
-from pydesc.structure.descriptors import DescriptorBuilderDriver
+from pydesc.api.structure import get_structures
 from pydesc.structure.descriptors import DescriptorBuilder
+from pydesc.structure.descriptors import DescriptorBuilderDriver
+from pydesc.structure.descriptors import ElementFactory
 
 structure, = get_structures("1no5")
 cmap = calculate_contact_map(structure)
@@ -1028,6 +1030,23 @@ assert descriptor.central_element.central_mer.ind == 22
 assert descriptor.cm_pid == ("A", 28, None)
 
 ```
+
+Element factory is used outside builder driver to create central element, but in this 
+ example we also pass it to `DescriptorBuilder` for it to use while creating contact 
+ objects.
+`DescriptorBuilder` implements methods listed below, while its driver execute them in
+ given order:
+* `set_derived_from` -- parent structure (`derived_from`) is taken from central element;
+* `set_central_element`
+* `create_contacts` -- this method uses element factory passed during initialization;
+* `set_mers`
+* `set_segments`
+* `set_elements`
+
+Default (and the only implemented one) `DescriptorBuilder` creates descriptors with star
+ topology, in which all elements have the same length.
+ Other topologies require different (implemented by users) element factories, descriptor
+ builders or their drivers.
 
 ## Trajectories
 
