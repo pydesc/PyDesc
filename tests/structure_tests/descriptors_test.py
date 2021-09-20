@@ -46,7 +46,8 @@ class TestProteinDescriptor:
         cmc = ContactMapCalculator(s, get_rc_distance_criterion())
         cm = cmc.calculate_contact_map()
 
-        desc_builder = DescriptorBuilder()
+        e_factory = ElementFactory()
+        desc_builder = DescriptorBuilder(e_factory)
         dbd = DescriptorBuilderDriver(desc_builder)
 
         descs = []
@@ -54,7 +55,7 @@ class TestProteinDescriptor:
         failed = 0
         for mer in s:
             try:
-                element = ElementFactory().build(s, mer)
+                element = e_factory.build(s, mer)
             except ElementCreationFail:
                 failed += 1
                 continue

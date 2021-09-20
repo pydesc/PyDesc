@@ -1010,9 +1010,13 @@ from pydesc.structure.descriptors import DescriptorBuilder
 structure, = get_structures("1no5")
 cmap = calculate_contact_map(structure)
 
+element_factory = ElementFactory()
+descriptor_builder = DescriptorBuilder(element_factory)
+builder_driver = DescriptorBuilderDriver(descriptor_builder)
+
 mer = structure[22]
-element = ElementFactory().build(structure, mer)
-descriptor = DescriptorBuilderDriver(DescriptorBuilder()).build(structure, element, cmap)
+element = element_factory.build(structure, mer)
+descriptor = builder_driver.build(structure, element, cmap)
 
 print(len(descriptor))
 for atom_set in descriptor:

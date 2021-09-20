@@ -74,7 +74,7 @@ class DescriptorBuilderDriver:
 class DescriptorBuilder(metaclass=ABCMeta):
     """Builder-like class preparing data to create descriptor."""
 
-    def __init__(self):
+    def __init__(self, element_factory):
         """Set initial attributes."""
         self.central_element = None
         self.mers = []
@@ -82,6 +82,7 @@ class DescriptorBuilder(metaclass=ABCMeta):
         self.segments = []
         self.elements = []
         self.derived_from = None
+        self.element_factory = element_factory
 
     def build(self):
         """Build descriptor using set attributes."""
@@ -126,8 +127,8 @@ class DescriptorBuilder(metaclass=ABCMeta):
         def create_contact(payload):
             ind_2, value = payload
             try:
-                element_1 = ElementFactory.build(stc, central_mer)
-                element_2 = ElementFactory.build(stc, stc[ind_2])
+                element_1 = self.element_factory.build(stc, central_mer)
+                element_2 = self.element_factory.build(stc, stc[ind_2])
                 return Contact(element_1, element_2)
             except ElementCreationFail:
                 return
