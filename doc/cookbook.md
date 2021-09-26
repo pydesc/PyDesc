@@ -94,6 +94,7 @@ examples that should not be tested by pytest -- in " ```python <code>" (note spa
     - [API](#api-7)
   - [Geometry](#geometry)
 
+
 ## Configuration
 
 TBD
@@ -717,7 +718,7 @@ There are more settings possibly relevant to chainable atom sets, such as `indic
 
 Different representation have different features that might be interesting for users,
  but may require calculation and are not read from file directly.
- PyDesc distinguishes between pseudoatoms (points) and other features (so called
+ PyDesc distinguishes between pseudoatoms (points) and other features (so-called
  "dynamic features").
  While implementing new class, it is possible to add algorithms that should be
  performed to get them.
@@ -824,7 +825,31 @@ There is no related configuration.
 
 ### API
 
-TBD
+[Descriptor creation](#descriptors) is facilitated by two functions in `pydesc.api.
+descriptor` module.
+
+```python
+from pydesc.api.cmaps import calculate_contact_map
+from pydesc.api.criteria import get_default_protein_criterion
+from pydesc.api.descriptor import create_descriptor
+from pydesc.api.descriptor import create_descriptors
+from pydesc.api.structure import get_structures
+
+structure, = get_structures("1no5")
+criterion = get_default_protein_criterion()
+contact_map = calculate_contact_map(structure, criterion)
+
+desc42 = create_descriptor(structure, structure[42], contact_map)
+descriptors = create_descriptors(structure, contact_map)
+```
+
+* `create_descriptor` takes structure, central atom set and contact map and constructs 
+ a descriptor.
+* `create_descriptors` takes structure and contact map, then constructs all possible 
+descriptors for add atom sets.
+ Result is a list of descriptors and `None`s.
+ The latter corresponds with atom sets for which descriptors could not be created.
+ They are kept to enable usage of comfortable generator `zip(descriptors, structure)`.
 
 ### Simple usage
 
