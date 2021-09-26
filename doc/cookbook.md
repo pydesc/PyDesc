@@ -856,7 +856,7 @@ descriptors for add atom sets.
 Getting chain is different from getting other structures, but easy, so that is where we
  will begin:
 
-#### Getting chains
+#### Chains
 
 ```python
 from pydesc.api.structure import get_structures
@@ -1021,10 +1021,25 @@ Contact is union of two elements, which central mers are in contact, according t
 Now, DLS is a union of all contacts possible to create for given central mer with given
  contact criterion.
 
-By now it should be clear, that creation of any descriptor requires contact map.
+Here is an example for structure `1no5` and descriptor for residue `A:48`:
+1. Load structure and calculate contact map for it (here: using default protein
+   criterion):
+2. Pick up residue `A:48` (side chain represented with sticks) and create element
+   for it (marked in red):
+   ![](images/desc1.png)
+3. Pick up all atom sets `A:48` contacts with (side chains of those residues are 
+   presented as white sticks, while contacts are marked with red dotted lines):
+   ![](images/desc2.png)
+4. For each residue picked up in 3rd step -- create an element (marked orange; they 
+   overlap, but each contains 5 residues).
+   Union of those elements is a `A:48`'s descriptor for default protein criterion:
+   ![](images/desc3.png)
+
+By now it should be clear, that creation of any descriptor requires contact map
+ (for more details, se [this section](#contact-maps)).
 Getting all components together is rather tedious, which is reflected in complexity of 
  creation process.
- It is easier to use api convenience functions.
+ It is easier to use api convenience functions (described [here](#api-2)).
  Full process is presented below:
 
 ```python
@@ -1053,7 +1068,6 @@ print(descriptor.contacts)
 print(descriptor.segments)
 assert descriptor.central_element.central_mer.ind == 22
 assert descriptor.cm_pid == ("A", 28, None)
-
 ```
 
 Element factory is used outside builder driver to create central element, but in this 
@@ -2546,7 +2560,7 @@ TBD
 
 #### Build own PyMOL from source
 
-1. clone repo `git clone https://github.com/schrodinger/pymol-open-source/blob/master`
+1. clone repo `git clone https://github.com/schrodinger/pymol-open-source/`
 1. `cd pymol-open-source`
 1. install all pre-requirements
 1. run `PREFIX_PATH=<site-packages> python setup.py install --prefix=<install-dir>`,
@@ -2554,9 +2568,10 @@ TBD
   local Python 3.6+ and `<install-dir>` is directory to install pymol to.
 1. to run pymol execute `<install-dir>/bin/pymol`
 
-Trick for `freetype`, which sometimes is not recognised by C++ compiler:
-- locate you freetype directory (`<freetype-dir>`)
-- set variable `CPATH=<freetype-dir>` in the same line where `python setup.py` is called
+Trick for `freetype` and `libxml`, which sometimes is not recognised by C++ compiler:
+- locate you freetype directory (`<freetype-dir>`) or libxml directory (`<libxml-dir>`)
+- set variable `CPATH=<freetype-dir>:<libxml-dir>` in the same line where
+  `python setup. py` is called
 
 ### Configuration
 
