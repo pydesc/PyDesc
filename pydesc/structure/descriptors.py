@@ -13,7 +13,6 @@ from pydesc.warnexcept import ElementCreationFail
 
 
 class ElementFactory:
-
     def __init__(self, length_of_chainable_elements=5):
         if not length_of_chainable_elements % 2 == 1:
             msg = "Length of chainable element should be an odd integer."
