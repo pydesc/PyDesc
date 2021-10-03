@@ -1,8 +1,8 @@
 """Convenience functions for creating descriptors."""
-
 from pydesc.structure.descriptors import DescriptorBuilder
 from pydesc.structure.descriptors import DescriptorBuilderDriver
 from pydesc.structure.descriptors import ElementFactory
+from pydesc.structure.topology import ElementOther
 from pydesc.warnexcept import ElementCreationFail
 
 
@@ -21,6 +21,8 @@ def create_descriptors(structure, contact_map):
         try:
             central_element = element_factory.build(structure, mer)
         except (ElementCreationFail):
+            return
+        if isinstance(central_element, ElementOther):
             return
         descriptor = builder_driver.build(structure, central_element, contact_map)
         return descriptor
