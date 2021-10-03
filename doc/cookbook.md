@@ -851,6 +851,16 @@ descriptors for add atom sets.
  The latter corresponds with atom sets for which descriptors could not be created.
  They are kept to enable usage of comfortable generator `zip(descriptors, structure)`.
 
+By default, both functions use basic `ElementFactory` and `DescriptorBuilderDriver` with
+ `DescriptorBuilder` attached.
+ That can be changed thanks to arguments provided by both api functions:
+ * `element_factory`
+ * `builder_driver`
+
+If only `element_factory` is provided -- it is used to construct default
+ `DescriptorBuilder` as well as for creating central element(s).
+
+
 ### Simple usage
 
 Getting chain is different from getting other structures, but easy, so that is where we
