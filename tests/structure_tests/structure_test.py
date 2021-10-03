@@ -1,3 +1,5 @@
+import pytest
+
 from pydesc.config import ConfigManager
 from pydesc.dbhandler import MetaHandler
 from pydesc.structure import StructureLoader
@@ -33,6 +35,7 @@ def test_default_structure_loader_load_local(pure_file, pure_types_2_mers):
         assert_structure(structure)
 
 
+@pytest.mark.web
 def test_default_structure_loader_load_from_pdb(pure_file, pure_types_2_mers):
     type_ = pure_file.parent.stem
     code = pure_file.stem

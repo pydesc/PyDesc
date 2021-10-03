@@ -32,6 +32,7 @@ def test_overfit_trivial(trivial_structures):
     assert 8.0 > rmsd >= 0.0
     assert isinstance(trt_mtx, TRTMatrix)
 
+
 def test_overfit_mers(trivial_structures):
     fitter = Overfit()
     for ind in range(len(trivial_structures[0]))[:3]:
@@ -41,6 +42,7 @@ def test_overfit_mers(trivial_structures):
 
     assert 8.0 > rmsd >= 0.0
     assert isinstance(trt_mtx, TRTMatrix)
+
 
 def test_overfit_points(trivial_structures):
     fitter = Overfit()
@@ -52,16 +54,19 @@ def test_overfit_points(trivial_structures):
     assert 8.0 > rmsd >= 0.0
     assert isinstance(trt_mtx, TRTMatrix)
 
+
 def test_overfit_points_different_lens():
     fitter = Overfit()
     with pytest.raises(TypeError):
         fitter.add_points([0, 0, 0], [0, 0, 0, 0, 0])
+
 
 def test_overfit_artificial_points():
     fitter = Overfit()
     fitter.add_points((1, 2, 3), (1, 2, 3))
     rmsd, trt = fitter.overfit()
     assert rmsd == 0.0
+
 
 def test_overfit_alignment(sars_pair):
     fitter = Overfit()
@@ -71,15 +76,16 @@ def test_overfit_alignment(sars_pair):
 
 
 def test_overfit_different_representation(protein_file, dna_file):
-    stc1, = get_structures_from_file(protein_file)
-    stc2, = get_structures_from_file(dna_file)
+    (stc1,) = get_structures_from_file(protein_file)
+    (stc2,) = get_structures_from_file(dna_file)
     fitter = Overfit()
     with pytest.raises(TypeError):
         fitter.add_mers(stc1[0], stc2[0])
 
+
 def test_overfit_different_structure_lens(protein_file, dna_file):
-    stc1, = get_structures_from_file(protein_file)
-    stc2, = get_structures_from_file(dna_file)
+    (stc1,) = get_structures_from_file(protein_file)
+    (stc2,) = get_structures_from_file(dna_file)
     fitter = Overfit()
     with pytest.raises(TypeError):
         fitter.add_structures(stc1, stc2)

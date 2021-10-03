@@ -176,7 +176,7 @@ Note that `load_structures` method takes list of file handlers, as it can read f
 
 To get files from a remote database, an additional database handler is needed:
 
-```python
+```python web
 from pydesc.dbhandler import MetaHandler
 from pydesc.structure import StructureLoader
 
@@ -222,7 +222,7 @@ Also order of numbers matter, e.g. "[3, 1]" mean that handler will first try to 
 Mode "2" works only for PDB database (so `PDBHandler` and `MMCIFHandler`), but requires 
  a synchronised copy od PDB and setting `ConfigManager.dbhandler.pdb_handler` path.
 
-```python
+```python web
 from pydesc.dbhandler import MetaHandler
 from pydesc.dbhandler import MMCIFHandler
 from pydesc.dbhandler import PDBHandler
@@ -296,7 +296,7 @@ Each structure comes with object responsible for translating PDB ids to atoms se
  stored as different pdb files.
  To do so just set flag `common_converter` to True.
 
-```python
+```python web
 from pydesc.dbhandler import PDBHandler
 from pydesc.structure import StructureLoader
 
@@ -596,7 +596,7 @@ CA-trace provides pseudoatom `mpp`, which is calculated as sum of vectors anchor
  adjacent CAs, pointing at CA of chosen residue, scaled to have length of 2.53Å.
  It is meant as fast to calculate, preliminary prediction of cbx position.
 
-```python
+```python web
 from pydesc.chemistry.bbtrace import CATrace
 from pydesc.chemistry.factories import BioPythonAtomSetFactory
 from pydesc.dbhandler import MetaHandler
@@ -614,7 +614,7 @@ for ca_residue in stc:
 
 Similarly, for P-trace:
 
-```python
+```python web
 from pydesc.chemistry.bbtrace import PTrace
 from pydesc.chemistry.factories import BioPythonAtomSetFactory
 from pydesc.chemistry.full_atom import Ligand
@@ -1419,7 +1419,7 @@ There is no related configuration.
 
 Single function related to frequency maps is stored in `pydesc.api.cmaps` submodule.
 It turns sequence of contact maps into frequency map:
-```python
+```python web
 from pydesc.api.cmaps import calculate_contact_map
 from pydesc.api.cmaps import create_frequency_map_from_contact_maps
 from pydesc.api.structure import get_structures
@@ -1438,7 +1438,7 @@ for ids, frequency in fmap:
 
 Frequency maps are mostly useful when working with trajectories.
  Similarly to contact maps, there is class performing calculation:
-```python
+```python web
 from pydesc.contacts.maps import FrequencyMapCalculator
 from pydesc.api.trajectory import from_frames
 from pydesc.api.structure import get_structures

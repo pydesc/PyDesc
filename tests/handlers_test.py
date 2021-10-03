@@ -20,6 +20,7 @@ class TestPDBHandler:
         yield
         rmtree(cache_dir)
 
+    @pytest.mark.web
     def test_pdb_access(self):
         # download
         handler = PDBHandler(mode=[1])
@@ -33,17 +34,20 @@ class TestPDBHandler:
         files = handler.get_file("1no5")
         assert len(files) == 1
 
+    @pytest.mark.web
     def test_mmcif_download(self):
         handler = MMCIFHandler(mode=[1])
         files = handler.get_file("1no5")
         assert len(files) == 1
 
+    @pytest.mark.web
     def test_bio_download(self):
         handler = BioUnitHandler(mode=[1])
         files = handler.get_file("3pi2", 1)
         assert len(files) == 1
 
 
+@pytest.mark.web
 class TestSCOPHandler:
     def test_download(self):
         handler = SCOPHandler(mode=[1])

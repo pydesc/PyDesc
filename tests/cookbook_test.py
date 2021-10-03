@@ -63,18 +63,23 @@ def iter_tree(key, tree):
 
 def extract_example(lines):
     examples = []
+    marks = []
     add = False
     for line in lines:
         if line.startswith("```python"):
             examples.append("")
             add = True
+            if "web" in line:
+                marks.append(True)
+            else:
+                marks.append(False)
             continue
         elif line.startswith("```"):
             add = False
         if add:
             examples[-1] += line
             examples[-1] += "\n"
-    return examples
+    return zip(examples, marks)
 
 
 def get_examples():
@@ -82,10 +87,10 @@ def get_examples():
     tree = make_section_tree(lines)
     for section, lines in iter_tree("Cookbook", tree):
         examples = extract_example(lines)
-        examples = [example for example in examples if bool(example)]
-        for n, example in enumerate(examples, 1):
+        examples = [example for example in examples if bool(example[0])]
+        for n, (example, mark) in enumerate(examples, 1):
             test_name = f"{section}_{n}"
-            yield test_name, ExecutableTest(example)
+            yield test_name, ExecutableTest(example, mark)
 
 
 class CookbookTestFail(Exception):
@@ -93,8 +98,12 @@ class CookbookTestFail(Exception):
 
 
 class ExecutableTest:
-    def __init__(self, code):
+    def __init__(self, code, web_mark=False):
         self.code = code
+        self.web = web_mark
+
+    def is_web(self):
+        return self.web
 
     def execute(self):
         try:
@@ -106,5 +115,10 @@ class ExecutableTest:
 
 
 @pytest.mark.parametrize("name,test_code", get_examples())
-def test_cookbook(name, test_code):
+def test_cookbook(request, name, test_code):
+    markings = request.config.getoption("keyword")
+    markings += request.config.getoption("markexpr")
+    if "not web" in markings:
+        if test_code.is_web():
+            pytest.xfail("Skipping web test.")
     test_code.execute()

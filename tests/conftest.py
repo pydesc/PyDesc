@@ -96,10 +96,10 @@ def any_structure_file(request):
     return request.param
 
 
-@pytest.fixture(
-    params=[PDB_FILES[kind][-1] for kind in NMR_TYPES])
+@pytest.fixture(params=[PDB_FILES[kind][-1] for kind in NMR_TYPES])
 def nmr_structure_of_each_kind(request):
     return request.param
+
 
 @pytest.fixture(scope="session")
 def mixed_structures_path():
