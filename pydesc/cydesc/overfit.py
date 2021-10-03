@@ -27,6 +27,7 @@ import ctypes
 import operator
 from ctypes import byref
 from functools import reduce
+from functools import wraps
 
 import numpy
 
@@ -121,19 +122,15 @@ def _ensure_token(func):
     and released.
     """
 
+    @wraps(func)
     def wrapper(self, *args, **kwargs):
-        """%s
-        This method is executed in context guaranteeing that liboverfit tokens
-        are properly managed.
-        """
         with self.token_context():
             return func(self, *args, **kwargs)
 
-    wrapper.__doc__ = wrapper.__doc__ % func.__doc__
     return wrapper
 
 
-class Overfit(object):
+class Overfit:
     """Stateful computation of RMSD using Kabsch algorithm.
 
     Enables accumulation of pairs of points, mers, structures etc.
@@ -156,28 +153,28 @@ class Overfit(object):
     def _get_token(self):
         """Grabs a liboverfit token. Adds data stored in _sums to
         accumulator in liboverfit."""
-        if self._token is None:
-            self._token = _liboverfit.overfit_get_token()
-            _liboverfit.overfit_reset(self._token)
-            _liboverfit.overfit_sumadd_str(self._token, self._sums)
-            return True
-        return False
+        self._token = _liboverfit.overfit_get_token()
+        _liboverfit.overfit_reset(self._token)
+        _liboverfit.overfit_sumadd_str(self._token, self._sums)
+
+    def _has_token(self):
+        return self._token is not None
 
     def _release_token(self):
         """Stores liboverfit accumulator in _sums and releases a token."""
-        if self._token is not None:
-            _liboverfit.overfit_sumsave_str(self._token, byref(self._sums))
-            _liboverfit.overfit_release_token(self._token)
-            self._token = None
+        _liboverfit.overfit_sumsave_str(self._token, byref(self._sums))
+        _liboverfit.overfit_release_token(self._token)
+        self._token = None
 
     @contextlib.contextmanager
     def token_context(self):
         """Context manager responsible for acquiring and releasing overfit tokens."""
-        got_token = self._get_token()
+        if not self._has_token():
+            self._get_token()
         try:
             yield
         finally:
-            if got_token:
+            if self._has_token():
                 self._release_token()
 
     @_ensure_token
@@ -192,7 +189,7 @@ class Overfit(object):
         return self._sums
 
     @_ensure_token
-    def add_point(self, point1, point2):
+    def add_points(self, point1, point2):
         """Adds a pair of points to overfit accumulator."""
         lpoint1, lpoint2 = list(map(list, (point1, point2)))
 
@@ -206,7 +203,7 @@ class Overfit(object):
         )
 
     @_ensure_token
-    def add_mer(self, mer1, mer2):
+    def add_mers(self, mer1, mer2):
         """Adds a pair of mers to overfit accumulator."""
         lmer1 = mer1.representation
         lmer2 = mer2.representation
@@ -215,10 +212,10 @@ class Overfit(object):
             raise TypeError("Mers have to have representations of the same length.")
 
         for point1, point2 in zip(lmer1, lmer2):
-            self.add_point(point1, point2)
+            self.add_points(point1, point2)
 
     @_ensure_token
-    def add_structure(self, struct1, struct2):
+    def add_structures(self, struct1, struct2):
         """Adds a pair of structures to overfit accumulator."""
         lstruct1 = list(struct1)
         lstruct2 = list(struct2)
@@ -227,59 +224,42 @@ class Overfit(object):
             raise TypeError("Structures have to have same lengths")
 
         for mer1, mer2 in zip(lstruct1, lstruct2):
-            self.add_mer(mer1, mer2)
+            self.add_mers(mer1, mer2)
 
     @_ensure_token
     def add_alignment(self, alignment_obj):
-        list1, list2 = list(zip(*alignment_obj.aligned_mers))
-        self.add_structure(list1, list2)  # ??? use self.add as soon as it works
-
-    @_ensure_token
-    def add(self, list1, list2):
-        """Adds a pair of arbitrarily nested iterables to overfit accumulator.
-
-        They should be 'homeomorphic' and have contain points at the lowest level.
-
-        """
-        if len(list1) != len(list2):
-            raise TypeError("Lists have to have same lengths")
-
-        for obj1, obj2 in zip(list1, list2):
-            try:
-                self.add_point(obj1, obj2)
-            except TypeError:
-                self.add(obj1, obj2)
+        stc1, stc2 = alignment_obj.structures
+        for ind1, ind2 in alignment_obj.iter_rows():
+            self.add_mers(stc1[ind1], stc2[ind2])
 
     @_ensure_token
     def overfit(self):
         """Computes RMSD and optimal superposition of accumulated pairs of points."""
         trot = t_transrot()
-
         rmsd = _liboverfit.fast_overfit(self._token, byref(trot))
-
         return rmsd, trot.to_trtmatrix()
 
 
-class Multifit(object):
+class Multifit:
     """Computation of RMSDs for multiple structure imposition."""
 
     def __init__(self):
         self.tokens = []
 
-    def add_point(self, *args):
+    def add_points(self, *args):
         if len(set(map(len, args)) - {3, 4}) != 0:
             raise TypeError("Point must have 3 (or 4) float coordinates.")
         if self.tokens != [] and len(args) != len(self.tokens[-1]):
             raise TypeError("Wrong number of points.")
         self.tokens.append(args)
 
-    def add_mer(self, *args):
+    def add_mers(self, *args):
         for points in zip(*[[a.vector for a in i.representation] for i in args]):
-            self.add_point(*points)
+            self.add_points(*points)
 
-    def add_structure(self, *args):
+    def add_structures(self, *args):
         for mers in map(list, args):
-            self.add_mer(*mers)
+            self.add_mers(*mers)
 
     def add_alignment(self, alg):
         """Adds representation of aligned mers.
@@ -292,7 +272,7 @@ class Multifit(object):
         for i in alg.aligned_mers:
             if str in set(map(type, i)):
                 continue
-            self.add_mer(*i)
+            self.add_mers(*i)
 
     def iter_once(self, mtxs=None):
         if not mtxs:
@@ -309,7 +289,7 @@ class Multifit(object):
         ovfs = [Overfit() for i in self.tokens[0]]
         for row, av_atm in zip(self.tokens, av_stc):
             for atm, ovf, mtx in zip(row, ovfs, mtxs):
-                ovf.add_point(av_atm, mtx.transform(vec=atm))
+                ovf.add_points(av_atm, mtx.transform(vec=atm))
         return [ovf.overfit() for ovf in ovfs]
 
     def multifit(self):
@@ -324,13 +304,3 @@ class Multifit(object):
             # ~ print "ITER %f" % (dev_prv - dev)
         return list(zip(rmsds, mtxs_prv))
 
-
-def overfit(list1, list2):
-    """Computes RMSD and optimal superposition of iterables containing points.
-    See Overfit.add and Overfit.overfit for more information."""
-    overfit_obj = Overfit()
-    with overfit_obj.token_context():
-        overfit_obj.add(list1, list2)
-        res = overfit_obj.overfit()
-
-    return res
