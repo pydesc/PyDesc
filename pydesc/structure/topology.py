@@ -561,7 +561,7 @@ class AbstractElement(AbstractStructure, metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def __init__(self, mer, derived_from):
+    def __init__(self, derived_from, mer):
         """Element constructor.
 
         Argument:
@@ -591,7 +591,7 @@ class ElementChainable(AbstractElement, Segment):
 
         Sets ElementChainable's list of Monomers.
         """
-        super().__init__(mer, derived_from)
+        super().__init__(derived_from, mer)
         length = ConfigManager.element.element_chainable_length
         if not length % 2 == 1:
             raise ValueError("Length of chainable element should be odd.")
@@ -615,12 +615,12 @@ class ElementOther(AbstractElement):
     single Ion or Ligand instance.
     """
 
-    def __init__(self, mer, derived_from):
+    def __init__(self, derived_from, mer):
         """Element constructor.
 
         Argument:
         """
-        super().__init__(mer, derived_from)
+        super().__init__(derived_from, mer)
 
 
 class Contact(AbstractStructure):
