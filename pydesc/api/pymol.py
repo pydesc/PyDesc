@@ -33,8 +33,9 @@ created: 19.09.2013 - , Tymoteusz 'hert' Oleniecki
 """
 
 from pymol import cmd
-from pydesc.structure.files import PDBWriter
+
 from pydesc.selection import Everything
+from pydesc.structure.files import PDBWriter
 
 
 def _fmt(string):
@@ -248,7 +249,7 @@ def draw_pseudoatoms(structure, pseudoatom_name, anchor_name=None, split_objects
         cmd.pseudoatom(obj_name, pos=vector, name=psd_name, **pseudoatom_dct)
         if anchor_name is not None:
             try:
-                vector = tuple(getattr(mer, anchor_name).vector)
+                vector = tuple(mer.get_point(anchor_name).vector)
             except AttributeError:
                 continue
             anc_name = f"ANC{state}"
@@ -300,7 +301,7 @@ class Registry:
         number. That pair forms PyMOL id."""
         pymol_id = (pymol_name, pymol_state)
         if pymol_id in cls.desc2mol.values():
-            raise KeyError("Name and stated already in registered.")
+            raise KeyError("Name and state already in registered.")
         cls.desc2mol[pydesc_obj] = pymol_id
 
     @classmethod

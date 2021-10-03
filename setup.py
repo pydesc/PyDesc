@@ -38,8 +38,10 @@ try:
 except ImportError:
     test = False
 
-from shlib.build_shlib import build_shlib, SharedLibrary
-from shlib.install_shlib import install_lib, develop
+from shlib.build_shlib import SharedLibrary
+from shlib.build_shlib import build_shlib
+from shlib.install_shlib import develop
+from shlib.install_shlib import install_lib
 
 cmdclass = {"install_lib": install_lib, "build_shlib": build_shlib, "develop": develop}
 
@@ -183,10 +185,5 @@ setup(
     cmdclass=cmdclass,
     test_suite="tests_legacy",
     shlibs=shlibs,
-    install_requires=[
-        "biopython == 1.76",
-        "numpy == 1.18.3",
-        "scipy == 1.4.1",
-        "mdtraj == 1.9.3",
-    ],
+    install_requires=["biopython", "mdtraj",],
 )

@@ -7,10 +7,10 @@ import pytest
 from pydesc.alignment.base import DASH
 from pydesc.alignment.base import MultipleAlignment
 from pydesc.alignment.base import PairAlignment
+from pydesc.alignment.loaders import PALLoader
 from pydesc.alignment.savers import CSVSaver
 from pydesc.alignment.savers import FASTASaver
 from pydesc.alignment.savers import PALSaver
-from pydesc.alignment.loaders import PALLoader
 from pydesc.api.structure import get_structures_from_file
 
 
@@ -290,7 +290,8 @@ class TestPALSaver:
         save_stream.seek(0)
         tmp_file = tmp_path / "test.pal"
         tmp_file.write_text(save_stream.read())
-        loader = PALLoader(str(tmp_file))
+        with open(tmp_file) as fh:
+            loader = PALLoader(fh)
 
         new_alignment = loader.load_alignment((structure1, structure4))
 

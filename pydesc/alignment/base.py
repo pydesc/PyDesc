@@ -83,6 +83,16 @@ class AbstractAlignment(ABC):
     def to_joined_pairs(self):
         pass
 
+    def set_columns_order(self, structures):
+        """Set order of columns to match given structure order."""
+        if set(structures) != set(self.structures):
+            msg = "All (and only) aligned structures should be passed."
+            raise ValueError(msg)
+        structures_inds = self.get_structure_indices()
+        new_order = [structures_inds[structure] for structure in structures]
+        klass = type(self)
+        return klass(structures, self.inds[:, new_order])
+
     def _fill_mer_map(self):
         mer_map = {structure: defaultdict(list) for structure in self.structures}
         for no, row in enumerate(self.inds):
@@ -120,15 +130,35 @@ class AbstractAlignment(ABC):
                 than one ind from other structure) mers.
 
         """
+        aligned_rows = self._get_rows_aligned_with(structure, inds)
+        generator = zip(self.structures, aligned_rows.T)
+        aligned_map = {stc: inds[inds != DASH].tolist() for stc, inds in generator}
+        aligned_map = {k: v for k, v in aligned_map.items() if v and (k != structure)}
+        return aligned_map
+
+    def _get_rows_aligned_with(self, structure, inds):
         row_indices = set()
         for ind in inds:
             row_indices = row_indices.union(self.mer_map[structure][ind])
         row_indices = sorted(row_indices)
         aligned_rows = self.inds[row_indices]
-        generator = zip(self.structures, aligned_rows.T)
-        aligned_map = {stc: inds[inds != DASH].tolist() for stc, inds in generator}
-        aligned_map = {k: v for k, v in aligned_map.items() if v and (k != structure)}
-        return aligned_map
+        return aligned_rows
+
+    def extract_aligned_with(self, structure, inds):
+        """Create new alignment narrowed down to rows aligning mers with given inds from
+        given structure.
+
+        Args:
+            structure: structure aligned in this alignment.
+            inds: sequence of mer indices.
+
+        Returns:
+            pair or multiple alignment.
+
+        """
+        aligned_rows = self._get_rows_aligned_with(structure, inds)
+        alignment = type(self)(self.structures, aligned_rows)
+        return alignment
 
     def prune(self):
         """Return new alignment without single mer rows."""
@@ -137,7 +167,7 @@ class AbstractAlignment(ABC):
         new_alignment = klass(self.structures, new_array)
         return new_alignment
 
-    def concatenate(self, other):
+    def sum_rows(self, other):
         """Append rows from second alignment at the end of first one and return new
         alignment.
 
@@ -156,7 +186,7 @@ class AbstractAlignment(ABC):
         column_inds = [other_indices[structure] for structure in self.structures]
         other_array = other.inds[:, column_inds]
         all_inds = numpy.concatenate((self.inds, other_array))
-        inds = numpy.unique(all_inds, axis=0)
+        inds = numpy.vstack({tuple(row) for row in all_inds})
         klass = type(self)
         return klass(self.structures, inds)
 
@@ -231,6 +261,9 @@ class PairAlignment(AbstractAlignment):
 
     def __hash__(self):
         return hash(self.structures)
+
+    def __repr__(self):
+        return f"<PairAlignment of {len(self)} rows>"
 
     @property
     def pair_alignments(self):
@@ -311,6 +344,15 @@ class PairAlignment(AbstractAlignment):
                     raise ValueError(msg)
         return True
 
+    def is_internally_consistent(self):
+        """Return True if no mer is aligned twice."""
+        for structure in self.structures:
+            structure_map = self.mer_map[structure]
+            no_alignments = {len(array) for array in structure_map.values()}
+            if no_alignments != {1}:
+                return False
+        return True
+
     def to_joined_pairs(self):
         """Return pruned version of this alignment (new object)."""
         return self.prune()
@@ -323,11 +365,15 @@ class PairAlignment(AbstractAlignment):
 class MultipleAlignment(AbstractAlignment):
     """Alignment of more than three structures."""
 
-    def limit_to_structures(self, *structures):
+    def __repr__(self):
+        rows, cols = self.inds.shape
+        return f"<MultipleAlignment of {rows} rows ({cols} structures)>"
+
+    def limit_to_structures(self, structures):
         """Return new alignment cropped to given structures.
 
         Args:
-            *structures: any number of structures present in this alignment (objects
+            structures: sequence of structures present in this alignment (objects
             equality).
 
         """

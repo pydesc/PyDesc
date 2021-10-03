@@ -16,6 +16,9 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 """Package providing convenience functions for dealing with structure creation."""
 
+from pathlib import Path
+
+from pydesc.dbhandler import MetaHandler
 from pydesc.structure import StructureLoader
 
 
@@ -34,12 +37,13 @@ def get_structures(name, common_converter=False):
 
     Returns:
         : list of structures. There will be more than one structure if structure
-        contains more than one model (trajectory, biounit or NMR).
+        contains more than one model (trajectory, bio-unit or NMR).
 
     """
     sl = StructureLoader()
-    res = sl.load_structures(name, common_converter=common_converter)
-    return res
+    with MetaHandler().open(name) as files:
+        structures = sl.load_structures(files, common_converter=common_converter)
+    return structures
 
 
 def get_structures_from_file(path, common_converter=False):
@@ -52,9 +56,13 @@ def get_structures_from_file(path, common_converter=False):
 
     Returns:
         : list of structures. There will be more than one structure if structure
-        contains more than one model (trajectory, biounit or NMR).
+        contains more than one model (trajectory, bio-unit or NMR).
 
     """
+    path = Path(path)
     sl = StructureLoader()
-    res = sl.load_structures(path=path, common_converter=common_converter)
-    return res
+    if not path.is_file():
+        raise ValueError("Given path does not lead to a file.")
+    with open(path) as file_:
+        structures = sl.load_structures([file_], common_converter=common_converter)
+    return structures

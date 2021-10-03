@@ -22,6 +22,7 @@ created: 13.03.2014, Tymoteusz 'hert' Oleniecki
 """
 
 import re
+from collections import Counter
 
 import numpy as np
 
@@ -151,9 +152,10 @@ class PDBid(tuple):
     """
 
     def __str__(self):
-        chain = "?" if self.chain is None else self.chain
+        chain = "*" if self.chain is None else self.chain
         icode = "" if self.icode is None else self.icode
-        return (chain + str(self.ind) + icode).strip()
+        string = f"{chain}:{self.ind}{icode.strip()}"
+        return string
 
     def format(self, chain=False):
         """Get id as string with or without chain."""
@@ -184,7 +186,7 @@ class PDBid(tuple):
 
         Argument:
             pdb_id -- string in format <chain>:<pdb_number><pdb_insertion_code>,
-        e.g. C12A.
+        e.g. C:12A.
         """
         match = re.match("^(.*):([0-9]*)([^0-9])?$", pdb_id)
         if match is None:
@@ -256,6 +258,16 @@ class NumberConverterFactory:
             models_ids = perform_smith_waterman(models_ids)
             models_ids = [[PDBid(i) for i in models_ids]]
 
+        first_model_ids = models_ids[0]
+        if len(first_model_ids) != len(set(first_model_ids)):
+            id_counter = Counter(first_model_ids)
+            repeated_ids = [pdb_id for pdb_id in id_counter if id_counter[pdb_id] > 1]
+            repeated_ids = ", ".join(map(str, repeated_ids))
+            msg = (
+                f"More than one mer or ligand has the same sequence number "
+                f"({repeated_ids})."
+            )
+            raise ValueError(msg)
         converter = NumberConverter(models_ids[0])
 
         return converter
@@ -325,4 +337,4 @@ class NumberConverter:
         try:
             return self.pdb2ind[pdb_id]
         except KeyError:
-            raise UnknownPDBid("Given PDB was not present in structure.")
+            raise UnknownPDBid(f"Given PDB id ({pdb_id}) was not present in structure.")

@@ -1,43 +1,44 @@
-import os.path
-
 import pytest
 
 from pydesc.api.criteria import get_rc_distance_criterion
+from pydesc.api.structure import get_structures_from_file
 from pydesc.contacts.maps import ContactMapCalculator
-from pydesc.structure import StructureLoader
+from pydesc.structure.descriptors import DescriptorBuilder
 from pydesc.structure.descriptors import DescriptorBuilderDriver
 from pydesc.structure.descriptors import ElementFactory
 from pydesc.structure.topology import ElementChainable
+from pydesc.warnexcept import ElementCreationFail
 
 
 class TestElementBuilder:
-    def test_build(self, structure_file_w_pure_type, structures_dir):
-        loader = StructureLoader()
-        pth = os.path.join(structures_dir, structure_file_w_pure_type)
-        structure = loader.load_structures(path=pth)[0]
+    def test_build(self, any_structure_file):
+        structure, *_ = get_structures_from_file(any_structure_file)
         for chain in structure.chains:
             chainable = [i for i in chain if i.is_chainable()]
-            failed = 0
             for mer in chainable[2:-2]:
                 try:
-                    elem = ElementFactory.build(mer, structure)
-                except ValueError:
-                    failed += 1
+                    elem = ElementFactory().build(structure, mer)
+                except ElementCreationFail:
+                    next_mer = mer.next_mer
+                    prev_mer = mer.prev_mer
+                    neighbours = [prev_mer, next_mer]
+                    if None not in neighbours:
+                        new = [prev_mer.prev_mer, next_mer.next_mer]
+                        neighbours.extend(new)
+                    assert None in neighbours
                 else:
                     assert type(elem) is ElementChainable
-            assert failed <= 0.2 * len(chainable)
 
             for mer in chainable[:2] + chainable[-2:]:
-                with pytest.raises(ValueError):
-                    ElementFactory.build(mer, structure)
+                with pytest.raises(ElementCreationFail):
+                    ElementFactory().build(structure, mer)
 
 
 class TestProteinDescriptor:
-    def test_build_rc_criterion(self, protein_file, structures_dir):
+    def test_build_rc_criterion(self, protein_file):
         """Test building descriptors with default side chain geometrical
         center distance criterion."""
-        pth = os.path.join(structures_dir, protein_file)
-        (s,) = StructureLoader().load_structures(path=pth)
+        (s,) = get_structures_from_file(protein_file)
 
         if max(list(map(len, s.chains))) < 10:
             pytest.skip("Structure %s has chains below 10 mers long, " "thus skipping.")
@@ -45,15 +46,26 @@ class TestProteinDescriptor:
         cmc = ContactMapCalculator(s, get_rc_distance_criterion())
         cm = cmc.calculate_contact_map()
 
-        dbd = DescriptorBuilderDriver()
+        e_factory = ElementFactory()
+        desc_builder = DescriptorBuilder(e_factory)
+        dbd = DescriptorBuilderDriver(desc_builder)
 
-        descs = dbd.create_descriptors(s, cm)
+        descs = []
+        descriptable_mers = []
+        failed = 0
+        for mer in s:
+            try:
+                element = e_factory.build(s, mer)
+            except ElementCreationFail:
+                failed += 1
+                continue
+            desc = dbd.build(s, element, cm)
+            descs.append(desc)
+            descriptable_mers.append(mer)
 
-        assert len([i for i in descs if i is not None]) > 0, (
-            "No descriptors for structure %s" % protein_file
-        )
+        assert len(descs) > 0, "No descriptors for structure %s" % protein_file
 
-        for mer, desc in zip(s, descs):
+        for mer, desc in zip(descriptable_mers, descs):
             if desc is None:
                 continue
             central_element = desc.central_element

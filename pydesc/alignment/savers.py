@@ -26,6 +26,7 @@ from itertools import zip_longest
 import numpy
 
 from pydesc.alignment.base import DASH
+from pydesc.warnexcept import MerCodeError
 
 
 class AbstractSaver(ABC):
@@ -54,9 +55,10 @@ class CSVSaver(AbstractSaver):
 
     """
 
-    def __init__(self, delimiter="\t", dash="-"):
+    def __init__(self, delimiter="\t", dash="-", sequence_dict=None):
         self.delimiter = delimiter
         self.dash = dash
+        self.seq_dct = sequence_dict
 
     def save(self, stream, alignment, *, names=None):
         if names is None:
@@ -76,10 +78,15 @@ class CSVSaver(AbstractSaver):
                 text = self.dash
             else:
                 pdb_id = structure.converter.get_pdb_id(ind)
-                letter_code = structure[ind].seq
+                letter_code = self._get_letter(structure[ind])
                 text = self._format_id(pdb_id, letter_code)
             text_row.append(text)
         return text_row
+
+    def _get_letter(self, mer):
+        if self.seq_dct is None:
+            return mer.seq
+        return self.seq_dct[mer.name]
 
     @staticmethod
     def _format_id(pdb_id, letter):
@@ -97,9 +104,10 @@ class FASTASaver(AbstractSaver):
 
     """
 
-    def __init__(self, dash="-", wrap_at=None):
+    def __init__(self, dash="-", wrap_at=None, sequence_dict=None):
         self.dash = dash
         self.wrap_at = wrap_at
+        self.seq_dct = sequence_dict
 
     def save(self, stream, alignment, *, names=None):
         sequences = {}
@@ -159,10 +167,32 @@ class FASTASaver(AbstractSaver):
     def _get_mer_code(self, structure, ind, lower_case):
         if ind is DASH:
             return self.dash
-        letter = structure[ind].seq
+        try:
+            letter = self._get_letter(structure[ind])
+        except (KeyError, AttributeError):
+            # KeyError when name not in config
+            # AttributeError when it is ligand, not mer
+            pdb_id = structure.converter.get_pdb_id(ind)
+            mer = structure[ind]
+            msg = (
+                f"Mer {str(pdb_id)} from structure {structure} has unknown one"
+                f"letter code. "
+                f"If it is a modified mer and was not loaded as mer, consider "
+                f"passing sequence_dict to this alignment saver. "
+                f"In any case consider adding mapping for name '{mer.name}' "
+                f"to `ConfigManager.chemistry.mer.additional_code`."
+            )
+            raise MerCodeError(msg)
         if lower_case:
             return letter.lower()
         return letter.upper()
+
+    def _get_letter(self, mer):
+        try:
+            return self.seq_dct[mer.name]
+        except (KeyError, TypeError):
+            # TypeError when seq_dct is None
+            return mer.seq
 
     def _write_sequence(self, stream, sequence):
         if self.wrap_at is None:

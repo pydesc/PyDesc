@@ -23,7 +23,6 @@ import numpy
 import scipy.linalg
 
 import pydesc.geometry
-import pydesc.geometry
 from pydesc.chemistry import ConfigManager
 from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import UnknownParticleName
@@ -186,6 +185,10 @@ class AtomSet:
 
     """
 
+    def __init_subclass__(cls, **kwargs):
+        """Create config cache for class."""
+        cls._config_cache = {}
+
     @classmethod
     def reset_config_cache(cls):
         """Resets cache of configuration settings in this class and all subclasses.
@@ -197,7 +200,6 @@ class AtomSet:
     @classmethod
     def get_config(cls, prop_name):
         """Return given setting from configuration manager."""
-
         try:
             return cls._config_cache[prop_name]
         except KeyError:
@@ -271,7 +273,16 @@ class AtomSet:
     @property
     def representation(self):
         """Return PyDesc representation as list of atoms."""
-        return [getattr(self, indicator) for indicator in self.get_config("indicators")]
+        return [
+            self.get_point(indicator) for indicator in self.get_config("indicators")
+        ]
+
+    def get_point(self, name):
+        """Return atom or pseudoatom of given name."""
+        try:
+            return self.atoms[name]
+        except KeyError:
+            return getattr(self, name)
 
 
 class Mer(AtomSet):

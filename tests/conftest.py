@@ -1,49 +1,35 @@
 import os.path
+from itertools import chain
 from pathlib import Path
 
 import pytest
 
-from pydesc.config import ConfigManager
 from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
+from pydesc.config import ConfigManager
 
 ConfigManager.warnings.class_filters.UnknownParticleName = "ignore"
 ConfigManager.warnings.class_filters.Info = "ignore"
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-TEST_STRUCTURES_DIR = os.path.join(BASE_DIR, "data", "test_structures")
-TEST_TRAJECTORIES_DIR = os.path.join(BASE_DIR, "data", "test_trajectories")
+BASE_DIR = Path(__file__).parent
+TEST_STRUCTURES_DIR = BASE_DIR / "data" / "test_structures"
+TEST_TRAJECTORIES_DIR = BASE_DIR / "data" / "test_trajectories"
 
-CIF_FILES_WITH_TYPE = []
+CIF_FILES = {}
+PDB_FILES = {}
 
-FILE_TYPES = []
-PDB_FILES_WITH_TYPE = []
-PDB_FILES_WITH_TYPE_SHORT = []
-PDB_FILES_DICT = {}
-PDB_FILES_DICT_SHORT = {}
+for path in TEST_STRUCTURES_DIR.glob("**/*[.pdb|.cif]"):
+    if path.is_dir():
+        continue
+    type_name = path.parent.stem
+    if path.suffix == ".pdb":
+        PDB_FILES.setdefault(type_name, []).append(path)
+    elif path.suffix == ".cif":
+        CIF_FILES.setdefault(type_name, []).append(path)
 
-for type_ in os.listdir(TEST_STRUCTURES_DIR):
-    FILE_TYPES.append(type_)
-
-    files_list = os.listdir(os.path.join(TEST_STRUCTURES_DIR, type_))
-
-    PDB_FILES_WITH_TYPE_SHORT.append(os.path.join(type_, files_list[-1]))
-    PDB_FILES_DICT[type_] = []
-    PDB_FILES_DICT_SHORT[type_] = [files_list[-1]]
-
-    for structure_file in files_list:
-        if structure_file.endswith(".pdb"):
-            PDB_FILES_WITH_TYPE.append(os.path.join(type_, structure_file))
-            PDB_FILES_DICT[type_].append(structure_file)
-        elif structure_file.endswith(".cif"):
-            CIF_FILES_WITH_TYPE.append((type_, structure_file))
-
-PDB_FILES_WITH_PURE_TYPE = [
-    file_name for file_name in PDB_FILES_WITH_TYPE if "only" in file_name
-]
-PDB_FILES_WITH_PURE_TYPE_SHORT = [
-    file_name for file_name in PDB_FILES_WITH_TYPE_SHORT if "only" in file_name
+ONE_OF_EACH_KIND = [PDB_FILES[key][-1] for key in PDB_FILES] + [
+    CIF_FILES[key][-1] for key in CIF_FILES
 ]
 
 PURE_TYPES_2_MERS_DICT = {
@@ -59,6 +45,18 @@ PURE_TYPES_2_MERS_DICT = {
 DIR_DICT = {v: k for k, v in list(PURE_TYPES_2_MERS_DICT.items())}
 
 
+def get_keys_iterator(*dcts, keys=None):
+    if keys is None:
+        keys = list(set([key for dct in dcts for key in dct]))
+    return list(chain(*[dct.get(key, []) for dct in dcts for key in keys]))
+
+
+def get_last_entries(*dcts, keys=None):
+    if keys is None:
+        keys = [key for dct in dcts for key in dct]
+    return [dct[key][-1] for dct in dcts for key in keys if key in dct]
+
+
 @pytest.fixture(scope="session")
 def structures_dir():
     return TEST_STRUCTURES_DIR
@@ -66,12 +64,12 @@ def structures_dir():
 
 @pytest.fixture(scope="session")
 def cmaps_dir():
-    return os.path.join(BASE_DIR, "data", "validated_cmaps")
+    return BASE_DIR / "data" / "validated_cmaps"
 
 
 @pytest.fixture(scope="session")
 def alignments_dir():
-    return Path(BASE_DIR) / "data" / "test_alignments"
+    return BASE_DIR / "data" / "test_alignments"
 
 
 @pytest.fixture(scope="session")
@@ -90,21 +88,20 @@ def pure_types_2_mers():
 
 
 @pytest.fixture(
-    scope="session",
-    params=[os.path.join(TEST_STRUCTURES_DIR, i) for i in PDB_FILES_WITH_TYPE_SHORT],
+    scope="session", params=ONE_OF_EACH_KIND,
 )
-def structure_file_w_type_short(request):
+def any_structure_file(request):
     return request.param
 
 
 @pytest.fixture(scope="session")
 def mixed_structures_path():
-    return os.path.join(TEST_STRUCTURES_DIR, "mixed")
+    return TEST_STRUCTURES_DIR / "mixed"
 
 
 @pytest.fixture(scope="session")
 def ligands_structures_path():
-    return os.path.join(TEST_STRUCTURES_DIR, "ligands")
+    return TEST_STRUCTURES_DIR / "ligands"
 
 
 def pytest_addoption(parser):
@@ -116,8 +113,9 @@ def pytest_addoption(parser):
     )
 
 
-FILES_WITH_TYPE = "structure_file_w_type"
-PURE_FILES_WITH_TYPE = "structure_file_w_pure_type"
+PDB_FILE = "pdb_file"
+CIF_FILE = "cif_file"
+PURE_FILE = "pure_file"
 PROTEINS = "protein_file"
 RNA = "rna_file"
 DNA = "dna_file"
@@ -134,50 +132,32 @@ def pytest_generate_tests(metafunc):
             metafunc.parametrize(parameter_name, all_files)
 
     set_parameter_if_all(
-        FILES_WITH_TYPE,
-        [os.path.join(TEST_STRUCTURES_DIR, i) for i in PDB_FILES_WITH_TYPE],
-        [os.path.join(TEST_STRUCTURES_DIR, i) for i in PDB_FILES_WITH_TYPE_SHORT],
+        CIF_FILE, get_keys_iterator(CIF_FILES), get_last_entries(CIF_FILES)
     )
+
     set_parameter_if_all(
-        PURE_FILES_WITH_TYPE,
-        [os.path.join(TEST_STRUCTURES_DIR, i) for i in PDB_FILES_WITH_PURE_TYPE],
-        [os.path.join(TEST_STRUCTURES_DIR, i) for i in PDB_FILES_WITH_PURE_TYPE_SHORT],
+        PDB_FILE, get_keys_iterator(PDB_FILES), get_last_entries(PDB_FILES)
     )
+
+    pure_keys = [key for key in PDB_FILES if "only" in key]
+    set_parameter_if_all(
+        PURE_FILE,
+        get_keys_iterator(PDB_FILES, CIF_FILES, keys=pure_keys),
+        get_last_entries(PDB_FILES, CIF_FILES, keys=pure_keys),
+    )
+
     set_parameter_if_all(
         PROTEINS,
-        [
-            os.path.join(TEST_STRUCTURES_DIR, "prots_only", i)
-            for i in PDB_FILES_DICT["prots_only"]
-        ],
-        [
-            os.path.join(TEST_STRUCTURES_DIR, "prots_only", i)
-            for i in PDB_FILES_DICT_SHORT["prots_only"]
-        ],
+        get_keys_iterator(PDB_FILES, CIF_FILES, keys=["prots_only"]),
+        get_last_entries(PDB_FILES, CIF_FILES, keys=["prots_only"]),
     )
-    set_parameter_if_all(
-        RNA,
-        [
-            os.path.join(TEST_STRUCTURES_DIR, "rna_only", i)
-            for i in PDB_FILES_DICT["rna_only"]
-        ],
-        [
-            os.path.join(TEST_STRUCTURES_DIR, "rna_only", i)
-            for i in PDB_FILES_DICT_SHORT["rna_only"]
-        ],
-    )
-    set_parameter_if_all(
-        DNA,
-        [
-            os.path.join(TEST_STRUCTURES_DIR, "dna_only", i)
-            for i in PDB_FILES_DICT["dna_only"]
-        ],
-        [
-            os.path.join(TEST_STRUCTURES_DIR, "dna_only", i)
-            for i in PDB_FILES_DICT_SHORT["dna_only"]
-        ],
-    )
-    set_parameter_if_all(
-        NUCLEOTIDE,
-        [i for i in PDB_FILES_WITH_PURE_TYPE if "dna" in i or "rna" in i],
-        [i for i in PDB_FILES_WITH_PURE_TYPE_SHORT if "dna" in i or "rna" in i],
-    )
+
+    rna_long = get_keys_iterator(PDB_FILES, CIF_FILES, keys=["rna_only"])
+    rna_short = get_last_entries(PDB_FILES, CIF_FILES, keys=["rna_only"])
+    set_parameter_if_all(RNA, rna_long, rna_short)
+
+    dna_long = get_keys_iterator(PDB_FILES, CIF_FILES, keys=["dna_only"])
+    dna_short = get_last_entries(PDB_FILES, CIF_FILES, keys=["dna_only"])
+    set_parameter_if_all(DNA, dna_long, dna_short)
+
+    set_parameter_if_all(NUCLEOTIDE, rna_long + dna_long, rna_short + dna_short)

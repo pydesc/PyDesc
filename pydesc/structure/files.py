@@ -11,8 +11,9 @@ class PDBWriter:
         """
         line_n = 0
         lines = []
+        converter = substructure.derived_from.converter
         for mer in substructure:
-            pdb_id = substructure.converter.get_pdb_id(mer.ind)
+            pdb_id = converter.get_pdb_id(mer.ind)
             for atom_name, atom in mer.atoms.items():
                 if transformed:
                     coord = atom.get_coord(substructure.trt_matrix)

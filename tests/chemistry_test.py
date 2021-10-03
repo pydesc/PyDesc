@@ -1,5 +1,3 @@
-import os.path
-
 import Bio.PDB
 import numpy
 import pytest
@@ -57,13 +55,14 @@ def test_mer_subclass(superclass, expected_is_chainable):
 
 class TestAtomSetFactory:
     def test_default_mer_factory_create_from_pdb_res(
-        self, structure_file_w_pure_type, structures_dir, pure_types_2_mers
+        self, pure_file, structures_dir, pure_types_2_mers
     ):
-        root, fname = os.path.split(structure_file_w_pure_type)
-        dummy, type_ = os.path.split(root)
+        type_ = pure_file.parent.stem
         factory = BioPythonAtomSetFactory()
-        pth = os.path.join(structures_dir, structure_file_w_pure_type)
-        pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(fname, pth)
+        with open(pure_file) as fname:
+            pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
+                fname, pure_file
+            )
 
         expected_type = pure_types_2_mers[type_]
         type_threshold = TYPE_THRESHOLDS[expected_type]
@@ -90,7 +89,7 @@ class TestAtomSetFactory:
     def test_create_residue_from_pdb_res(self, structures_dir):
         factory = BioPythonAtomSetFactory()
         pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
-            "5MPV.pdb", os.path.join(structures_dir, "prots_only", "5MPV.pdb")
+            "5MPV.pdb", structures_dir / "prots_only" / "5MPV.pdb"
         )
 
         r1 = pdb_structure[0]["D"][15]
@@ -127,7 +126,7 @@ class AtomSetTest:
             pdb_structure = cls.cache[(file_, test_structures_dir)]
         except KeyError:
             pdb_structure = Bio.PDB.PDBParser(QUIET=True).get_structure(
-                "test", os.path.join(test_structures_dir, file_)
+                "test", test_structures_dir / file_
             )
             cls.cache[(file_, test_structures_dir)] = pdb_structure
         to_return = []
@@ -184,7 +183,7 @@ class TestResidue(AtomSetTest):
             del mer.dynamic_features["angles"]
             psi1, phi1 = angs
             psi2, phi2 = mer.angles
-            assert pytest.approx(psi1) == psi2
+            assert pytest.approx(psi1, abs=1.0e-4) == psi2
             assert pytest.approx(phi1) == phi2
 
     def test_bb_average(self, protein_file, structures_dir):

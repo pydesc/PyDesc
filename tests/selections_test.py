@@ -1,5 +1,4 @@
 import itertools
-import os.path
 
 import pytest
 
@@ -32,17 +31,20 @@ ConfigManager.warnings.quiet = True
 
 
 @pytest.fixture(scope="module")
-def structure(structure_file_w_type_short):
+def structure(any_structure_file):
     sl = StructureLoader()
-    structure = sl.load_structures(path=structure_file_w_type_short)[0]
+    with open(any_structure_file) as fh:
+        structure = sl.load_structures([fh])[0]
     return structure
 
 
 @pytest.fixture(scope="module")
 def stc_2dlc(structures_dir):
     sl = StructureLoader()
-    pth = os.path.join(structures_dir, "mixed", "2DLC.cif")
-    return sl.load_structures(path=pth)[0]
+    pth = structures_dir / "mixed" / "2DLC.cif"
+    with open(pth) as fh:
+        stc = sl.load_structures([fh])[0]
+    return stc
 
 
 def test_api(stc_2dlc):
@@ -214,13 +216,14 @@ class TestRangeSelection:
     @pytest.mark.system
     def test_range_on_discontinuity_chain(self, structures_dir):
         sl = StructureLoader()
-        pth = os.path.join(structures_dir, "prots_only", "3NPU.pdb")
-        stc = sl.load_structures(path=pth)[0]
+        pth = structures_dir / "prots_only" / "3NPU.pdb"
+        with open(pth) as fh:
+            stc = sl.load_structures([fh])[0]
         get_id = stc.converter.get_pdb_id
         # discontinuity occurs between A19 and A24 (1! res missing)
         msg = "Something is wrong with structure that supposed have broken " "backbone."
-        assert str(get_id(17)) == "A19", msg
-        assert str(get_id(18)) == "A24", msg
+        assert str(get_id(17)) == "A:19", msg
+        assert str(get_id(18)) == "A:24", msg
 
         range_selection = Range(get_id(16), get_id(19))
         new_sel = range_selection.specify(stc)

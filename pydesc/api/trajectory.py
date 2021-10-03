@@ -22,10 +22,10 @@ import numpy
 from pydesc.chemistry.factories import CopyingFactor
 from pydesc.selection import Everything
 from pydesc.selection import Selector
+from pydesc.structure import TrajectoryLoader
 from pydesc.structure.topology import Chain
 from pydesc.structure.topology import Structure
 from pydesc.structure.trajectory import Trajectory
-from pydesc.structure import TrajectoryLoader
 
 
 def freeze_frame(trajectory):
@@ -53,11 +53,11 @@ def from_frames(frames, topology=None):
     if topology is None:
         topology = frames[0]
     name = topology.name
-    path = topology.path
+    path_str = str(topology.path)
     converter = topology.converter
 
-    md_traj = mdtraj.load_frame(path, 0)
-    trajectory = Trajectory(name, path, converter, md_traj)
+    md_traj = mdtraj.load_frame(path_str, 0)
+    trajectory = Trajectory(name, path_str, converter, md_traj)
     n_frames = len(frames)
     n_atoms = md_traj.n_atoms
     coords = numpy.zeros((n_frames, n_atoms, 3))

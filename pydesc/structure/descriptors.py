@@ -1,6 +1,7 @@
-import numpy
 from abc import ABCMeta
 from functools import reduce
+
+import numpy
 
 from pydesc.config import ConfigManager
 from pydesc.structure.topology import AbstractStructure
@@ -8,28 +9,35 @@ from pydesc.structure.topology import Contact
 from pydesc.structure.topology import ElementChainable
 from pydesc.structure.topology import ElementOther
 from pydesc.structure.topology import Segment
+from pydesc.warnexcept import ElementCreationFail
 
 
 class ElementFactory:
-    @staticmethod
-    def build(mer, derived_from):
+    def __init__(self, length_of_chainable_elements=5):
+        if not length_of_chainable_elements % 2 == 1:
+            msg = "Length of chainable element should be an odd integer."
+            raise ValueError(msg)
+        self.chainable_element_length = length_of_chainable_elements
+
+    def build(self, derived_from, mer):
         """Static builder.
 
         Returns appropriate Element subclass instance.
 
         Argument:
-        mer -- instance of pydesc.monomer.Monomer.
         """
         if mer.is_chainable():
-            return ElementChainable(derived_from, mer)
+            return ElementChainable(derived_from, mer, self.chainable_element_length)
         return ElementOther(derived_from, mer)
 
 
 class DescriptorBuilderDriver:
     """Descriptor building driver."""
 
-    @staticmethod
-    def build(structure_obj, central_element, contact_map):
+    def __init__(self, builder):
+        self.builder = builder
+
+    def build(self, derived_from, central_element, contact_map):
         """Create descriptor builder and return built descriptor.
 
         Arguments:
@@ -39,43 +47,19 @@ class DescriptorBuilderDriver:
          is taken.
 
         """
-        builder = DescriptorBuilder()
-        builder.set_derived_from(structure_obj)
-        builder.set_central_element(central_element)
-        builder.create_contacts(central_element, contact_map)
-        builder.set_mers()
-        builder.set_segments()
-        builder.set_elements()
-        return builder.build()
-
-    @classmethod
-    def create_descriptors(cls, structure_obj, contact_map):
-        """Static method that creates all possible Descriptor instances for
-        a given (sub)structure.
-
-        Arguments:
-        structure_obj -- any AbstractStructure subclass instance
-        contact_map -- ContactMap instance that will be submitted to
-        AbstractDescriptor.__init__ method, initially set to None.
-        """
-
-        def mk_desc(mer):
-            try:
-                central_element = ElementFactory.build(mer, structure_obj)
-                descriptor = cls.build(structure_obj, central_element, contact_map)
-                return descriptor
-            except (TypeError, ValueError, AttributeError):
-                # TODO: it looks like it was catching too much -- investigate,
-                #  e.g. on 4NJ6
-                return
-
-        return [mk_desc(mer) for mer in structure_obj]
+        self.builder.set_derived_from(derived_from)
+        self.builder.set_central_element(central_element)
+        self.builder.create_contacts(central_element, contact_map)
+        self.builder.set_mers()
+        self.builder.set_segments()
+        self.builder.set_elements()
+        return self.builder.build()
 
 
 class DescriptorBuilder(metaclass=ABCMeta):
     """Builder-like class preparing data to create descriptor."""
 
-    def __init__(self):
+    def __init__(self, element_factory):
         """Set initial attributes."""
         self.central_element = None
         self.mers = []
@@ -83,12 +67,13 @@ class DescriptorBuilder(metaclass=ABCMeta):
         self.segments = []
         self.elements = []
         self.derived_from = None
+        self.element_factory = element_factory
 
     def build(self):
         """Build descriptor using set attributes."""
         data = (
-            self.central_element,
             self.mers,
+            self.central_element,
             self.elements,
             self.segments,
             self.contacts,
@@ -113,7 +98,7 @@ class DescriptorBuilder(metaclass=ABCMeta):
 
     def create_contacts(self, element_obj, contact_map):
         """Create star topology contacts for central mer of given element.
-        
+
         Arguments:
         element_obj -- ElementChainable instance.
         contact_map -- instance of contact map. Set on None by default. If 
@@ -121,41 +106,26 @@ class DescriptorBuilder(metaclass=ABCMeta):
         from is taken.
         """  # TODO: fix
         stc = element_obj.derived_from
-        central_mer = element_obj.central_monomer
+        central_mer = element_obj.central_mer
         contacts_ = sorted(contact_map.get_atom_set_contacts(central_mer.ind))
 
         def create_contact(payload):
-            """Returns Contact or None if failed to create one.
-
-            Argument:
-            input_ -- tuple containing: ind_1, ind_2 -- mers inds, value --
-            contact value.
-            """
             ind_2, value = payload
             try:
-                element_1 = ElementFactory.build(central_mer, stc)
-                element_2 = ElementFactory.build(stc[ind_2], stc)
+                element_1 = self.element_factory.build(stc, central_mer)
+                element_2 = self.element_factory.build(stc, stc[ind_2])
                 return Contact(element_1, element_2)
-            except (ValueError,):
-                # TypeError is raised during creation of Contacts based on
-                # pairs of mers that cannot be used to create Elements
-                # ValueError -- non chainable or too close to terminus
+            except ElementCreationFail:
                 return
 
-        self.contacts = [create_contact(cnt) for cnt in contacts_]
+        contact_objects = [create_contact(cnt) for cnt in contacts_]
+        self.contacts = [contact for contact in contact_objects if contact is not None]
 
     def set_segments(self):  # TODO: nightmare code -- fix it please
         """Fills initial attr segments."""
 
         def add_segment(start, end):
-            """Adds ElementChainable to segments list, or Segment if start and
-            end are distant more then proper segment length.
-            """
-            element_length = ConfigManager.element.element_chainable_length
             segment = Segment(self.derived_from, start, end)
-            if len(segment) == element_length:
-                central_mer = tuple(segment)[element_length // 2]
-                segment = ElementChainable(self.derived_from, central_mer)
             segments.append(segment)
 
         def reduce_tuple(presegment_1, presegment_2):
@@ -178,17 +148,15 @@ class DescriptorBuilder(metaclass=ABCMeta):
 
     def set_elements(self):
         """Fills initial attrs elements and elements_values."""
-        neighbours = {self.central_element.central_monomer: []}
+        neighbours = {self.central_element.central_mer: []}
         elements = {}
         for con in self.contacts:
             element1, element2 = con.elements
             for el1, el2 in zip((element1, element2), (element2, element1)):
-                elements[el1.central_monomer] = el1
-                neighbours.setdefault(el1.central_monomer, []).append(
-                    el2.central_monomer
-                )
+                elements[el1.central_mer] = el1
+                neighbours.setdefault(el1.central_mer, []).append(el2.central_mer)
         self.elements = sorted(
-            list(elements.values()), key=lambda elm: elm.central_monomer.ind
+            list(elements.values()), key=lambda elm: elm.central_mer.ind
         )
 
 
@@ -199,7 +167,7 @@ class Descriptor(AbstractStructure):
     according to a given ContactMap ContactCriterion.
     """
 
-    def __init__(self, central_element, mers, elements, segments, contacts):
+    def __init__(self, mers, central_element, elements, segments, contacts):
         """Descriptor constructor.
 
         Arguments:
@@ -216,8 +184,10 @@ class Descriptor(AbstractStructure):
 
     @property
     def cm_pid(self):
-        """Returns PDB id of central element central monomer as string."""
-        return str(self.central_element.central_monomer.pid)
+        """Returns PDB id of central element central mer as string."""
+        ind = self.central_element.central_mer.ind
+        pdb_id = self.derived_from.converter.get_pdb_id(ind)
+        return pdb_id
 
     def __repr__(self):
         return "<Descriptor of %s:%s>" % (str(self.derived_from), self.cm_pid)

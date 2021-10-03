@@ -189,22 +189,11 @@ class WarnManager(warnings.catch_warnings):
 
 class CannotCalculateContact(Exception):
     """Class of exceptions raised by contact criteria whenever given mers
-    lack attributes or properties needed to calculate contact.
-
-    Arguments:
-    arg1 -- mer obj 1.
-    arg2 -- mer obj 2.
-    arg3 -- criterion instance.
-    """
+    lack attributes or properties needed to calculate contact."""
 
 
 class DiscontinuityError(Exception):
-    """Class of exceptions raised due to discontinuity between chainable mers.
-
-    Arguments:
-    arg1 -- pydesc.monomer.Monomer subclass instance 1.
-    arg2 -- pydesc.monomer.Monomer subclass instance 2.
-    """
+    """Class of exceptions raised due to discontinuity between chainable mers."""
 
     pass
 
@@ -217,11 +206,7 @@ class FrameNotAvailable(Exception):
 
 class IncompleteParticle(Exception):
     """Class of exceptions raised when incomplete particle is given to
-    create monomer instance.
-
-    Argument:
-    arg1 -- BioPython Residue instance.
-    """
+    create monomer instance."""
 
 
 class UnknownPDBid(Exception):
@@ -251,7 +236,16 @@ class WrongAtomSetType(Exception):
     pass
 
 
+class MerCodeError(Exception):
+    """Raised when non-standard residue or nucleotide cannot be translated to
+    code, usually when getting chain sequence."""
+
+    pass
+
+
 class NotASlice(Exception):
+    """Raised when given object is not a slice."""
+
     pass
 
 
@@ -269,3 +263,22 @@ class UnknownParticleName(Warning):
     """Class of warnings. Information about particles that have unknown
     names. Printed by default.
     """
+
+
+class InvalidID(Exception):
+    """Database handler exception for wrong structure ID."""
+
+    pass
+
+
+class OperationModeError(Exception):
+    """Database handler exception for not served mode of getting files."""
+
+    pass
+
+
+class ElementCreationFail(Exception):
+    """Raised when it is impossible to create element for given atom set.
+    Meant to be cached by ElementFactory."""
+
+    pass

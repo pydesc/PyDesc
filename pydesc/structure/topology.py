@@ -1,5 +1,6 @@
 import math
 import operator
+import re
 from abc import ABCMeta
 from abc import abstractmethod
 
@@ -11,6 +12,7 @@ import pydesc.geometry
 from pydesc.config import ConfigManager
 from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import DiscontinuityError
+from pydesc.warnexcept import ElementCreationFail
 from pydesc.warnexcept import NotASlice
 from pydesc.warnexcept import WrongElement
 from pydesc.warnexcept import warn
@@ -34,21 +36,60 @@ class PDBidGetter:
         self.structure = structure
 
     def __getitem__(self, item):
-        try:
-            # TODO: serve slices and lists
-            raise NotASlice
-        except NotASlice:
-            if isinstance(item, str) or isinstance(item, PDBid):
-                return self._get_mer(item)
-            return self._get_iterable(item)
+        if isinstance(item, PDBid):
+            return self._get_mer(item)
+        elif isinstance(item, slice):
+            return self._get_slice(item)
+        elif self._is_full_pdbid(item):
+            return self._get_mer(item)
+        elif self._is_chain_wildcard(item):
+            return self.structure.get_chain(item[:1])
+        elif self._is_mer_wildcard(item):
+            item = self._resolve_mer_wildcard(item)
+        return self._get_iterable(item)
 
-    def _get_iterable(self, iterable):
-        inds = [self._get_ind(key) for key in iterable]
-        return self.structure[inds]
+    def _is_mer_wildcard(self, item):
+        try:
+            return bool(re.match("[0-9]+[^0-9]?", item))
+        except TypeError:
+            return False
+
+    def _is_full_pdbid(self, item):
+        pattern = ".+:[0-9]+[^0-9]?"
+        try:
+            return bool(re.match(pattern, item))
+        except TypeError:
+            return False
+
+    def _is_chain_wildcard(self, item):
+        pattern = ".+:"
+        try:
+            return bool(re.match(pattern, item))
+        except TypeError:
+            return False
+
+    def _resolve_mer_wildcard(self, item):
+        all_ids = self.converter.ind2pdb
+        ids = [pdbid for pdbid in all_ids if pdbid.format() == item]
+        return ids
+
+    def _get_slice(self, key):
+        start = self._get_ind(key.start) if key.start is not None else None
+        stop = self._get_ind(key.stop) if key.stop is not None else None
+        return self.structure[start:stop]
 
     def _get_mer(self, key):
         ind = self._get_ind(key)
         return self.structure[ind]
+
+    def _get_iterable(self, iterable):
+        try:
+            inds = [self._get_ind(key) for key in iterable]
+        except ValueError:
+            items = ", ".join([str(i) for i in iterable])
+            msg = f"Indexing by iterable expects only full PDB ids, but got:\n{items}"
+            raise ValueError(msg)
+        return self.structure[inds]
 
     def _get_ind(self, key):
         try:
@@ -165,16 +206,12 @@ class AbstractStructure(metaclass=ABCMeta):
         """Returns number of mers present in current structure."""
         return len(self._mers)
 
-    def next_mer(self, monomer_obj):
-        """Returns next monomer available in current structure for given
-        monomer.
-
-        Argument:
-        monomer_obj -- instance of pydesc.monomer.Monomer.
-        """
+    def next_mer(self, mer):
+        """Returns next mer available in current structure for given
+        mer."""
         try:
-            if monomer_obj.next_mer in self:
-                return monomer_obj.next_mer
+            if mer.next_mer in self:
+                return mer.next_mer
             return None
         except AttributeError:
             return None
@@ -235,15 +272,6 @@ class AbstractStructure(metaclass=ABCMeta):
     def get_sequence(self):
         """Returns (sub)structure sequence (one letter code)."""
         return self._map_mers_with_attr("seq")
-
-    def save_pdb(self, path):  # TODO: move to separate class
-        """Writes (sub)structure into pdb file.
-
-        Arguments:
-        path -- string; path to new file.
-        """
-        with open(path, "w") as file_:
-            file_.write(self.create_pdb_string().read())
 
 
 class Structure(AbstractStructure):
@@ -456,12 +484,12 @@ class Segment(AbstractStructure):
 
     @property
     def start(self):
-        """Returns first segment monomer."""
+        """Returns first segment mer."""
         return self._mers[0]
 
     @property
     def end(self):
-        """Returns last segment monomer."""
+        """Returns last segment mer."""
         return self._mers[-1]
 
     def adjusted_number(self):
@@ -533,20 +561,18 @@ class AbstractElement(AbstractStructure, metaclass=ABCMeta):
     """
 
     @abstractmethod
-    def __init__(self, mer, derived_from):
+    def __init__(self, derived_from, mer):
         """Element constructor.
 
         Argument:
-        mer -- instance of appropriate pydesc.monomer.Monomer subclass.
         """
         AbstractStructure.__init__(self, derived_from)
-        self.central_monomer = mer
+        self.central_mer = mer
 
     def __repr__(self, mode=0):
-        return "<%s of %s>" % (
-            str(self.__class__.__name__),
-            str(self.derived_from.converter.get_pdb_id(self.central_monomer.ind)),
-        )
+        name = self.__class__.__name__
+        pdb_id = str(self.derived_from.converter.get_pdb_id(self.central_mer.ind))
+        return f"<{name} of {pdb_id}>"
 
 
 class ElementChainable(AbstractElement, Segment):
@@ -556,7 +582,7 @@ class ElementChainable(AbstractElement, Segment):
     two preceding and two following mers.
     """
 
-    def __init__(self, derived_from, mer):
+    def __init__(self, derived_from, mer, length):
         """ElementChainable constructor.
 
         Argument:
@@ -565,11 +591,8 @@ class ElementChainable(AbstractElement, Segment):
 
         Sets ElementChainable's list of Monomers.
         """
-        super().__init__(mer, derived_from)
-        length = ConfigManager.element.element_chainable_length
-        if not length % 2 == 1:
-            raise ValueError("Length of chainable element should be odd.")
-        mers = [self.central_monomer]
+        super().__init__(derived_from, mer)
+        mers = [self.central_mer]
         for _ in range(length // 2):
             start = mers[0]
             end = mers[-1]
@@ -577,10 +600,10 @@ class ElementChainable(AbstractElement, Segment):
                 mers = [start.prev_mer, *mers, end.next_mer]
             except AttributeError:
                 msg = f"Element creation failed for mer {mer.ind}"
-                raise ValueError(msg)
+                raise ElementCreationFail(msg)
         if mers.count(None) != 0:
             msg = f"Element creation failed for mer {mer.ind}"
-            raise ValueError(msg)
+            raise ElementCreationFail(msg)
         self._mers = numpy.array(mers, dtype=object)
 
 
@@ -589,13 +612,12 @@ class ElementOther(AbstractElement):
     single Ion or Ligand instance.
     """
 
-    def __init__(self, mer, derived_from):
+    def __init__(self, derived_from, mer):
         """Element constructor.
 
         Argument:
-        mer -- instance of any pydesc.monomer.MonomerOther subclass.
         """
-        super().__init__(mer, derived_from)
+        super().__init__(derived_from, mer)
 
 
 class Contact(AbstractStructure):
@@ -616,7 +638,7 @@ class Contact(AbstractStructure):
                 "Impossible to create contact instance with elements derived "
                 "from different structures"
             )
-        if element1.central_monomer.ind == element2.central_monomer.ind:
+        if element1.central_mer.ind == element2.central_mer.ind:
             raise ValueError("Impossible to create contact using one element")
         AbstractStructure.__init__(self, element1.derived_from)
         self._mers = numpy.array([*element1, *element2], dtype=object)
@@ -631,7 +653,7 @@ class Contact(AbstractStructure):
         return self.get_other_element(val)
 
     def __repr__(self):
-        items = sorted(i.central_monomer.ind for i in self.elements)
+        items = sorted(i.central_mer.ind for i in self.elements)
         return "<Contact of %i and %i elements>" % tuple(items)
 
     def get_other_element(self, element_obj):
@@ -654,4 +676,4 @@ class Contact(AbstractStructure):
 
         This property is required by contacts.DescriptorCriterion.
         """
-        return cmap.get_contact_value(*[i.central_monomer.ind for i in self.elements])
+        return cmap.get_contact_value(*[i.central_mer.ind for i in self.elements])

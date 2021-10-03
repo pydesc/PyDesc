@@ -23,6 +23,7 @@ from pydesc.config import ConfigManager
 ConfigManager.chemistry.new_branch("martiniresidue")
 ConfigManager.chemistry.martiniresidue.set_default("backbone_atoms", ("BB",))
 ConfigManager.chemistry.martiniresidue.set_default("bb_bond_threshold", 5.0)
+ConfigManager.chemistry.martiniresidue.set_default("indicators", ("BB", "last_sc"))
 
 
 class MartiniResidue(Mer):
@@ -36,6 +37,3 @@ class MartiniResidue(Mer):
             return self.atoms[f"SC{self_len - 1}"]
         except KeyError:
             return self.atoms["BB"]
-
-
-MartiniResidue.reset_config_cache()

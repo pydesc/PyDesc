@@ -22,14 +22,14 @@ from abc import abstractmethod
 
 import numpy
 
-from pydesc.config import ConfigManager
 from pydesc.chemistry.base import Atom
 from pydesc.chemistry.base import AtomProxy
 from pydesc.chemistry.base import AtomSet
-from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Compound
+from pydesc.chemistry.full_atom import MonoatomicIon
 from pydesc.chemistry.full_atom import Nucleotide
 from pydesc.chemistry.full_atom import Residue
+from pydesc.config import ConfigManager
 from pydesc.numberconverter import PDBid
 from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import WarnManager
