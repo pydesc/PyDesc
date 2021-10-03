@@ -13,8 +13,14 @@ from pydesc.warnexcept import ElementCreationFail
 
 
 class ElementFactory:
-    @staticmethod
-    def build(derived_from, mer):
+
+    def __init__(self, length_of_chainable_elements=5):
+        if not length_of_chainable_elements % 2 == 1:
+            msg = "Length of chainable element should be an odd integer."
+            raise ValueError(msg)
+        self.chainable_element_length = length_of_chainable_elements
+
+    def build(self, derived_from, mer):
         """Static builder.
 
         Returns appropriate Element subclass instance.
@@ -22,7 +28,7 @@ class ElementFactory:
         Argument:
         """
         if mer.is_chainable():
-            return ElementChainable(derived_from, mer)
+            return ElementChainable(derived_from, mer, self.chainable_element_length)
         return ElementOther(derived_from, mer)
 
 
@@ -120,14 +126,7 @@ class DescriptorBuilder(metaclass=ABCMeta):
         """Fills initial attr segments."""
 
         def add_segment(start, end):
-            """Adds ElementChainable to segments list, or Segment if start and
-            end are distant more then proper segment length.
-            """
-            element_length = ConfigManager.element.element_chainable_length
             segment = Segment(self.derived_from, start, end)
-            if len(segment) == element_length:
-                central_mer = tuple(segment)[element_length // 2]
-                segment = ElementChainable(self.derived_from, central_mer)
             segments.append(segment)
 
         def reduce_tuple(presegment_1, presegment_2):

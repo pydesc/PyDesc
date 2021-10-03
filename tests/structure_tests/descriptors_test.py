@@ -17,7 +17,7 @@ class TestElementBuilder:
             chainable = [i for i in chain if i.is_chainable()]
             for mer in chainable[2:-2]:
                 try:
-                    elem = ElementFactory.build(structure, mer)
+                    elem = ElementFactory().build(structure, mer)
                 except ElementCreationFail:
                     next_mer = mer.next_mer
                     prev_mer = mer.prev_mer
@@ -31,7 +31,7 @@ class TestElementBuilder:
 
             for mer in chainable[:2] + chainable[-2:]:
                 with pytest.raises(ElementCreationFail):
-                    ElementFactory.build(structure, mer)
+                    ElementFactory().build(structure, mer)
 
 
 class TestProteinDescriptor:

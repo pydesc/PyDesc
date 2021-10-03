@@ -582,7 +582,7 @@ class ElementChainable(AbstractElement, Segment):
     two preceding and two following mers.
     """
 
-    def __init__(self, derived_from, mer):
+    def __init__(self, derived_from, mer, length):
         """ElementChainable constructor.
 
         Argument:
@@ -592,9 +592,6 @@ class ElementChainable(AbstractElement, Segment):
         Sets ElementChainable's list of Monomers.
         """
         super().__init__(derived_from, mer)
-        length = ConfigManager.element.element_chainable_length
-        if not length % 2 == 1:
-            raise ValueError("Length of chainable element should be odd.")
         mers = [self.central_mer]
         for _ in range(length // 2):
             start = mers[0]
