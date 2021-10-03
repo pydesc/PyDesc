@@ -42,6 +42,8 @@ PURE_TYPES_2_MERS_DICT = {
     "PorCA_only": MonoatomicIon,
 }
 
+NMR_TYPES = ("prots_only_nmr", "rna_only_nmr", "dna_only_nmr")
+
 DIR_DICT = {v: k for k, v in list(PURE_TYPES_2_MERS_DICT.items())}
 
 
@@ -94,6 +96,11 @@ def any_structure_file(request):
     return request.param
 
 
+@pytest.fixture(
+    params=[PDB_FILES[kind][-1] for kind in NMR_TYPES])
+def nmr_structure_of_each_kind(request):
+    return request.param
+
 @pytest.fixture(scope="session")
 def mixed_structures_path():
     return TEST_STRUCTURES_DIR / "mixed"
@@ -120,6 +127,7 @@ PROTEINS = "protein_file"
 RNA = "rna_file"
 DNA = "dna_file"
 NUCLEOTIDE = "nuclei_file"
+TRACE = "trace_file"
 
 
 def pytest_generate_tests(metafunc):
@@ -161,3 +169,9 @@ def pytest_generate_tests(metafunc):
     set_parameter_if_all(DNA, dna_long, dna_short)
 
     set_parameter_if_all(NUCLEOTIDE, rna_long + dna_long, rna_short + dna_short)
+
+    set_parameter_if_all(
+        TRACE,
+        get_keys_iterator(PDB_FILES, CIF_FILES, keys="PorCA_only"),
+        get_last_entries(PDB_FILES, CIF_FILES, keys="PorCA_only"),
+    )
