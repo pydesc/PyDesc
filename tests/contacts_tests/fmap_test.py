@@ -1,5 +1,3 @@
-import os.path
-
 import numpy as np
 
 from pydesc.api.cmaps import calculate_contact_map
@@ -13,7 +11,7 @@ from pydesc.structure import TrajectoryLoader
 
 
 def test_fmap_from_cmap(structures_dir):
-    path = os.path.join(structures_dir, "prots_only_nmr", "2LJP.pdb")
+    path = structures_dir / "prots_only_nmr" / "2LJP.pdb"
     structures = get_structures_from_file(path)
 
     cms = [calculate_contact_map(stc) for stc in structures]

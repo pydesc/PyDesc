@@ -1,5 +1,3 @@
-import os.path
-
 import pytest
 from Bio.PDB import PDBParser
 
@@ -46,7 +44,7 @@ class TestConverter:
     @pytest.mark.system
     def test_simple_single_structure(self, structures_dir):
         structure_name = "5MPV.pdb"
-        file_path = os.path.join(structures_dir, "prots_only", structure_name)
+        file_path = structures_dir / "prots_only" / structure_name
         pdb_structure = PDBParser(QUIET=True).get_structure(structure_name, file_path)
 
         nc_factory = numberconverter.NumberConverterFactory()
@@ -73,7 +71,7 @@ class TestConverter:
         config.ConfigManager.chemistry.solvent = []
 
         structure_name = "5MPV.pdb"
-        file_path = os.path.join(structures_dir, "prots_only", structure_name)
+        file_path = structures_dir / "prots_only" / structure_name
         pdb_structure = PDBParser(QUIET=True).get_structure(structure_name, file_path)
 
         nc_factory = numberconverter.NumberConverterFactory()
@@ -96,7 +94,7 @@ class TestConverter:
     @pytest.mark.system
     def test_nmr_20_structures(self, structures_dir):
         structure_name = "2JRM.pdb"
-        file_path = os.path.join(structures_dir, "prots_only_nmr", structure_name)
+        file_path = structures_dir / "prots_only_nmr" / structure_name
         pdb_structure = PDBParser(QUIET=True).get_structure(structure_name, file_path)
 
         nc_factory = numberconverter.NumberConverterFactory()

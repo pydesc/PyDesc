@@ -23,7 +23,6 @@ import numpy
 import scipy.linalg
 
 import pydesc.geometry
-import pydesc.geometry
 from pydesc.chemistry import ConfigManager
 from pydesc.warnexcept import IncompleteParticle
 from pydesc.warnexcept import UnknownParticleName

@@ -24,15 +24,14 @@ created: 27.03.2014 - Pawel Daniluk
 
 import contextlib
 import ctypes
-from ctypes import byref
-
 import operator
+from ctypes import byref
+from functools import reduce
+
+import numpy
 
 import pydesc.cydesc as cydesc
 import pydesc.geometry as geometry
-
-import numpy
-from functools import reduce
 
 # This is not a constant.
 liboverfit = cydesc.load_library("overfit")  # pylint: disable=C0103

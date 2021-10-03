@@ -20,7 +20,8 @@ import numpy
 from scipy.spatial.distance import cdist
 
 from pydesc.contacts.base import ContactCriterion
-from pydesc.warnexcept import warn, Info
+from pydesc.warnexcept import Info
+from pydesc.warnexcept import warn
 
 
 def get_inds(atom_sets):

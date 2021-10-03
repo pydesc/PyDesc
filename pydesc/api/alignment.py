@@ -16,10 +16,13 @@
 # along with PyDesc.  If not, see <http://www.gnu.org/licenses/>.
 """Functions facilitating usage of alignments."""
 
-from pydesc.alignment.base import DASH
-from pydesc.api.selection import get_selection_from_sub_structure
-from pydesc.alignment.loaders import PALLoader, FASTALoader, CSVLoader
 from pathlib import Path
+
+from pydesc.alignment.base import DASH
+from pydesc.alignment.loaders import CSVLoader
+from pydesc.alignment.loaders import FASTALoader
+from pydesc.alignment.loaders import PALLoader
+from pydesc.api.selection import get_selection_from_sub_structure
 
 
 def get_loader(path):

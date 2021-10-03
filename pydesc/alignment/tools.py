@@ -21,11 +21,12 @@ Contains classes required to solve structure alignment.
 created: 4.12.2014 - Tymoteusz 'vdhert' Oleniecki
 """
 
-from pydesc.structure import AbstractDescriptor
-from pydesc.cydesc.compdesc import compdesc
+import operator
 
 import numpy
-import operator
+
+from pydesc.cydesc.compdesc import compdesc
+from pydesc.structure import AbstractDescriptor
 
 
 def make_basic_evaluation(clicque):

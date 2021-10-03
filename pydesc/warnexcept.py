@@ -244,6 +244,8 @@ class MerCodeError(Exception):
 
 
 class NotASlice(Exception):
+    """Raised when given object is not a slice."""
+
     pass
 
 
@@ -271,5 +273,12 @@ class InvalidID(Exception):
 
 class OperationModeError(Exception):
     """Database handler exception for not served mode of getting files."""
+
+    pass
+
+
+class ElementCreationFail(Exception):
+    """Raised when it is impossible to create element for given atom set.
+    Meant to be cached by ElementFactory."""
 
     pass

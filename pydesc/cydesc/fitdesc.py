@@ -27,7 +27,6 @@ import ctypes
 from ctypes import POINTER
 
 import pydesc.alignment as alignment
-
 import pydesc.cydesc as cydesc
 import pydesc.cydesc.overfit as overfit
 
