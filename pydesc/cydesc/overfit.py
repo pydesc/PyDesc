@@ -191,7 +191,8 @@ class Overfit:
     @_ensure_token
     def add_points(self, point1, point2):
         """Adds a pair of points to overfit accumulator."""
-        lpoint1, lpoint2 = list(map(list, (point1, point2)))
+        lpoint1 = list(point1)
+        lpoint2 = list(point2)
 
         if not 3 <= len(lpoint1) <= 4 or not 3 <= len(lpoint2) <= 4:
             raise TypeError("Point must have 3 (or 4) float coordinates.")
@@ -243,64 +244,57 @@ class Overfit:
 class Multifit:
     """Computation of RMSDs for multiple structure imposition."""
 
-    def __init__(self):
-        self.tokens = []
+    def __init__(self, n_structures):
+        self.points = []
+        self.n = n_structures
 
-    def add_points(self, *args):
-        if len(set(map(len, args)) - {3, 4}) != 0:
-            raise TypeError("Point must have 3 (or 4) float coordinates.")
-        if self.tokens != [] and len(args) != len(self.tokens[-1]):
-            raise TypeError("Wrong number of points.")
-        self.tokens.append(args)
+    def add_points(self, *points):
+        if len(points) != self.n:
+            msg = f"This multifit expects {self.n} points, got {len(points)}."
+            raise TypeError(msg)
+        points = tuple(map(tuple, points))
+        self.points.append(points)
 
-    def add_mers(self, *args):
-        for points in zip(*[[a.vector for a in i.representation] for i in args]):
+    def add_mers(self, *mers):
+        for points in zip(*[[a.vector for a in i.representation] for i in mers]):
             self.add_points(*points)
 
-    def add_structures(self, *args):
-        for mers in map(list, args):
+    def add_structures(self, *structures):
+        for mers in zip(*map(list, structures)):
             self.add_mers(*mers)
 
-    def add_alignment(self, alg):
-        """Adds representation of aligned mers.
+    def add_alignment(self, alignment):
+        structures = alignment.structures
+        for row in alignment.iter_rows():
+            mers = [stc[ind] for stc, ind in zip(structures, row)]
+            self.add_mers(*mers)
 
-        Argument:
-        alg -- pydesc.alignment.MultipleAlignment instance.
-
-        Only mers aligned for all structures will be taken.
-        """
-        for i in alg.aligned_mers:
-            if str in set(map(type, i)):
-                continue
-            self.add_mers(*i)
-
-    def iter_once(self, mtxs=None):
-        if not mtxs:
-            mtxs = [geometry.TRTMatrix() for i in self.tokens[0]]
-        n = len(self.tokens[0])
-        av_stc = [
-            reduce(
-                operator.add,
-                [mtx.transform(vec=coords) for coords, mtx in zip(vec, mtxs)],
-            )
-            / n
-            for vec in self.tokens
-        ]
-        ovfs = [Overfit() for i in self.tokens[0]]
-        for row, av_atm in zip(self.tokens, av_stc):
-            for atm, ovf, mtx in zip(row, ovfs, mtxs):
-                ovf.add_points(av_atm, mtx.transform(vec=atm))
-        return [ovf.overfit() for ovf in ovfs]
+    def iter_once(self, matrices=None):
+        if matrices is None:
+            matrices = [geometry.TRTMatrix() for _ in range(self.n)]
+        average_structure = []
+        for points_row in self.points:
+            points_row = [
+                matrix.transform(vec=point)
+                for point, matrix in zip(points_row, matrices)
+            ]
+            average_point = reduce(operator.add, points_row) / self.n
+            average_structure.append(average_point)
+        overfits = [Overfit() for _ in range(self.n)]
+        for points_row, average_point in zip(self.points, average_structure):
+            for point, overfit, matrix in zip(points_row, overfits, matrices):
+                overfit.add_points(average_point, matrix.transform(vec=point))
+        return [ovf.overfit() for ovf in overfits]
 
     def multifit(self):
-        dev_prv = numpy.inf
+        dev_previous = numpy.inf
         dev = 999999
-        mtxs_prv = [geometry.TRTMatrix() for i in self.tokens[0]]
-        while dev_prv - dev > 0.1:
-            dev_prv = dev
-            rmsds, mtxs = list(zip(*self.iter_once(mtxs=mtxs_prv)))
-            dev = max([rmsd ** 2 * len(self.tokens) for rmsd in rmsds])
-            mtxs_prv = [i.combine(j) for i, j in zip(mtxs_prv, mtxs)]
-            # ~ print "ITER %f" % (dev_prv - dev)
-        return list(zip(rmsds, mtxs_prv))
-
+        matrices_previous = [geometry.TRTMatrix() for i in self.points[0]]
+        while dev_previous - dev > 0.1:
+            dev_previous = dev
+            rmsds, matrices = list(zip(*self.iter_once(matrices=matrices_previous)))
+            dev = max([rmsd ** 2 * len(self.points) for rmsd in rmsds])
+            matrices_previous = [
+                i.combine(j) for i, j in zip(matrices_previous, matrices)
+            ]
+        return list(zip(rmsds, matrices_previous))
