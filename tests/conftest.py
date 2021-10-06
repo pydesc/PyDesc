@@ -120,6 +120,10 @@ def pytest_addoption(parser):
     )
 
 
+def pytest_configure(config):
+    config.addinivalue_line("markers", "web: mark test requiring web access")
+
+
 PDB_FILE = "pdb_file"
 CIF_FILE = "cif_file"
 PURE_FILE = "pure_file"
