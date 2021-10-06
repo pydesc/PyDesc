@@ -144,7 +144,7 @@ To learn more about trajectories see also [this section](#trajectories).
  anywhere on the local machine.
  It can be file in PDB or mmCIF format.
 
-Both methods passes `common_converter` flag to `load_structures` method, which was 
+Both methods pass `common_converter` flag to `load_structures` method, which was 
 described [here](#number-converters).
 
 ### Simple usage
@@ -496,7 +496,7 @@ Residues in pydesc store pseudoatom `cbx`, which stands for "extended CB" and is
  comparison methods for secondary structure type.
  PyDesc also calculates torsion angles (as dynamic feature).
  Note that calculating them individually for each mer is not efficient, so to get all
- of them rather then values for single residues of interest use
+ of them rather than values for single residues of interest use
  `calculate_residues_angles_vectorized` from `pydesc.chemistry.full_atom` module or
  even more convenient `pydesc.api.full_atom.calculate_residues_angles` function.
  Another interesting pseudoatom is moving average CA.
@@ -1188,7 +1188,7 @@ Trajectory object has all the features structure has, plus methods `set_frame`,
 
 From trajectory one can derive all substructures available in PyDesc like segments or
  contacts, even descriptors to see how they change with time (although the same set 
- of residues in different frames might not be able to form a descriptor any more).
+ of residues in different frames might not be able to form a descriptor anymore).
  It is important to understand that changing trajectory frame will make implicit 
  changes to derivatives as well.
 
@@ -1320,21 +1320,22 @@ Structure "2bll" contains only residues.
  When having access to AtomSet objects -- their ids are stored as `ind` attribute.
  See [this section](#atomset---structure-building-block) for more information.
  
-`m12_contacts = contact_map.get_atom_set_contacts(12)` returns list tuples storing
- ind of residue in contact and value of that contact. Zero-valued contacts are skipped.
+`m12_contacts = contact_map.get_atom_set_contacts(12)` returns list of tuples storing
+ indices of residue in contact and value of that contact.
+ Zero-valued contacts are skipped.
 
 ### Changing contact criteria
 
 As different types of research might require different types of criteria -- it is
- possible to use other criteria, for example those defined in PyDesc instead of
-  default one (see [this section](#pre-defined-criteria) for more information), or
-   even combine them to get new, more complex, criteria (see [this section
-   ](#combining-existing-criteria-into-complex-ones) for more information).
- It is also possible to change thresholds or other settings (see [this section
- ](#customizing-targets-and-parameters) for more information).
+ possible to use other criteria.
+ For example, those defined in PyDesc instead of default one
+ (see [this section](#pre-defined-criteria) for more information).
+ It is even possible to combine them to get new, more complex, criteria
+ (see [this section](#combining-existing-criteria-into-complex-ones)).
+ It is also possible to change thresholds or other settings
+ (see [this section](#customizing-targets-and-parameters)).
  In case of customized coarse-grained representation or complicated criteria it might
-  also make sense to implement new classes (see [this section](#extending-base
-  -classes) for more information).
+ also make sense to implement new classes (see [this section](#extending-base-classes)).
 
 Whatever is the origin of criteria other than default, using them is as simple as
  passing them to `ContactMapCalculator` during initialization:
@@ -1459,7 +1460,8 @@ for inds, frequency in fmap:
     print(f"{inds[0]} - {inds[1]} frequency: {frequency}")
 ```
 Frequency maps, as contact maps, are iterable. Iterator returns tuple of ids 
- and frequency. However there are methods specific to that kind of maps:
+ and frequency.
+ However, there are methods specific to that kind of maps:
 * `get_contacts_frequencies` -- takes single id of atom set and returns list of
  results in format (<id of atom set in contact>, <frequency>)
 * `get_contact_frequency` -- returns frequency of contact between two atom sets.
@@ -1579,7 +1581,7 @@ Since that criterion only makes sens to residues, we added an extra line there -
  In this case -- only residues will be used.
 
 That features give another possibility of criterion customization.
- It allows to specify for which types of atom sets calculation of contacts will be
+ It allows specifying for which types of atom sets calculation of contacts will be
   performed.
  For example, it enables excluding ligands from calculation for certain criteria by
  passing this selection:
@@ -1762,7 +1764,105 @@ It was introduced to help understand the concept.
 
 ### Overfit
 
-TBD
+Simple superposition of rigid bodies can be done in PyDesc with Overfit.
+ Fitter provided in this module calculates RMSD and `TRTMatrix` that represents
+ transformation to be applied to 2nd structure in order to get the best superposition.
+
+This method requires pairs of points to be aligned.
+ Such pairs can be provided simply as pairs of lists of coordinates, pairs of atom sets
+ of the same type, pairs of (sub)structures of the same length or as actual alignment.
+
+In the example below, we calculate RMSD and transformation matrix for trivial sample:
+ a pair of two different NMR frames.
+```python
+from pydesc.api.structure import get_structures
+from pydesc.cydesc.overfit import Overfit
+
+frame1, *_, frame20 = get_structures("2ljp")
+fitter = Overfit()
+fitter.add_structures(frame1, frame20)
+rmsd, matrix = fitter.overfit()
+```
+
+In this case, subsequent atom sets from both frames are assumed to be aligned, and thus
+ they are being superimposed by overfit.
+Adding single pairs of mers or atoms is similar:
+
+```python
+from pydesc.api.structure import get_structures
+from pydesc.cydesc.overfit import Overfit
+
+frame1, *_, frame20 = get_structures("2ljp")
+fitter = Overfit()
+fitter.add_mers(frame1[0], frame20[0])
+fitter.add_points(frame1[1].ca, frame20[1].ca)
+fitter.add_points([.1, .2, .3], [.2, .3, .4])
+rmsd, matrix = fitter.overfit()
+```
+
+That example also shows, that different ways of adding points to calculation can be 
+ called multiple times and mixed together.
+ In such case, every first argument is treated as part of the first structure, while
+ every second argument extends the list of second structure points.
+ In the example above, point of coordinates (0.1, 0.2, 0.3) was treated as part of 
+ "structure" that already contained first residue of frame 1 and `CA` of 2nd residue 
+ from the same frame.
+
+Last, but not least, calculation RMSD and transformation for aligned parts:
+```python
+from pydesc.api.alignment import load_alignment
+from pydesc.api.structure import get_structures_from_file
+from pydesc.cydesc.overfit import Overfit
+
+alignment_path = 'tests/data/test_alignments/pal/sars_pair.pal'
+pdb_path = "tests/data/test_alignments/structures/sars_pair.pdb"
+aligned_structures = get_structures_from_file(pdb_path)
+alignment = load_alignment(alignment_path, aligned_structures)
+
+fitter = Overfit()
+fitter.add_alignment(alignment)
+rmsd, matrix = fitter.overfit()
+```
+
+To sum up, there are four ways of adding points:
+* `add_points` -- accepting sequence of coordinate, e.g. `Atom`, 'AtomProxy' or 
+  `Pseudoatom` PyDesc instances, but also lists of numpy arrays.
+* `add_mers` -- accepting not only mers, but any atom sets; this method actually
+  takes into account only their `representation` property.
+  This is why it is important to have atom sets of the same type.
+  Actually -- they just need to have the same representation.
+* `add_structures` -- accepting structures or substructures of the same length.
+  Adding structures leads to serial addition of corresponding (in terms of index) mers.
+* `add_alignments` -- accepting pair alignment.
+
+Overfit comes in two flavors: `Overfit` for pairs, which superimposes 2nd structure 
+ onto 1st one; and `Multifit` -- fitting multiple structures to artificial "average"
+ structure of all passed structures.
+ Interface for the `Multifit` is similar to the interface of the `Overfit` class, so 
+ example will be limited to "multifitting" three NMR frames, only to highlight the
+ differences:
+```python
+from pydesc.api.structure import get_structures
+from pydesc.cydesc.overfit import Multifit
+
+frame1, frame2, *_, frame20 = get_structures("2ljp")
+fitter = Multifit(3)
+fitter.add_structures(frame1, frame2, frame20)
+(rmsd1, matrix1), (rmsd2, matrix2), (rmsd3, matrix3) = fitter.multifit_once()
+rmsds, matrices = zip(*fitter.multifit())
+```
+Firs of all, `Multifit` needs number of structures to be superimposed while initialized.
+ Second difference, probably obvious, is that `add_?` methods take multiple arguments.
+ Third, there are two methods to run fitting:
+* `multifit_once`, which will only once calculate average structure and fit each
+  added structure to it; and
+* `multifit`, which will iterate until all structures are fitted with in such way,
+  that mean distance between atoms are less than 0.1 Å.
+
+Finally -- results are returned as a list of pairs: RMSD - transformation matrix.
+ Their order corresponds to order of given structures.
+
+Look [here](#geometry) to learn how to work with `TRTMatrix` objects.
 
 ### Compdesc
 
@@ -2278,8 +2378,9 @@ This method returns boolean values.
 
 To do so simply call `is_internally_consistent`, as shown in example above.
  It might be needed to manually remove some rows from alignment.
- Alignment are immutable, so that means picking subsets of rows (which results in new
- (sub)alignments and merging them with `sum_rows`.
+ However, alignment are immutable and direct removal of rows is not possible.
+ The way to achieve it, is to pick subsets of rows correct rows and merging them with
+ `sum_rows` method.
 
 ### Alignment comparison
 
