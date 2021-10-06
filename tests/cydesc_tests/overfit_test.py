@@ -104,7 +104,7 @@ class TestMultifit:
         fitter = Multifit(3)
         p1, p2, p3 = [stc[0].representation[0] for stc in trivial_structures3]
         fitter.add_points(p1, p2, p3)
-        result = fitter.iter_once()
+        result = fitter.multifit_once()
         rmsds, matrices = zip(*result)
         for i in rmsds:
             assert i == 0.0
@@ -120,7 +120,7 @@ class TestMultifit:
         fitter = Multifit(3)
         mers = [stc[0] for stc in trivial_structures3]
         fitter.add_mers(*mers)
-        result = fitter.iter_once()
+        result = fitter.multifit_once()
         rmsds, matrices = zip(*result)
         for i in rmsds:
             assert i >= 0.0
@@ -130,7 +130,7 @@ class TestMultifit:
     def test_structures(self, trivial_structures3):
         fitter = Multifit(3)
         fitter.add_structures(*trivial_structures3)
-        result = fitter.iter_once()
+        result = fitter.multifit_once()
         rmsds, matrices = zip(*result)
         for i in rmsds:
             assert 0.0 < i < 8.0

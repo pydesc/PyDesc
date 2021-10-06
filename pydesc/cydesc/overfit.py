@@ -269,7 +269,7 @@ class Multifit:
             mers = [stc[ind] for stc, ind in zip(structures, row)]
             self.add_mers(*mers)
 
-    def iter_once(self, matrices=None):
+    def multifit_once(self, matrices=None):
         if matrices is None:
             matrices = [geometry.TRTMatrix() for _ in range(self.n)]
         average_structure = []
@@ -292,7 +292,7 @@ class Multifit:
         matrices_previous = [geometry.TRTMatrix() for i in self.points[0]]
         while dev_previous - dev > 0.1:
             dev_previous = dev
-            rmsds, matrices = list(zip(*self.iter_once(matrices=matrices_previous)))
+            rmsds, matrices = list(zip(*self.multifit_once(matrices=matrices_previous)))
             dev = max([rmsd ** 2 * len(self.points) for rmsd in rmsds])
             matrices_previous = [
                 i.combine(j) for i, j in zip(matrices_previous, matrices)
