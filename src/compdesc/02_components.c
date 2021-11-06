@@ -163,8 +163,8 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
         /*
          * Each contact ocurs twice in contact_map (A-B and B-A). To avoid duplications
          * we pick only one of the pair in the first descriptor.
-         */
         if(con1->mer1_used>con1->mer2_used) continue;
+         */
         for(int j=0; j<desc2->contact_map->n_contacts; j++) {
             CContact *con2=&desc2->contact_map->contacts[j];
             float dist;
