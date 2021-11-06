@@ -25,8 +25,6 @@
 #include<string.h>
 #include<math.h>
 
-//#define MD_TEST
-
 static void getMapOrderingSegmentsAccordingToLength(int* seg_map, const CStructure* desc) // checked
 {
     int n_segs = desc->n_segs;
@@ -59,12 +57,6 @@ static void initializeTree(t_segfit** tree, int* n_branches, int token) // check
     // fit of segment desc->segs[seg_map[0]]
 
     tree[0][0].source = NULL;
-
-    // TODO: czy ponizsze jest w ogole do czegokolwiek potrzebne
-    //	tree[0][0].start_in_dom_ind = -1;
-    //	tree[0][0].start_in_dom_mer_array = -1;
-    //	tree[0][0].length = 0;
-    //	tree[0][0].seg_num = 0;
 
     overfit_reset(token);
     overfit_sumsave_str(token, &(tree[0][0].sums));
@@ -102,11 +94,9 @@ static int noClashesWithAlreadyAligned(t_segfit** tree, int height, int branch, 
 static int incompatibleAAtypesOccur(const CStructure* dom, int aa, const CStructure* desc, int seg_num, int seg_len)
 {
     int start = desc->segs[seg_num].c_start;
-    //printf("start = %d\n",start);
 
     for(int i=0;i<seg_len;i++)
         if( dom->monomers[aa+i].type != desc->monomers[start+i].type ) {
-            //printf("dom->mers[aa+i].ind = %d, desc->mers[start+i].ind = %d\n",dom->monomers[aa+i].ind,desc->monomers[start+i].ind);
             return 0;
         }
 
@@ -220,7 +210,6 @@ static void makeBranch(t_segfit** tree, int* n_branches, int i, int seg_num, int
             if( length_map[aa] < seg_len || incompatibleAAtypesOccur(dom,aa,desc,seg_num,seg_len)==0 || noClashesWithAlreadyAligned(tree, height, branch, seg_len, aa)==0 )
                 continue;
 
-            /* printf("elo\n"); */
             overfit_reset(token);
 			addToSums(seg_num,seg_len,aa,desc,dom,token); // see the definition of "addToSums"
 
@@ -306,7 +295,6 @@ static void allocResult(t_fitdesc_result* result, int n_mers)
 
 static void storeFits(t_segfit* leaves, int final_n_fits, CStructure* desc,t_fitdesc_result** results)
 {
-	//printf("final_n_fits = %d\n",final_n_fits);
 	t_fitdesc_result* tmp = (t_fitdesc_result*) malloc(final_n_fits * sizeof(t_fitdesc_result));
 
 	for( int leafNum = 0; leafNum < final_n_fits; leafNum++ ) {

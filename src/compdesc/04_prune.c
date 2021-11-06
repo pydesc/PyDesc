@@ -89,14 +89,10 @@ int prune_alignments(CDescriptor *desc1, CDescriptor *desc2, t_alignment *full_a
         }
     }
 
-    /* P_INT(max_size) P_INT(max_cnt) P_NL; */
-
     qsort(al_order, n_full_align, sizeof(int), al_size_comp);
 
 
     int max=max_n_al==0?n_full_align:MIN(max_n_al, n_full_align);
-
-    /* P_INT(max) P_NL; */
 
     int i=0;
     while(i<max) {
@@ -107,16 +103,7 @@ int prune_alignments(CDescriptor *desc1, CDescriptor *desc2, t_alignment *full_a
         if(coverage_test_alignment(&(full_align[al_order[i]]), &al_cov)) {
             int tmp=0;
 
-            /* P_INT(al_order[i]) P_NL */
-
-/* #ifdef COMPDESC_DEBUG */
-/*             if(run1) { */
-/*                 RMSD_frag_crop(&full_align[al_order[i]], th_overall_RMSD, 5, &tmp, al_cov, deb->full_align_crop_val_run1[al_order[i]], deb->full_align_crop_max_run1[al_order[i]]);  */
-/*             } else */
-/* #endif */
-            /* { */
-                RMSD_frag_crop(&full_align[al_order[i]], th_overall_RMSD, 5, &tmp, al_cov, 0, 0);
-            /* } */
+            RMSD_frag_crop(&full_align[al_order[i]], th_overall_RMSD, 5, &tmp, al_cov, 0, 0);
             alignment_size(&full_align[al_order[i]]);
 
             int new_pos=i;
@@ -136,7 +123,6 @@ int prune_alignments(CDescriptor *desc1, CDescriptor *desc2, t_alignment *full_a
                             max_cnt++;
                         }
                     }
-                    /* P_INT(max_size) P_INT(max_cnt) P_NL; */
                     qsort(al_order, n_full_align, sizeof(int), al_size_comp);
                     i=0;
                 }
@@ -149,12 +135,8 @@ int prune_alignments(CDescriptor *desc1, CDescriptor *desc2, t_alignment *full_a
                 changed=1;
             }
 
-            /* P_INT(tmp) P_INT(i) P_INT(new_pos) P_INT(changed) P_INT(full_align[al_order[new_pos]].n_AA) P_FLOAT(full_align[al_order[new_pos]].RMSD)  P_NL; */
-            /* P_INT(i) P_INT(al_order[i]) P_INT(full_align[al_order[i]].dud) P_INT(full_align[al_order[i]].n_AA) P_FLOAT(full_align[al_order[i]].RMSD) P_INT(coverage_test_alignment(&(full_align[al_order[i]]), 0)) P_NL; */
-
             if(!changed) {
                 int log=0;
-                /* P_INT(i); */
                 for(int j=0; j<i; j++) {
                     if(is_subalignment(&(full_align[al_order[i]]), &(full_align[al_order[j]]))) {
                         full_align[al_order[i]].dud=1;
@@ -177,12 +159,6 @@ int prune_alignments(CDescriptor *desc1, CDescriptor *desc2, t_alignment *full_a
                         } else break;
                     }
                 }
-                /* P_INT(i) P_INT(log) P_INT(n_full_align) P_INT(changed) P_NL; */
-                /* for(int i=0; i<MIN(n_full_align, 10); i++) { */
-                /*     P_INT(i) P_INT(al_order[i]) P_INT(full_align[al_order[i]].dud) P_INT(full_align[al_order[i]].n_AA) P_FLOAT(full_align[al_order[i]].RMSD) P_INT(coverage_test_alignment(&(full_align[al_order[i]]), 0)) ; */
-                /*     if(i<n_full_align+1) P_INT(al_size_comp(&al_order[i], &al_order[i+1])); */
-                /*     P_NL; */
-                /* } */
             }
         } else {
             full_align[al_order[i]].dud=1;
@@ -195,38 +171,16 @@ int prune_alignments(CDescriptor *desc1, CDescriptor *desc2, t_alignment *full_a
     }
 
 #ifdef COMPDESC_DEBUG
-/*         if(run1) { */
-/*             deb->full_align_run1=calloc(n_full_align, sizeof(t_alignment)); */
-/*  */
-/*             for(int i=0; i<n_full_align; i++) { */
-/*                 copy_alignment(&(((t_alignment *)deb->full_align_run1)[i]), &full_align[i]); */
-/*                 for(int j=0; j<=5; j++) if(deb->full_align_crop_max_run1[i][j]>=0) { */
-/*                     deb->full_align_crop_max_run1[i][j]=map_unmap(desc1->contact_map->c_ind_to_used_map, deb->full_align_crop_max_run1[i][j]); */
-/*                     deb->full_align_crop_max_run1[i][j]=map_unmap(desc1->structure->ind_to_c_map, deb->full_align_crop_max_run1[i][j]); */
-/*                 } */
-/*             } */
-/*  */
-/*             run1=0; */
-/*         } */
-#endif
-
-#ifdef COMPDESC_DEBUG
     deb->stage4=1;
 #endif
 
     int cnt=0;
-
-    /* for(int i=0; i<MIN(n_full_align, 11); i++) { */
-    /*     P_INT(i) P_INT(al_order[i]) P_INT(full_align[al_order[i]].dud) P_INT(full_align[al_order[i]].n_AA) P_FLOAT(full_align[al_order[i]].RMSD) P_INT(coverage_test_alignment(&(full_align[al_order[i]]), 0)) ; */
-    /*     P_INT(al_size_comp(&al_order[i], &al_order[i+1])) P_NL; */
-    /* } */
 
     for(int i=0; i<n_full_align; i++) {
         if(!coverage_test_alignment(&(full_align[i]), 0) || full_align[i].RMSD>th_overall_RMSD || full_align[i].dud) continue;
         cnt++;
     }
 
-    /* P_INT(cnt) P_NL; */
 
     return cnt;
 }
@@ -254,9 +208,6 @@ int save_results(CDescriptor *desc1, CDescriptor *desc2, t_compdesc_result **res
         res->RMSD=al->RMSD;
         res->TR=al->TR;
 
-        /* res->desc1_monomers = calloc(res->n_monomers, sizeof(int)); */
-        /* res->desc2_monomers = calloc(res->n_monomers, sizeof(int)); */
-
         void save_map(t_map *map, int *n, int **vec1, int **vec2) {
             *vec1=calloc(map->len1, sizeof(int));
             *vec2=calloc(map->len1, sizeof(int));
@@ -281,7 +232,6 @@ int save_results(CDescriptor *desc1, CDescriptor *desc2, t_compdesc_result **res
         save_map(al->contact_map, &res->n_contacts, &res->desc1_contacts, &res->desc2_contacts);
 
         for(int j=0; j<res->n_monomers; j++) {
-            /* P_INT(pos1) P_INT(pos2) P_NL */
             res->desc1_monomers[j] = map_unmap(desc1->structure->ind_to_c_map, res->desc1_monomers[j]);
             res->desc2_monomers[j] = map_unmap(desc2->structure->ind_to_c_map, res->desc2_monomers[j]);
         }

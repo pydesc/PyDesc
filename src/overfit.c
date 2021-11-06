@@ -127,7 +127,6 @@ void __attribute__ ((constructor)) overfit_init(void)
 {
 #pragma omp critical(overfit_token)
 	{
-//		printf("overfit_init\n");
 		memset(tokens, 0, sizeof(tokens));
 	}
 }
@@ -746,10 +745,6 @@ float fast_overfit(int token, t_transrot *TR)
 	}
 
 	float res=(float)sqrt( fabs((double) (residual)*2.0/((double)n_points[token])) );
-
-//	res=rintf(res*10000.0)*0.0001;
-//	res=rintf(res*1000.0)*0.001;
-//	res=rintf(res*100.0)*0.01;
 
 	return res;
 }

@@ -95,7 +95,6 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
     elsim_list[n_elsim].el2=zero_el2;
     elsim_list[n_elsim].RMSD=zero_el_RMSD;
     elel_to_elsim[desc1->central_element_used][desc2->central_element_used]=n_elsim;
-    /* P_INT(desc1->central_element_used) P_INT(desc2->central_element_used) P_INT(n_elsim) P_NL; */
     overfit_sumsave_str(token, &(elsim_list[n_elsim].overfit_sums));
     n_elsim++;
 
@@ -145,8 +144,6 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
     }
 
 
-    /* P_INT(desc1->n_elements) */
-    /* P_INT(desc1->contact_map->n_contacts) P_NL; */
 #ifdef COMPDESC_DEBUG
     deb->n_all_element_comp=deb_pos;
 
@@ -161,8 +158,9 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
     for(int i=0; i<desc1->contact_map->n_contacts; i++) {
         CContact *con1=&desc1->contact_map->contacts[i];
         /*
-         * Each contact ocurs twice in contact_map (A-B and B-A). To avoid duplications
-         * we pick only one of the pair in the first descriptor.
+         * If each contact ocurs twice in contact_map (A-B and B-A),
+         * to avoid duplications, pick only one of the pair in the first descriptor.
+         * In such case, include this line:
         if(con1->mer1_used>con1->mer2_used) continue;
          */
         for(int j=0; j<desc2->contact_map->n_contacts; j++) {
@@ -176,25 +174,11 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
             el21=&desc2->elements[con2->mer1_used];
             el22=&desc2->elements[con2->mer2_used];
 
-
-            /* P_INT(i) P_INT(j) P_NL; */
-            /* P_INT(el11->center_used) P_INT(el21->center_used) P_INT(elel_to_elsim[el11->center_used][el21->center_used]) P_NL; */
-            /* P_INT(el12->center_used) P_INT(el22->center_used) P_INT(elel_to_elsim[el12->center_used][el22->center_used]) P_NL; */
-
             if(elel_to_elsim[el11->center_used][el21->center_used]<0 || elel_to_elsim[el12->center_used][el22->center_used]<0) continue;
             t_elsim *elsim1=&(elsim_list[elel_to_elsim[el11->center_used][el21->center_used]]);
             t_elsim *elsim2=&(elsim_list[elel_to_elsim[el12->center_used][el22->center_used]]);
-
-            /* P_FLOAT(elsim1->RMSD) P_FLOAT(elsim2->RMSD) P_NL; */
-
-
             if(force_order)
                 if(element_offset(el11, el21) * element_offset(el12, el22)) continue;
-
-
-            /* P_INT(elsim1->overfit_sums.N); */
-            /* P_INT(elsim2->overfit_sums.N); */
-            /* P_NL; */
 
             dist=RMSD_pair(token, &(elsim1->overfit_sums), &(elsim2->overfit_sums));
 
@@ -210,8 +194,6 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
             if(dist>th_pair_RMSD) {
                 continue;
             }
-
-            /* P_FLOAT(dist) P_NL; */
 
             elsim1->consim_cnt++;
             elsim2->consim_cnt++;
@@ -235,7 +217,6 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
 
     int pos=1;
     for(int i=0; i<n_elsim; i++) {
-        /* P_INT(i) P_INT(elsim_list[i].el1->center)  P_INT(elsim_list[i].el2->center) P_INT(elsim_list[i].consim_cnt) P_NL; */
         if(i==0) continue;
         if(elsim_list[i].consim_cnt>0) {
             elsim_list[pos]=elsim_list[i];
@@ -245,14 +226,11 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
             pos++;
         }
     }
-    /* P_INT(n_elsim) P_INT(pos) P_NL; */
     n_elsim=pos;
 
     elsim_list=realloc(elsim_list, n_elsim * sizeof(t_elsim));
     consim_list=realloc(consim_list, n_consim * sizeof(t_consim));
     t_consim ***consim_map=(t_consim ***)array_alloc(n_elsim, n_elsim, sizeof(t_consim *));
-
-    /* P_INT(n_consim) P_NL; */
 
     for(int i=0; i<n_consim; i++) {
         CContact *con1=consim_list[i].con1;
@@ -268,7 +246,6 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
 
         consim_map[elsim1_ind][elsim2_ind]=&(consim_list[i]);
         consim_map[elsim2_ind][elsim1_ind]=&(consim_list[i]);
-        /* P_INT(elsim1_ind) P_INT(elsim2_ind) P_INT(i) P_NL; */
     }
 
 
@@ -309,10 +286,8 @@ t_sim_graph *build_graph(t_sim_components *sim_components
         )
 {
     t_elsim *elsim_list=sim_components->elsim_list;
-    /* t_consim *consim_list=sim_components->consim_list; */
     t_consim ***consim_map=sim_components->consim_map;
     int n_elsim=sim_components->n_elsim;
-    /* int n_consim=sim_components->n_consim; */
 
     t_sim *sim_list=calloc(n_elsim, sizeof(t_sim));
     int n_sim=0;
@@ -376,11 +351,6 @@ t_sim_graph *build_graph(t_sim_components *sim_components
         }
     }
 
-    /* P_INT(n_sim) P_NL; */
-    /* for(int i=0; i<n_sim; i++) { */
-    /*     P_INT_ARR(sim_graph[i], n_sim); P_NL; */
-    /* } */
-
     t_sim_graph *res=calloc(1, sizeof(t_sim_graph));
 
     res->sim_list=sim_list;
@@ -423,7 +393,6 @@ int clean_ion_contacts(int token, CDescriptor *desc1, CDescriptor *desc2, t_sim_
 
                     if(dist>2*th_overall_RMSD) {
                         graph->sim_graph[i][j]=1;
-                        /* P_FLOAT(dist) P_NL; */
                     }
 
                 }
@@ -467,11 +436,9 @@ int clean_ion_contacts(int token, CDescriptor *desc1, CDescriptor *desc2, t_sim_
 
     dfs(0);
 
-    /* int cnt=0; */
 
     for(int i=0; i<graph->n_sim; i++) {
         if(!visited[i]) {
-           /* cnt++; */
             for(int j=1; j<graph->n_sim; j++) {
                 graph->sim_graph[i][j]=0;
                 graph->sim_graph[j][i]=0;
@@ -479,7 +446,6 @@ int clean_ion_contacts(int token, CDescriptor *desc1, CDescriptor *desc2, t_sim_
         }
     }
 
-    /* P_INT(cnt) P_NL; */
 
 
 }

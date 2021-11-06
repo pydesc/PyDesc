@@ -48,33 +48,6 @@ int is_subalignment(t_alignment *al1, t_alignment *al2)
     return 1;
 }
 
-/* void print_alignment(t_alignment *align) */
-/* { */
-/*  */
-/*     void p1(int v1, int v2) { */
-/*         printf("%4d", v1); */
-/*     } */
-/*  */
-/*     void p2(int v1, int v2) { */
-/*         printf("%4d", v2); */
-/*     } */
-/*  */
-/*     printf("mers: "); */
-/*     map_iter(align->mer_map, p1); P_NL; */
-/*     printf("      "); */
-/*     map_iter(align->mer_map, p2); P_NL; */
-/*  */
-/*     printf("el: "); */
-/*     map_iter(align->el_map, p1); P_NL; */
-/*     printf("    "); */
-/*     map_iter(align->el_map, p2); P_NL; */
-/*  */
-/*     printf("con: "); */
-/*     map_iter(align->contact_map, p1); P_NL; */
-/*     printf("     "); */
-/*     map_iter(align->contact_map, p2); P_NL; */
-/* } */
-
 void copy_alignment(t_alignment *dest, t_alignment *align)
 {
     destroy_alignment(dest);
@@ -165,9 +138,6 @@ static void create_desc_vector(int *desc_vec, CDescriptor *desc)
             type=ZERO;
         } else {
             type=CENTRAL;
-            /* int con_pos=desc->contact_map->contact_array[desc->central_element_used][i]; */
-            /* P_INT(desc->central_element_used) P_INT(i) P_INT(con_pos) P_INT(desc->contact_map->contacts[con_pos].val) P_NL; */
-            /* opt=desc->contact_map->contacts[con_pos].val==2 ? 1 : 0; */
             nopt=1-el->optional;
         }
 
@@ -307,7 +277,6 @@ static int is_equal_al_coverage(t_al_coverage *cov1, t_al_coverage *cov2)
 
     return r1&&r2;
 
-    /* return is_equal_desc_coverage(&cov1->desc1, &cov2->desc1) && is_equal_desc_coverage(&cov1->desc2, &cov2->desc2); */
 }
 #endif
 
@@ -474,21 +443,6 @@ int coverage_test_alignment(t_alignment* alignment, t_al_coverage **coverage_p)
         map_iter(alignment->mer_map, mark_aligned);
 
         /*
-         * New version which marks only elements explicitly aligned.
-         */
-
-/*         void mark_aligned_el(int used1, int used2) { */
-/*             CElement *el1=&desc1->elements[used1]; */
-/*             CElement *el2=&desc2->elements[used2]; */
-/*  */
-/*             cov->desc1.desc_vec[el1->center_c_ind] |= ALIGNED_EL; */
-/*             cov->desc2.desc_vec[el2->center_c_ind] |= ALIGNED_EL; */
-/*         } */
-/*  */
-/*         map_iter(align_new->el_map, mark_aligned_el); */
-
-
-        /*
          * Old version which marks all elements covered by alignment as aligned.
          */
 
@@ -559,7 +513,6 @@ int coverage_test_alignment(t_alignment* alignment, t_al_coverage **coverage_p)
 
     if(old_cov) {
         if(is_equal_al_coverage(old_cov, alignment->coverage)) {
-            /* printf("deleting alignment->coverage. What a waste!\n"); */
         } else {
             printf("********* coverages differ ************************\n");
             abort();

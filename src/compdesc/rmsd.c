@@ -41,7 +41,6 @@ static void RMSD_add_monomers(int token,  int c_ind1, int c_ind2, CStructure *st
     for(int i=0; i<n_points; i++) {
         float_al *p1=(float_al *)&(mer1->points[i]);
         float_al *p2=(float_al *)&(mer2->points[i]);
-        /* P_FLOAT_ARR(p1, 4); P_FLOAT_ARR(p2, 4); P_NL; */
         overfit_add(token, p1, p2);
     }
 }
@@ -108,7 +107,7 @@ float RMSD_frag(t_alignment *align, int zero_el1_c_ind, int zero_el2_c_ind, CStr
     return align->RMSD;
 }
 
-static int remove_from_alignment(t_alignment *align, short worst_el1_used) //, t_al_coverage *al_cov)
+static int remove_from_alignment(t_alignment *align, short worst_el1_used)
     /*
      * CAUTION: This function does not account for elements covered but not explicitely aligned are included in coverage.
      */
@@ -130,37 +129,22 @@ static int remove_from_alignment(t_alignment *align, short worst_el1_used) //, t
 
     int done=0;
 
-    /* P_INT(worst_el1_used) P_NL; */
-
-    /* P_T("remove_from_alignment\n") */
-
 retry:
     while(!done) {
         done=1;
         for(int i=el_pos; i<n_el_del; i++) {
-            /* P_INT(i) P_INT(elements_to_del[i]) P_NL; */
             for(int j=0; j<desc1->n_elements; j++) if(j!=elements_to_del[i]) {
                 int con=desc1->contact_map->contact_array[elements_to_del[i]][j];
 
-                /* P_INT(elements_to_del[i]) P_INT(j) P_INT(con) */
-                /* if(con>=0) P_INT(map_map(align->contact_map, con)); */
-
                 if(con>=0 && map_map(align->contact_map, con)>=0) {
                     contacts_to_del[n_con_del++]=con;
-                    /* printf(" ***"); */
                 }
-                /* P_NL; */
 
                 con=desc1->contact_map->contact_array[j][elements_to_del[i]];
 
-                /* P_INT(j) P_INT(elements_to_del[i]) P_INT(con) */
-                /* if(con>=0) P_INT(map_map(align->contact_map, con)); */
-
                 if(con>=0 && map_map(align->contact_map, con)>=0) {
                     contacts_to_del[n_con_del++]=con;
-                    /* printf(" ***"); */
                 }
-                /* P_NL; */
             }
         }
 
@@ -171,18 +155,14 @@ retry:
 
             void process_el(int el_used) {
 
-                /* P_INT(contacts_to_del[i]) P_INT(el_used) P_INT(align->el_cov_count[el_used]); */
-
                 if(align->el_cov_count[el_used]>0) {
                     align->el_cov_count[el_used]--;
                     if(!align->el_cov_count[el_used]) {
                         elements_to_del[n_el_del++]=el_used;
-                        /* printf(" ***"); */
                         done=0;
                     }
                 }
 
-                /* P_NL; */
             }
 
             process_el(con->mer1_used);
@@ -204,20 +184,11 @@ retry:
         update_con(contacts_to_del[i], &al_cov->desc1);
         update_con(map_map(align->contact_map, contacts_to_del[i]), &al_cov->desc2);
 
-        /* CContact *con=&desc1->contact_map->contacts[contacts_to_del[i]]; */
-        /* int el1=con->mer1_used; */
-        /* int el2=con->mer2_used; */
-        /* P_T("removing ") P_INT(el1) P_INT(el2) P_NL; */
-
         map_unset(align->contact_map, contacts_to_del[i], 1);
     }
 
-    /* P_INT(n_el_del) P_NL; */
-
     for(int i=0; i<n_el_del; i++) {
         CElement *el=&desc1->elements[elements_to_del[i]];
-
-        /* P_INT(el->center_used); P_NL; */
 
         if(!(al_cov->desc1.desc_vec[el->center_c_ind] & NON_OPT_EL)) al_cov->desc1.n_el_all--;
         if(!(al_cov->desc2.desc_vec[map_map(align->mer_map,el->center_c_ind)] & NON_OPT_EL)) al_cov->desc2.n_el_all--;
@@ -244,7 +215,6 @@ retry:
                 }
             }
         }
-        /* P_T("removing ") P_INT(el->center_used)  P_NL; */
         map_unset(align->el_map, el->center_used, 1);
     }
 
@@ -271,8 +241,6 @@ retry:
         int el1_used=con->mer1_used;
         int el2_used=con->mer2_used;
 
-        /* P_INT(el1_used) P_INT(el2_used) P_NL; */
-
         update_comp(el1_used);
         update_comp(el2_used);
 
@@ -290,7 +258,6 @@ retry:
         update_comp(i);
     }
 
-    /* P_INT_ARR(comp, desc1->n_elements) P_NL; */
 
     void remove_not_connected_element(int el1_used, int el2_used) {
         if(comp[el1_used]!=comp[desc1->central_element_used]) {
@@ -306,10 +273,7 @@ retry:
 
     map_iter(align->el_map, remove_not_connected_element);
 
-    /* P_INT_ARR(elements_to_del, n_el_del) P_NL; */
-
     if(n_el_del) {
-        /* printf("remove_elements retry\n"); */
         goto retry;
     }
 
@@ -319,8 +283,6 @@ retry:
     int old_n_AA=align->n_AA;
 
     alignment_size(align);
-
-    /* P_INT(old_n_AA) P_INT(align->n_AA) P_NL; */
 
     /*
      * Old version which marks all elements covered by alignment as aligned.
@@ -362,7 +324,6 @@ static float RMSD_frag_crop_int(t_alignment *align, float threshold, int max_del
     }
 
 
-    /* printf("RMSD_frag_crop: "); P_INT(max_del) P_FLOAT(RMSD) P_NL; */
 
     int n_set_aside_local=0;
 
@@ -374,18 +335,12 @@ static float RMSD_frag_crop_int(t_alignment *align, float threshold, int max_del
             }
 
             t_alignment tmp_align;
-            /* t_al_coverage tmp_al_cov; */
 
             memset(&tmp_align, 0, sizeof(tmp_align));
-            /* memset(&tmp_al_cov, 0, sizeof(tmp_al_cov)); */
 
             copy_alignment(&tmp_align, align);
-            /* copy_al_coverage(&tmp_al_cov, al_cov); */
 
-            /* int del_count=remove_from_alignment(&tmp_align, pos2, desc1, desc2); */
-            int del_count=remove_from_alignment(&tmp_align, el1_used);//, &tmp_al_cov);
-
-
+            int del_count=remove_from_alignment(&tmp_align, el1_used);
 
             int act;
 
@@ -422,7 +377,7 @@ static float RMSD_frag_crop_int(t_alignment *align, float threshold, int max_del
         int act;
 
         if(max[min_c]>=0) {
-            int del_count=remove_from_alignment(align, max[min_c]);//, al_cov);
+            int del_count=remove_from_alignment(align, max[min_c]);
 
             RMSD=RMSD_frag_crop_int(align, threshold, max_del-del_count, &act, set_aside, n_set_aside+saved_n_set_aside_local[min_c], max[min_c]+1, 0,0);
             *act_del=act+del_count;
@@ -435,7 +390,6 @@ static float RMSD_frag_crop_int(t_alignment *align, float threshold, int max_del
         }
     }
 
-    /* P_INT(max_del) P_INT(*act_del) P_FLOAT(RMSD) P_NL; */
     return RMSD;
 }
 

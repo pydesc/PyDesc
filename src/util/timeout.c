@@ -94,13 +94,6 @@ void set_timeout(int n_sec)
 	timeout=n_sec;
 
 	start_time=time(0);
-/*
-	P_S("set_timeout: ");
-	P_INT(timeout);
-	P_INT(start_time);
-	P_NL;
-*/
-//	printf("set timeout: %d\n", n_sec);
 }
 
 
@@ -109,13 +102,6 @@ int check_timeout()
 	if(!timeout) return 0;
 
 	int curr_time=time(0);
-/*
-	P_S("check_timeout: ");
-	P_INT(curr_time);
-	P_INT(start_time+timeout);
-	P_NL;
-*/
-//	printf("check timeout: %d left\n", start_time+timeout-curr_time);
 
 	if(curr_time>=start_time+timeout) return 1;
 

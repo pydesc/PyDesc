@@ -87,14 +87,10 @@ static void convert_comb_align(t_alignment *align, int *allowed_comb, t_sim_comp
     t_elsim *elsim_list[allowed_comb[0]*2];
     int n_el=0;
 
-    /* P_T("convert_comb_align") P_NL; */
-    /* P_T("elts1: "); */
-
     for(int i=0; i<allowed_comb[0]; i++) {
         void add_elsim(t_elsim *elsim) {
             elsim_list[n_el++]=elsim;
             map_set(align->el_map, elsim->el1->center_used, elsim->el2->center_used);
-            /* printf("%d ", elsim->el1->center_used); */
         }
 
         t_sim *sim=&(sim_list[allowed_comb[i+1]]);
@@ -110,23 +106,17 @@ static void convert_comb_align(t_alignment *align, int *allowed_comb, t_sim_comp
         }
     }
 
-    /* P_NL; */
-
     for(int i=0; i<n_el; i++) {
         for(int j=0; j<n_el; j++) {
             t_consim *consim=sim_components->consim_map[elsim_list[i]->pos][elsim_list[j]->pos];
 
-            /* P_INT(elsim_list[i]->pos) P_INT(elsim_list[j]->pos) */
-
             if(!consim) {
-                /* P_INT(-1) P_NL; */
                 continue;
             }
 
             align->el_cov_count[consim->elsim1->el1->center_used]++;
             align->el_cov_count[consim->elsim2->el1->center_used]++;
 
-            /* P_INT(consim->pos) P_NL; */
             map_set(align->contact_map, consim->con1->pos, consim->con2->pos);
 
         }
@@ -203,8 +193,6 @@ static int fill_allowed(int ***allowed_comb_p, int *subset, char **edge_graph, i
     int res[n_set+1];
 
     int max_comb=n_edges;
-
-    /* max_comb=1; // TODO: Temporary for testing purposes. Remove when done. */
 
     int **allowed_comb=(int **) array_alloc(max_comb, max_len+1, sizeof(int));
 
@@ -294,21 +282,14 @@ static int enumerate_cliques(char **graph, int n_sim, int ***res_p, int min_el
 )
 {
 
-    /* short indep_sets[min_el][n_sim+1]; */
     int **indep_sets=(int **)array_alloc(min_el, (n_sim+1), sizeof(int));
-
-    /* P_POINT(indep_sets) P_NL; */
 
     int n_sets=fill_indep_sets(graph, n_sim, indep_sets, min_el);
 
-    /* P_INT(n_sets) P_NL; */
 #ifdef COMPDESC_DEBUG
     deb->n_sets=n_sets;
-    /* P_INT(deb->n_sets) P_NL; */
     deb->indep_sets=indep_sets;
 #endif
-
-    /* P_INT(min_el) P_INT(n_sets) P_NL; */
 
     int *n_align=calloc(n_sets, sizeof(int));
     int ***allowed_comb=calloc(n_sets, sizeof(int **));
@@ -344,10 +325,7 @@ static int enumerate_cliques(char **graph, int n_sim, int ***res_p, int min_el
 
         max_align_size+=max_size;
 
-        /* P_INT(i) P_INT(n_align[i]) P_INT(max_size) P_NL; */
     }
-
-    /* P_INT(n_sim) P_NL; */
 
     int **res=(int **)array_alloc(n_full_align, max_align_size+1, sizeof(int));
 
@@ -406,9 +384,6 @@ static int enumerate_cliques(char **graph, int n_sim, int ***res_p, int min_el
 
         edge_graph_dfs(graph, n_sim, 0, -1, visited, reachable, mark_reachable);
 
-        /* P_INT_ARR_L(res[i]) P_NL; */
-        /* P_INT_ARR_L(tmp_comb) P_NL; */
-
         memcpy(res[i], tmp_comb, sizeof(tmp_comb));
 
     }
@@ -461,7 +436,6 @@ int build_alignments(CDescriptor *desc1, CDescriptor *desc2, t_alignment **full_
         alignment_size(&full_align[i]);
         RMSD_frag(&full_align[i], zero_el1->center_c_ind, zero_el2->center_c_ind, desc1->structure, desc2->structure);
 
-        /* P_INT(full_align[i].n_AA) P_NL; */
     }
 
     *full_align_p=full_align;

@@ -232,11 +232,6 @@ void * fh_replacekeydata(struct fibheap * h, struct fibheap_el *x, unsigned int 
 		return odata;
 
 	y = x->fhe_p;
-
-/*
-	if (h->fh_keys && okey == key)
-		return odata;
-*/
 	
 	if (y != NULL && fh_compare(h, x, y) <= 0) {
 		fh_cut(h, x, y);
