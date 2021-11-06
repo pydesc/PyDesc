@@ -342,10 +342,8 @@ class CContactMap(ctypes.Structure, metaclass=CInDelMeta):
         """ Accepts instances of contactmap.ContactMap. """
 
         contacts_list = []
-
-        for mer1, mer_dict in list(contact_map.contacts.items()):
-            for mer2, val in list(mer_dict.items()):
-                contacts_list.append(CContact(mer1, mer2, val))
+        for (ind1, ind2), val in contact_map:
+            contacts_list.append(CContact(ind1, ind2, val))
 
         self.structure = ctypes.pointer(struct)
         self.n_contacts = len(contacts_list)
