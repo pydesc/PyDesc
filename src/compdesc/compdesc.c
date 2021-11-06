@@ -182,8 +182,6 @@ int compdesc(CDescriptor *desc1, CDescriptor *desc2, int max_res, t_compdesc_par
 	// 4. Best alignment with qualifying RMSD
 #ifdef COMPDESC_DEBUG
     int cnt=prune_alignments(desc1, desc2, full_align, al_order, n_full_align, max_res, deb);
-#else
-    int cnt=prune_alignments(desc1, desc2, full_align, al_order, n_full_align, max_res);
 #endif
 
 #ifdef COMPDESC_DEBUG

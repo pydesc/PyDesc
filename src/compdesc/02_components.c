@@ -22,6 +22,7 @@
 #include"cstructures.h"
 #include"arrays.h"
 #include"02_components.h"
+#include"string.h"
 
 static int element_overlap(CElement *el1, CElement *el2)
 {
@@ -120,7 +121,7 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
                 if(element_offset(zero_el1, el1) != element_offset(zero_el2, el2)) continue;
 
             if(force_order)
-                if(element_offset(zero_el1, el1) * element_offset(zero_el2, el2)) continue;
+                if(element_offset(zero_el1, el1) && element_offset(zero_el2, el2)) continue;
 
             dist=RMSD_element(token, el1, el2, desc1->structure, desc2->structure);
 
@@ -178,7 +179,7 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
             t_elsim *elsim1=&(elsim_list[elel_to_elsim[el11->center_used][el21->center_used]]);
             t_elsim *elsim2=&(elsim_list[elel_to_elsim[el12->center_used][el22->center_used]]);
             if(force_order)
-                if(element_offset(el11, el21) * element_offset(el12, el22)) continue;
+                if(element_offset(el11, el21) && element_offset(el12, el22)) continue;
 
             dist=RMSD_pair(token, &(elsim1->overfit_sums), &(elsim2->overfit_sums));
 
@@ -365,7 +366,7 @@ t_sim_graph *build_graph(t_sim_components *sim_components
     return res;
 }
 
-int clean_ion_contacts(int token, CDescriptor *desc1, CDescriptor *desc2, t_sim_components *sim_components, t_sim_graph *graph)
+void clean_ion_contacts(int token, CDescriptor *desc1, CDescriptor *desc2, t_sim_components *sim_components, t_sim_graph *graph)
 {
     /*
      *
@@ -445,7 +446,5 @@ int clean_ion_contacts(int token, CDescriptor *desc1, CDescriptor *desc2, t_sim_
             }
         }
     }
-
-
 
 }

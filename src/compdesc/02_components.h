@@ -32,7 +32,7 @@ t_sim_components *compare_elements(int token, CDescriptor *desc1, CDescriptor *d
 t_sim_graph *build_graph(t_sim_components *sim_components);
 #endif
 
-int clean_ion_contacts(int token, CDescriptor *desc1, CDescriptor *desc2, t_sim_components *sim_components, t_sim_graph *graph);
+void clean_ion_contacts(int token, CDescriptor *desc1, CDescriptor *desc2, t_sim_components *sim_components, t_sim_graph *graph);
 
 void sim_components_free(t_sim_components *sim_components);
 void sim_graph_free(t_sim_graph *sim_graph);

@@ -284,7 +284,7 @@ static int enumerate_cliques(char **graph, int n_sim, int ***res_p, int min_el
 
     int **indep_sets=(int **)array_alloc(min_el, (n_sim+1), sizeof(int));
 
-    int n_sets=fill_indep_sets(graph, n_sim, indep_sets, min_el);
+    unsigned n_sets=fill_indep_sets(graph, n_sim, indep_sets, min_el);
 
 #ifdef COMPDESC_DEBUG
     deb->n_sets=n_sets;
@@ -294,7 +294,7 @@ static int enumerate_cliques(char **graph, int n_sim, int ***res_p, int min_el
     int *n_align=calloc(n_sets, sizeof(int));
     int ***allowed_comb=calloc(n_sets, sizeof(int **));
 
-    for(int i=0; i<n_sets; i++) {
+    for(unsigned i=0; i<n_sets; i++) {
         n_align[i]=fill_allowed(&allowed_comb[i], indep_sets[i], graph, min_el, n_sim);
     }
 
@@ -313,7 +313,7 @@ static int enumerate_cliques(char **graph, int n_sim, int ***res_p, int min_el
     int n_full_align=1;
     int max_align_size=0;
     int selected[n_sets];
-    for(int i=0; i<n_sets; i++) {
+    for(unsigned i=0; i<n_sets; i++) {
         selected[i]=n_align[i]?0:-1;
         n_full_align*=MAX(n_align[i] , 1);
 
@@ -334,7 +334,7 @@ static int enumerate_cliques(char **graph, int n_sim, int ***res_p, int min_el
     int done=0;
 
     while(!done) {
-        for(int i=0; i<n_sets; i++) if(selected[i]>=0) {
+        for(unsigned i=0; i<n_sets; i++) if(selected[i]>=0) {
             for(int j=1; j<=allowed_comb[i][selected[i]][0]; j++) {
                 res[n_full_align][++res[n_full_align][0]]=allowed_comb[i][selected[i]][j];
             }
@@ -342,7 +342,7 @@ static int enumerate_cliques(char **graph, int n_sim, int ***res_p, int min_el
 
         n_full_align++;
 
-        int pos=0;
+        unsigned pos=0;
         for(;;) {
 
             if(n_align[pos]>0) {
@@ -359,7 +359,7 @@ static int enumerate_cliques(char **graph, int n_sim, int ***res_p, int min_el
     }
 
 #ifndef COMPDESC_DEBUG
-    for(int i=0; i<n_sets; i++) {
+    for(unsigned i=0; i<n_sets; i++) {
         array_free((void **)allowed_comb[i]);
     }
     free(allowed_comb);

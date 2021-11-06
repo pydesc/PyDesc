@@ -98,7 +98,7 @@ int mask_size(t_bitmask *bitmask)
     int len=bitmask->len;
     t_maskcell *mask=bitmask->mask;
 
-	for(int i=0; i<=len/MASK_CELL_SIZE; i++) res+=bits(mask[i]);
+	for(unsigned i=0; i<=len/MASK_CELL_SIZE; i++) res+=bits(mask[i]);
 
 	return res;
 }
@@ -108,7 +108,7 @@ int mask_empty(t_bitmask *bitmask)
     int len=bitmask->len;
     t_maskcell *mask=bitmask->mask;
 
-	for(int i=0; i<=len/MASK_CELL_SIZE; i++) if(mask[i]) return 0;
+	for(unsigned i=0; i<=len/MASK_CELL_SIZE; i++) if(mask[i]) return 0;
 
 	return 1;
 }
@@ -118,7 +118,7 @@ void mask_not(t_bitmask *bitmask)
     int len=bitmask->len;
     t_maskcell *mask=bitmask->mask;
 
-	for(int i=0; i<=len/MASK_CELL_SIZE; i++) mask[i]=~mask[i];
+	for(unsigned i=0; i<=len/MASK_CELL_SIZE; i++) mask[i]=~mask[i];
 }
 
 void mask_or(t_bitmask *bitmask, t_bitmask *bitmask1)
@@ -127,7 +127,7 @@ void mask_or(t_bitmask *bitmask, t_bitmask *bitmask1)
     t_maskcell *mask=bitmask->mask;
     t_maskcell *mask1=bitmask1->mask;
 
-	for(int i=0; i<=len/MASK_CELL_SIZE; i++) mask[i]|=mask1[i];
+	for(unsigned i=0; i<=len/MASK_CELL_SIZE; i++) mask[i]|=mask1[i];
 }
 
 void mask_and(t_bitmask *bitmask, t_bitmask *bitmask1)
@@ -136,7 +136,7 @@ void mask_and(t_bitmask *bitmask, t_bitmask *bitmask1)
     t_maskcell *mask=bitmask->mask;
     t_maskcell *mask1=bitmask1->mask;
 
-	for(int i=0; i<=len/MASK_CELL_SIZE; i++) mask[i]&=mask1[i];
+	for(unsigned i=0; i<=len/MASK_CELL_SIZE; i++) mask[i]&=mask1[i];
 }
 
 int mask_and_empty(t_bitmask *bitmask, t_bitmask *bitmask1)
@@ -145,7 +145,7 @@ int mask_and_empty(t_bitmask *bitmask, t_bitmask *bitmask1)
     t_maskcell *mask=bitmask->mask;
     t_maskcell *mask1=bitmask1->mask;
 
-	for(int i=0; i<=len/MASK_CELL_SIZE; i++) if(mask[i]&mask1[i]) return 0;
+	for(unsigned i=0; i<=len/MASK_CELL_SIZE; i++) if(mask[i]&mask1[i]) return 0;
 
 	return 1;
 }
@@ -156,7 +156,7 @@ void mask_sub(t_bitmask *bitmask, t_bitmask *bitmask1)
     t_maskcell *mask=bitmask->mask;
     t_maskcell *mask1=bitmask1->mask;
 
-	for(int i=0; i<=len/MASK_CELL_SIZE; i++) mask[i]&=~mask1[i];
+	for(unsigned i=0; i<=len/MASK_CELL_SIZE; i++) mask[i]&=~mask1[i];
 }
 
 int mask_sub_empty(t_bitmask *bitmask, t_bitmask *bitmask1)
@@ -165,7 +165,7 @@ int mask_sub_empty(t_bitmask *bitmask, t_bitmask *bitmask1)
     t_maskcell *mask=bitmask->mask;
     t_maskcell *mask1=bitmask1->mask;
 
-	for(int i=0; i<=len/MASK_CELL_SIZE; i++) if(mask[i]&~mask1[i]) return 0;
+	for(unsigned i=0; i<=len/MASK_CELL_SIZE; i++) if(mask[i]&~mask1[i]) return 0;
 
 	return 1;
 }
@@ -185,7 +185,7 @@ int mask_eq(t_bitmask *bitmask1, t_bitmask *bitmask2)
     t_maskcell *mask1=bitmask1->mask;
     t_maskcell *mask2=bitmask2->mask;
 
-	for(int i=0; i<=len/MASK_CELL_SIZE; i++) {
+	for(unsigned i=0; i<=len/MASK_CELL_SIZE; i++) {
 		if(mask1[i] != mask2[i]) return 0;
 	}
 
@@ -200,7 +200,7 @@ int mask_comp(t_bitmask *bitmask1, t_bitmask *bitmask2)
 
 	int res=MASK_SUBSET | MASK_SUPERSET | MASK_EQUAL;
 
-	for(int i=0; i<=len/MASK_CELL_SIZE; i++) {
+	for(unsigned i=0; i<=len/MASK_CELL_SIZE; i++) {
 		if(mask1[i] & ~mask2[i]) res=res&~(MASK_EQUAL | MASK_SUBSET);
 		if(~mask1[i] & mask2[i]) res=res&~(MASK_EQUAL | MASK_SUPERSET);
 	}
