@@ -22,6 +22,8 @@ from functools import wraps
 import numpy
 from scipy.sparse import dok_matrix
 
+from pydesc.contacts.base import create_empty_contact_map
+
 
 def same_structure_only(method):
     @wraps(method)
@@ -98,6 +100,21 @@ class FrequencyMapCalculator(AbstractContactMapCalculator):
         frequency_map = FrequencyMap(contact_mtx, self.structure, end_frame)
         self.structure.derived_from.set_frame(original_frame)
         return frequency_map
+
+
+class DescriptorMapFactory:
+    def __init__(self, descriptor):
+        self.descriptor = descriptor
+
+    def create_contact_map(self):
+        contact_map = create_empty_contact_map(self.descriptor)
+        for structural_contact in self.descriptor.contacts:
+            ind1, ind2 = [
+                element.central_mer.ind for element in structural_contact.elements
+            ]
+            contact_map[ind1, ind2] = structural_contact.value
+        cmap = ContactMap(contact_map, self.descriptor.derived_from.converter)
+        return cmap
 
 
 class AbstractContactMap:
