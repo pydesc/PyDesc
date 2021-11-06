@@ -25,9 +25,8 @@ created: 08.05.2014 - Pawel Daniluk
 import ctypes
 from ctypes import POINTER
 
-import pydesc.alignment as alignment
-import pydesc.cydesc as cydesc
 import pydesc.cydesc.overfit as overfit
+from pydesc.alignment.factory import AlignmentFactory
 from pydesc.config import ConfigManager
 from pydesc.cydesc import ctopology
 from pydesc.cydesc import load_library
@@ -260,15 +259,13 @@ class t_compdesc_result(ctypes.Structure):  # pylint: disable=C0103
         get_monomers = lambda struct, array: list(
             map(struct.__getitem__, array[0:n_mers])
         )
-        pair_al = alignment.PairAlignment(
-            [desc1, desc2],
-            list(
-                zip(
-                    get_monomers(desc1, self.desc1_monomers),
-                    get_monomers(desc2, self.desc2_monomers),
-                )
-            ),
-        )
+        alignment_factory = AlignmentFactory()
+        structures = desc1.derived_from, desc2.derived_from
+        inds_lists = [
+            self.desc1_monomers[0 : self.n_monomers],
+            self.desc2_monomers[0 : self.n_monomers],
+        ]
+        pair_al = alignment_factory.create_from_list_of_inds(structures, inds_lists)
         return self.RMSD, pair_al, self.TR.to_trtmatrix()
 
 
