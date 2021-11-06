@@ -114,7 +114,7 @@ class DescriptorBuilder(metaclass=ABCMeta):
             try:
                 element_1 = self.element_factory.build(stc, central_mer)
                 element_2 = self.element_factory.build(stc, stc[ind_2])
-                return Contact(element_1, element_2)
+                return Contact(element_1, element_2, value=value)
             except ElementCreationFail:
                 return
 

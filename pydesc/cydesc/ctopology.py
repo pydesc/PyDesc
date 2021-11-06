@@ -382,7 +382,7 @@ class CElement(ctypes.Structure, metaclass=CInDelMeta):
     # python types are converted into integers according to this dictionary
     types_dict = {topology.ElementChainable: 1, topology.ElementOther: 2}
 
-    def __init__(self, element):  # pylint: disable=W0231
+    def __init__(self, element, optional=0):  # pylint: disable=W0231
         # __init__ supplied by ctypes.Structure should not be called, if there
         # is an __init__ supplied in a subclass.
         """ Accepts instances of structure.Element.
@@ -452,7 +452,7 @@ class CDescriptor(ctypes.Structure, metaclass=CInDelMeta):
         self.elements = ctypes.cast(
             (CElement * self.n_elements)(*elements), ctypes.POINTER(CElement)
         )
-        self.central_element = descriptor.central_element.central_monomer.ind
+        self.central_element = descriptor.central_element.central_mer.ind
 
     def __repr__(self):
         return "<CDescriptor for %s#%d:: n_elements:%d>" % (

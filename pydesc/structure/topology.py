@@ -632,7 +632,7 @@ class ElementOther(AbstractElement):
 class Contact(AbstractStructure):
     """Representation of two close-Element instances."""
 
-    def __init__(self, element1, element2):
+    def __init__(self, element1, element2, value=2):
         """Contact constructor.
 
         Arguments:
@@ -641,6 +641,7 @@ class Contact(AbstractStructure):
         Sets Contacts's list of Monomers.
         Extended AbstractStructure method.
         """
+        self.value = value
         self.elements = (element1, element2)
         if element1.derived_from is not element2.derived_from:
             raise ValueError(
