@@ -25,6 +25,7 @@ import ctypes.util
 
 import pydesc.util.typesdictionary as typesdictionary
 from pydesc.chemistry import full_atom
+from pydesc.contacts.maps import DescriptorMapFactory
 from pydesc.cydesc import CYDESC_LIB
 from pydesc.structure import descriptors
 from pydesc.structure import topology
@@ -418,30 +419,28 @@ class CDescriptor(ctypes.Structure, metaclass=CInDelMeta):
     # python types are converted into integers according to this dictionary
     types_dict = {descriptors.Descriptor: 1}
 
-    # types_dict = {descriptors.Descriptor: 1, descriptors.NucleotideDescriptor: 2}
-
     def __init__(self, descriptor):  # pylint: disable=W0231
         # __init__ supplied by ctypes.Structure should not be called, if there
         # is an __init__ supplied in a subclass.
         """ Accepts instances of structure.AbstractDescriptor. """
 
-        contact_map = contactmap.ContactMap(
-            descriptor, contacts.DescriptorCriterion(descriptor)
-        )
-        contact_map.calculate_contacts()
+        contact_map = DescriptorMapFactory(descriptor).create_contact_map()
 
         struct = CStructure(descriptor)
         ccmap = CContactMap(struct, contact_map)
 
-        # elements = [CElement(structure.Element.build(descriptor[k])) for k, v in sorted(contact_map.contacts.items()) if len(v) > 0]
-        elements = list(map(CElement, descriptor.elements))
-
-        for element, celement in zip(descriptor.elements, elements):
-            celement.optional = (
-                1
-                if descriptor.elements_values[element.central_monomer.ind].optional
-                else 0
-            )
+        central_element = descriptor.central_element
+        c1 = descriptor.contacts[0]
+        ec = central_element
+        e1, e2 = c1.elements
+        central_celement = CElement(descriptor.central_element, 0)
+        elements = [central_celement]
+        for contact in descriptor.contacts:
+            other_element = contact.get_other_element(central_element)
+            is_optional = 0 if contact.value == 2 else 1
+            celement = CElement(other_element, is_optional)
+            elements.append(celement)
+        elements = sorted(elements, key=lambda x: x.center)
 
         self.structure = ctypes.pointer(struct)
         self.contact_map = ctypes.pointer(ccmap)
