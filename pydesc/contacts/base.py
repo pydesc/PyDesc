@@ -30,6 +30,13 @@ from scipy.sparse import dok_matrix
 from pydesc.selection import Everything
 
 
+def create_empty_contact_map(structure):
+    """Initialize empty dok_matrix as base fo given structure's contact map."""
+    total_len = structure.derived_from.converter.get_max_ind()
+    contact_map = dok_matrix((total_len, total_len), dtype=numpy.uint8)
+    return contact_map
+
+
 class ContactCriterion:
     """Abstract criterion, base for all other criteria."""
 
@@ -41,10 +48,10 @@ class ContactCriterion:
     def set_selections(self, selection1, selection2):
         """Set selections determining for which sets of atoms contacts will be
         calculated.
-        
+
         E.g. for criteria that only make sense for residues, but does not for
         nucleotides, one would like to add selections picking residues only.
-        
+
         Note that this allows to define contacts between different types of mers and
         ligands, e.g. between nucleotides and residues or residues and other compounds.
 
@@ -90,8 +97,7 @@ class ContactCriterion:
         atom_sets1 = self.selection1.create_structure(structure_obj)
         atom_sets2 = self.selection2.create_structure(structure_obj)
 
-        total_len = structure_obj.derived_from.converter.get_max_ind()
-        contact_map = dok_matrix((total_len, total_len), dtype=numpy.uint8)
+        contact_map = create_empty_contact_map(structure_obj)
         contact_map = self._fill_contact_matrix(atom_sets1, atom_sets2, contact_map)
 
         return contact_map
@@ -117,8 +123,7 @@ class ContactCriterion:
             raise ValueError(
                 "Both given sub structures have to be part of the same structure"
             )
-        total_len = structure1.derived_from.converter.get_max_ind()
-        contact_map = dok_matrix((total_len, total_len), dtype=numpy.uint8)
+        contact_map = create_empty_contact_map(structure1)
         contact_map = self._fill_contact_matrix(atom_sets1, atom_sets2, contact_map)
 
         if self.asymmetric:
