@@ -178,11 +178,11 @@ class CMer(ctypes.Structure, metaclass=CInDelMeta):
         """ Accepts instances of monomer.Monomer. """
         self.ind = m.ind
         self.type = self.types_dict[type(m)]
-        self.type_name = type(m).__name__
+        self.type_name = type(m).__name__.encode()
 
         atoms = m.representation
         points = [CPoint(list(a)) for a in atoms]
-        point_names = [a.name for a in atoms]
+        point_names = [name.encode() for name in m.get_config("indicators")]
         self.n_points = len(points)
 
         if m.next_mer:
@@ -231,7 +231,7 @@ class CStructure(ctypes.Structure, metaclass=CInDelMeta):
     _fields_ = [
         ("name", ctypes.c_char_p),
         ("n_monomers", ctypes.c_int),
-        ("mers", ctypes.POINTER(CMer)),
+        ("monomers", ctypes.POINTER(CMer)),
         ("n_segs", ctypes.c_int),
         ("segs", ctypes.POINTER(CSeg)),
         ("adjusted_number_p", _adjusted_number_ftype),
@@ -261,9 +261,9 @@ class CStructure(ctypes.Structure, metaclass=CInDelMeta):
         csegs = [CSeg(*s) for s in segs]
 
         try:
-            self.name = struct.name
+            self.name = struct.name.encode()
         except AttributeError:
-            self.name = ""
+            self.name = "".encode()
 
         def adjusted_number(start, end):
             """ Returns an adjusted number of segments between given mers."""
@@ -274,9 +274,9 @@ class CStructure(ctypes.Structure, metaclass=CInDelMeta):
         self.monomers = ctypes.cast(
             (CMer * self.n_monomers)(*cmers), ctypes.POINTER(CMer)
         )
+
         self.n_segs = len(segs)
         self.segs = ctypes.cast((CSeg * self.n_segs)(*csegs), ctypes.POINTER(CSeg))
-
         self.adjusted_number_p = self._adjusted_number_ftype(adjusted_number)
         self.structure = struct
 

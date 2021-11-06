@@ -29,6 +29,8 @@ import pydesc.alignment as alignment
 import pydesc.cydesc as cydesc
 import pydesc.cydesc.overfit as overfit
 from pydesc.config import ConfigManager
+from pydesc.cydesc import ctopology
+from pydesc.cydesc import load_library
 
 ConfigManager.new_branch("compdesc")
 ConfigManager.compdesc.set_default("ca_contact_distance", 6.0)
@@ -44,7 +46,7 @@ ConfigManager.compdesc.set_default("th_overall_rmsd", 2.5)
 
 
 # This is not a constant.
-libcompdesc = cydesc.load_library("compdesc")  # pylint: disable=C0103
+libcompdesc = load_library("compdesc")  # pylint: disable=C0103
 
 
 class t_compdesc_parameters(ctypes.Structure):  # pylint: disable=C0103
@@ -124,22 +126,22 @@ class t_alignment(ctypes.Structure):  # pylint: disable=C0103
         ("contact_map", POINTER(t_map)),
         ("mer_cov_count", POINTER(ctypes.c_int)),
         ("el_cov_count", POINTER(ctypes.c_int)),
-        ("desc1", POINTER(cydesc.CDescriptor)),
-        ("desc2", POINTER(cydesc.CDescriptor)),
+        ("desc1", POINTER(ctopology.CDescriptor)),
+        ("desc2", POINTER(ctopology.CDescriptor)),
         ("n_AA", ctypes.c_int),
         ("coverage", POINTER(t_al_coverage)),
         ("RMSD", ctypes.c_float),
-        ("TR", cydesc.overfit.t_transrot),
+        ("TR", overfit.t_transrot),
     ]
 
 
 class t_elsim(ctypes.Structure):  # pylint: disable=C0103
     # This class has to be named as the corresponding C structure.
     _fields_ = [
-        ("el1", POINTER(cydesc.CElement)),
-        ("el2", POINTER(cydesc.CElement)),
+        ("el1", POINTER(ctopology.CElement)),
+        ("el2", POINTER(ctopology.CElement)),
         ("RMSD", ctypes.c_float),
-        ("overfit_sums", cydesc.overfit.t_overfit_sums),
+        ("overfit_sums", overfit.t_overfit_sums),
         ("consim_cnt", ctypes.c_int),
         ("core_cnt", ctypes.c_int),
         ("pos", ctypes.c_int),
@@ -149,8 +151,8 @@ class t_elsim(ctypes.Structure):  # pylint: disable=C0103
 class t_consim(ctypes.Structure):  # pylint: disable=C0103
     # This class has to be named as the corresponding C structure.
     _fields_ = [
-        ("con1", POINTER(cydesc.CContact)),
-        ("con2", POINTER(cydesc.CContact)),
+        ("con1", POINTER(ctopology.CContact)),
+        ("con2", POINTER(ctopology.CContact)),
         ("elsim1", POINTER(t_elsim)),
         ("elsim2", POINTER(t_elsim)),
         ("RMSD", ctypes.c_float),
@@ -232,7 +234,7 @@ class t_compdesc_result(ctypes.Structure):  # pylint: disable=C0103
 
     Contains a single descriptor assignment.
 
-    Probably this class should be merged with pydesc.cydesc.fitdest.t_fitdesc_result.
+    Probably this class should be merged with pydesc.ctopology.fitdest.t_fitdesc_result.
     """
     _fields_ = [
         ("n_monomers", ctypes.c_int),
@@ -272,8 +274,8 @@ class t_compdesc_result(ctypes.Structure):  # pylint: disable=C0103
 
 if libcompdesc.has_debug():
     libcompdesc.compdesc.argtypes = [
-        ctypes.POINTER(cydesc.CDescriptor),
-        ctypes.POINTER(cydesc.CDescriptor),
+        ctypes.POINTER(ctopology.CDescriptor),
+        ctypes.POINTER(ctopology.CDescriptor),
         ctypes.c_int,
         ctypes.POINTER(t_compdesc_parameters),
         ctypes.POINTER(ctypes.POINTER(t_compdesc_result)),
@@ -281,8 +283,8 @@ if libcompdesc.has_debug():
     ]
 else:
     libcompdesc.compdesc.argtypes = [
-        ctypes.POINTER(cydesc.CDescriptor),
-        ctypes.POINTER(cydesc.CDescriptor),
+        ctypes.POINTER(ctopology.CDescriptor),
+        ctypes.POINTER(ctopology.CDescriptor),
         ctypes.c_int,
         ctypes.POINTER(t_compdesc_parameters),
         ctypes.POINTER(ctypes.POINTER(t_compdesc_result)),
@@ -319,7 +321,7 @@ def _desc_setter(num):
         setattr(
             self,
             "_c_desc%d" % num,
-            None if desc_obj is None else cydesc.CDescriptor(desc_obj),
+            None if desc_obj is None else ctopology.CDescriptor(desc_obj),
         )
 
     return set_desc
@@ -339,8 +341,6 @@ class CompDesc(object):
         """
         Initializator. Can set desc1 and desc2 attributes.
         """
-
-        # Nicely pacifies Pylint
         self._desc1 = None
         self._c_desc1 = None
         self._desc2 = None
