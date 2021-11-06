@@ -390,11 +390,10 @@ class CElement(ctypes.Structure, metaclass=CInDelMeta):
 
         """
 
-        self.center = element.central_monomer.ind
-        self.start = element[0].ind
-        self.end = element[-1].ind
+        self.center = element.central_mer.ind
+        self.start, *_, self.end = [mer.ind for mer in element]
         self.type = self.types_dict[type(element)]
-        self.optional = 0
+        self.optional = optional
 
     def __repr__(self):
         return "<CElement center: %d type: %d>" % (self.center, self.type)
