@@ -397,17 +397,3 @@ class CompDesc(object):
         else:
             libcompdesc.free_results(results_p, n_results)
             return results
-
-
-def compdesc(desc1, desc2, max_res=0, debug=False):
-    """
-        Computes alignments of the desc2 to the desc1.
-
-        Parameters:
-            * max_res -- max number of results to be returned (0 means any)
-            * debug -- if set an instance of t_compdesc_debug is returned along with the resuls.
-
-        Results are sorted by size (decreasing) and RMSD (increasing).
-    """
-    compdesc_obj = CompDesc(desc1, desc2)
-    return compdesc_obj.compdesc(max_res, debug)
