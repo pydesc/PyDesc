@@ -113,7 +113,7 @@ class AbstractStructure(metaclass=ABCMeta):
     def __init__(self, derived_from):
         self.derived_from = derived_from
         self._mers = numpy.array([], dtype=object)
-        if self == derived_from:
+        if self is derived_from:
             self.trt_matrix = pydesc.geometry.TRTMatrix()
         else:
             self.trt_matrix = self.derived_from.trt_matrix
@@ -574,6 +574,15 @@ class AbstractElement(AbstractStructure, metaclass=ABCMeta):
         pdb_id = str(self.derived_from.converter.get_pdb_id(self.central_mer.ind))
         return f"<{name} of {pdb_id}>"
 
+    def __eq__(self, other):
+        same_structure = self.derived_from is other.derived_from
+        same_length = len(self) == len(other)
+        same_ind = self.central_mer.ind == other.central_mer.ind
+        return same_ind and same_length and same_structure
+
+    def __hash__(self):
+        return id((self.derived_from, len(self), self.central_mer.ind))
+
 
 class ElementChainable(AbstractElement, Segment):
     """Representation of a five-mer Segment.
@@ -632,7 +641,7 @@ class Contact(AbstractStructure):
         Sets Contacts's list of Monomers.
         Extended AbstractStructure method.
         """
-        self.elements = {element1, element2}
+        self.elements = (element1, element2)
         if element1.derived_from is not element2.derived_from:
             raise ValueError(
                 "Impossible to create contact instance with elements derived "
@@ -643,31 +652,17 @@ class Contact(AbstractStructure):
         AbstractStructure.__init__(self, element1.derived_from)
         self._mers = numpy.array([*element1, *element2], dtype=object)
 
-    def __sub__(self, val):
-        """Deprecated."""
-        warn(
-            """Subtracting contacts is no longer supported. Please, 
-            use get_other_element instead.""",
-            DeprecationWarning,
-        )
-        return self.get_other_element(val)
-
     def __repr__(self):
         items = sorted(i.central_mer.ind for i in self.elements)
         return "<Contact of %i and %i elements>" % tuple(items)
 
-    def get_other_element(self, element_obj):
-        """Returns other than given element.
-
-        Argument:
-        element_obj -- instance of Element class.
-        """
-        elements = set(self.elements)
-        try:
-            elements.remove(element_obj)
-        except KeyError:
+    def get_other_element(self, element):
+        """Returns other than given element."""
+        if element not in self.elements:
             raise WrongElement("Given element is not part of this Contact.")
-        return elements.pop()
+        if element == self.elements[0]:
+            return self.elements[1]
+        return self.elements[0]
 
     def value(self, cmap):
         """
