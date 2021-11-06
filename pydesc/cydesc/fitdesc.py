@@ -29,6 +29,7 @@ from ctypes import POINTER
 import pydesc.alignment as alignment
 import pydesc.cydesc as cydesc
 import pydesc.cydesc.overfit as overfit
+from pydesc.cydesc.ctopology import CStructure
 
 # This is not a constant.
 libfitdesc = cydesc.load_library("fitdesc")  # pylint: disable=C0103
@@ -59,15 +60,13 @@ class t_fitdesc_result(ctypes.Structure):  # pylint: disable=C0103
         motif and structure are AbstractStructure instances which the assignment refers to.
         """
         n_mers = self.n_monomers
-        get_monomers = lambda struct, array: list(
-            map(struct.__getitem__, array[0:n_mers])
-        )
+        get_mers = lambda struct, array: list(map(struct.__getitem__, array[0:n_mers]))
         pair_al = alignment.PairAlignment(
             [motif, structure],
             list(
                 zip(
-                    get_monomers(motif, self.motif_monomers),
-                    get_monomers(structure, self.structure_monomers),
+                    get_mers(motif, self.motif_monomers),
+                    get_mers(structure, self.structure_monomers),
                 )
             ),
         )
@@ -75,8 +74,8 @@ class t_fitdesc_result(ctypes.Structure):  # pylint: disable=C0103
 
 
 libfitdesc.fitdesc.argtypes = [
-    ctypes.POINTER(cydesc.CStructure),
-    ctypes.POINTER(cydesc.CStructure),
+    ctypes.POINTER(CStructure),
+    ctypes.POINTER(CStructure),
     ctypes.c_float,
     ctypes.c_int,
     ctypes.POINTER(ctypes.POINTER(t_fitdesc_result)),
@@ -117,7 +116,7 @@ class FitDesc(object):
         # This method is called in __init__
         # pylint: disable=W0201
         self._structure = struct
-        self._c_structure = None if struct is None else cydesc.CStructure(struct)
+        self._c_structure = None if struct is None else CStructure(struct)
 
     @property
     def motif(self):
@@ -135,7 +134,7 @@ class FitDesc(object):
         # This method is called in __init__
         # pylint: disable=W0201
         self._motif = struct
-        self._c_motif = None if struct is None else cydesc.CStructure(struct)
+        self._c_motif = None if struct is None else CStructure(struct)
 
     def fitdesc(self, max_rmsd, max_res=0):
         """
