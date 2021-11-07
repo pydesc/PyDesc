@@ -5,7 +5,6 @@ from pydesc.api.criteria import get_default_protein_criterion
 from pydesc.api.criteria import get_gc_distance_criterion
 from pydesc.api.descriptor import create_descriptor
 from pydesc.api.descriptor import create_descriptors
-from pydesc.api.structure import get_structures
 from pydesc.api.structure import get_structures_from_file
 from pydesc.chemistry.bbtrace import CATrace
 from pydesc.chemistry.factories import BioPythonAtomSetFactory
@@ -88,7 +87,7 @@ def test_CATrace_compdesc(structures_dir):
     mer_factory = BioPythonAtomSetFactory(classes=[CATrace])
     loader = StructureLoader(atom_set_factory=mer_factory)
     with open(structures_dir / "PorCA_only" / "1KAN.pdb") as fh:
-        stc, = loader.load_structures([fh])
+        (stc,) = loader.load_structures([fh])
     criterion = get_gc_distance_criterion()
     cm = calculate_contact_map(stc, criterion)
 
@@ -98,7 +97,7 @@ def test_CATrace_compdesc(structures_dir):
 
     fitter = CompDesc(desc1, desc2)
     res = fitter.compdesc()
-    best_res, = res
+    (best_res,) = res
     best_rmsd, _, _ = best_res
     assert best_rmsd == 1.007647156715393
     # confirmed by visual inspection

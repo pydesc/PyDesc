@@ -43,6 +43,7 @@ class t_fitdesc_result(ctypes.Structure):
 
     Probably this class should be merged with pydesc.cydesc.desc_comp.t_desc_comp_result.
     """
+
     _fields_ = [
         ("n_monomers", ctypes.c_int),
         ("motif_monomers", POINTER(ctypes.c_int)),
@@ -62,8 +63,8 @@ class t_fitdesc_result(ctypes.Structure):
         alignment_factory = AlignmentFactory()
         structures = motif.derived_from, structure.derived_from
         inds_lists = [
-            self.motif_monomers[0: self.n_monomers],
-            self.structure_monomers[0: self.n_monomers],
+            self.motif_monomers[0 : self.n_monomers],
+            self.structure_monomers[0 : self.n_monomers],
         ]
         pair_al = alignment_factory.create_from_list_of_inds(structures, inds_lists)
         return self.RMSD, pair_al, self.TR.to_trtmatrix()

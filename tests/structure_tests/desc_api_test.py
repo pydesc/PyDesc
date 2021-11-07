@@ -4,9 +4,9 @@ from pydesc.api.criteria import get_rc_distance_criterion
 from pydesc.api.descriptor import create_descriptor
 from pydesc.api.descriptor import create_descriptors
 from pydesc.api.structure import get_structures_from_file
+from pydesc.chemistry.base import Mer
 from pydesc.contacts.maps import ContactMapCalculator
 from pydesc.selection import AtomSetSubclass
-from pydesc.chemistry.base import Mer
 
 
 @pytest.fixture(scope="function")
