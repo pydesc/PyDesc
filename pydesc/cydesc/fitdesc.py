@@ -29,15 +29,13 @@ from ctypes import POINTER
 import pydesc.alignment as alignment
 import pydesc.cydesc as cydesc
 import pydesc.cydesc.overfit as overfit
+from pydesc.alignment.factory import AlignmentFactory
 from pydesc.cydesc.ctopology import CStructure
 
-# This is not a constant.
-libfitdesc = cydesc.load_library("fitdesc")  # pylint: disable=C0103
+libfitdesc = cydesc.load_library("fitdesc")
 
 
-class t_fitdesc_result(ctypes.Structure):  # pylint: disable=C0103
-    # This class has to be named as the corresponding C structure.
-
+class t_fitdesc_result(ctypes.Structure):
     """
     Class corresponging to t_fitdesc_result in fitdesc.h.
 
@@ -61,15 +59,13 @@ class t_fitdesc_result(ctypes.Structure):  # pylint: disable=C0103
         """
         n_mers = self.n_monomers
         get_mers = lambda struct, array: list(map(struct.__getitem__, array[0:n_mers]))
-        pair_al = alignment.PairAlignment(
-            [motif, structure],
-            list(
-                zip(
-                    get_mers(motif, self.motif_monomers),
-                    get_mers(structure, self.structure_monomers),
-                )
-            ),
-        )
+        alignment_factory = AlignmentFactory()
+        structures = motif.derived_from, structure.derived_from
+        inds_lists = [
+            self.motif_monomers[0: self.n_monomers],
+            self.structure_monomers[0: self.n_monomers],
+        ]
+        pair_al = alignment_factory.create_from_list_of_inds(structures, inds_lists)
         return self.RMSD, pair_al, self.TR.to_trtmatrix()
 
 
