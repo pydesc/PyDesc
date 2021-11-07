@@ -76,6 +76,13 @@ class TestOverfit:
         rmsd, trt = fitter.overfit()
         assert rmsd >= 0.0
 
+    def test_self_fit_on_all_structure_types(self, pure_file):
+        stc = get_structures_from_file(pure_file)[0]
+        fitter = Overfit()
+        fitter.add_structures(stc, stc)
+        res = fitter.overfit()
+        assert round(res[0]) == 0
+
     def test_different_representation(self, protein_file, dna_file):
         (stc1,) = get_structures_from_file(protein_file)
         (stc2,) = get_structures_from_file(dna_file)
