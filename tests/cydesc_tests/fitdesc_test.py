@@ -1,7 +1,11 @@
 import pytest
 
 from pydesc.api.structure import get_structures_from_file
+from pydesc.chemistry.bbtrace import CATrace
+from pydesc.chemistry.bbtrace import PTrace
+from pydesc.chemistry.factories import BioPythonAtomSetFactory
 from pydesc.cydesc.fitdesc import FitDesc
+from pydesc.structure import StructureLoader
 
 
 def test_fit_protein_gold_standard(structures_dir):
@@ -25,3 +29,19 @@ def test_fit_protein_gold_standard(structures_dir):
 
     for al in alignments:
         assert len(al) == 8
+
+
+def test_bbtrace_fitdesc(trace_file):
+    mer_factory = BioPythonAtomSetFactory(classes=[CATrace, PTrace])
+    loader = StructureLoader(atom_set_factory=mer_factory)
+    with open(trace_file) as fh:
+        (stc,) = loader.load_structures([fh])
+
+    segment = stc[:10]
+    fitter = FitDesc(segment, stc)
+    res = fitter.fitdesc(2.0, 5)
+    assert len(res) <= 5
+    best_res, *_ = res
+    best_rmsd, best_al, _ = best_res
+    assert len(best_al) == 11
+    assert round(best_rmsd) == 0
