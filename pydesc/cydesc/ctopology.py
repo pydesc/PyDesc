@@ -24,7 +24,7 @@ import ctypes
 import ctypes.util
 
 import pydesc.util.typesdictionary as typesdictionary
-from pydesc.chemistry import full_atom
+from pydesc import chemistry
 from pydesc.contacts.maps import DescriptorMapFactory
 from pydesc.cydesc import CYDESC_LIB
 from pydesc.structure import descriptors
@@ -168,10 +168,12 @@ class CMer(ctypes.Structure, metaclass=CInDelMeta):
 
     # python types are converted into integers according to this dictionary
     types_dict = typesdictionary.TypesDictionary()
-    types_dict[full_atom.Residue] = 1
-    types_dict[full_atom.Nucleotide] = 2
-    types_dict[full_atom.Compound] = 3
-    types_dict[full_atom.MonoatomicIon] = 4
+    types_dict[chemistry.full_atom.Residue] = 1
+    types_dict[chemistry.full_atom.Nucleotide] = 2
+    types_dict[chemistry.full_atom.Compound] = 3
+    types_dict[chemistry.full_atom.MonoatomicIon] = 4
+    types_dict[chemistry.bbtrace.CATrace] = 1
+    types_dict[chemistry.bbtrace.PTrace] = 2
 
     def __init__(self, m):  # pylint: disable=W0231
         # __init__ supplied by ctypes.Structure should not be called, if there

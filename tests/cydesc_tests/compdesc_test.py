@@ -2,10 +2,15 @@ import pytest
 
 from pydesc.api.cmaps import calculate_contact_map
 from pydesc.api.criteria import get_default_protein_criterion
+from pydesc.api.criteria import get_gc_distance_criterion
 from pydesc.api.descriptor import create_descriptor
+from pydesc.api.descriptor import create_descriptors
 from pydesc.api.structure import get_structures
 from pydesc.api.structure import get_structures_from_file
+from pydesc.chemistry.bbtrace import CATrace
+from pydesc.chemistry.factories import BioPythonAtomSetFactory
 from pydesc.cydesc.compdesc import CompDesc
+from pydesc.structure import StructureLoader
 
 
 @pytest.fixture(scope="session")
@@ -77,3 +82,23 @@ def test_similar_different_structures(structures_dir, criterion):
     assert pytest.approx(rmsd, 0.001) == 1.154
     assert len(al) == 27
     assert al.get_inds_aligned_with(stc1, [47]) == {stc2: [210]}
+
+
+def test_CATrace_compdesc(structures_dir):
+    mer_factory = BioPythonAtomSetFactory(classes=[CATrace])
+    loader = StructureLoader(atom_set_factory=mer_factory)
+    with open(structures_dir / "PorCA_only" / "1KAN.pdb") as fh:
+        stc, = loader.load_structures([fh])
+    criterion = get_gc_distance_criterion()
+    cm = calculate_contact_map(stc, criterion)
+
+    descs = tuple(filter(bool, create_descriptors(stc, cm)))
+    desc1 = create_descriptor(stc, stc[19], cm)
+    desc2 = create_descriptor(stc, stc[134], cm)
+
+    fitter = CompDesc(desc1, desc2)
+    res = fitter.compdesc()
+    best_res, = res
+    best_rmsd, _, _ = best_res
+    assert best_rmsd == 1.007647156715393
+    # confirmed by visual inspection
