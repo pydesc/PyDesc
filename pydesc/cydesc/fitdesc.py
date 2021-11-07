@@ -162,19 +162,3 @@ class FitDesc(object):
         libfitdesc.free_results(results_p, n_results)
 
         return results
-
-
-def fitdesc(motif, struct, max_rmsd, max_res=0):
-    """
-        Computes FitDesc assignments of the motif to the structure.
-
-        Parameters:
-            * motif -- structure being assigned
-            * struct -- structrure being assigned to
-            * r -- maximum allowed RMSD
-            * max_res -- max number of results to be returned (0 means any)
-
-        Results are sorted by increasing RMSD.
-    """
-    fitdesc_obj = FitDesc(motif, struct)
-    return fitdesc_obj.fitdesc(max_rmsd, max_res)
