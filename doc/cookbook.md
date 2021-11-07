@@ -1866,7 +1866,65 @@ Look [here](#geometry) to learn how to work with `TRTMatrix` objects.
 
 ### Compdesc
 
-TBD
+Descriptors of local structure (DLS) were described [here](#descriptors).
+Comparison of DLSs implemented in PyDesc is not a trivial comparison of rigid bodies.
+Scoring function takes into account such factors as overlap of central and 
+ peripheral elements and quality of contacts.
+It deals with different numbers of elements and contacts present in descriptors to be 
+ compared.
+A result of such comparison is, in fact, a structural alignment.
+
+DLSs comparison is a part of more complex comparison of two or more structures,
+ but since DLS is a structure large enough to store some motifs, running comparison
+ of two DLSs might be interesting on its own, or might be part of procedures not
+ implemented in PyDesc.
+
+Procedure below leads to an alignment between two descriptors from kinases `1luf` and 
+ `2src`:
+```python
+from pydesc.api.structure import get_structures
+from pydesc.api.cmaps import calculate_contact_map
+from pydesc.api.criteria import get_default_protein_criterion
+from pydesc.api.descriptor import create_descriptor
+from pydesc.cydesc.compdesc import CompDesc
+
+criterion = get_default_protein_criterion()
+structure1, = get_structures("1luf")
+cmap1 = calculate_contact_map(structure1, criterion)
+desc1 = create_descriptor(structure1, structure1.pdb_ids["A:607"], cmap1)
+
+structure2, = get_structures("2src")
+cmap2 = calculate_contact_map(structure2, criterion)
+desc2 = create_descriptor(structure2, structure2.pdb_ids["A:294"], cmap2)
+
+fitter = CompDesc(desc1, desc2)
+results = fitter.compdesc()
+
+for rmsd, alignment, trt_matrix in results:
+    assert rmsd < 2.0
+    for ind1, ind2 in alignment.iter_rows():
+        print(structure1[ind1], structure2[ind2])
+        if ind1 == desc1.central_element.central_mer.ind:
+            assert ind2 == desc2.central_element.central_mer.ind
+```
+
+Much like in case of Overfit, there is a fitter object able to compare two DLSs.
+Procedures of [loading a structure](#loading-structures),
+ [calculating contact maps](#contact-maps) and [DLS creation](#descriptors) were 
+ described before.
+The only new lines here are:
+* `fitter = CompDesc(desc1, desc2)`, in which fitter object is created, taking two
+    LDSs to be compared as arguments, and
+* `fitter.compdesc()`, which takes one optional argument `max_res` (0 by default).
+    This argument limits number of results, unless it is `0`, in which case compdesc
+    returns all results.
+
+If the alignment is ambiguous, multiple results may occur.
+In such case, each result is stored as a separate tuple in result list.
+Single result has three elements:
+* RMSD,
+* alignment object, as described [here](#alignment-objects),
+* `TRTMatrix` object, storing rotation and translation that should be applied to 
 
 ### FitDesc
 
