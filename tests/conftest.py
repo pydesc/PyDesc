@@ -176,6 +176,6 @@ def pytest_generate_tests(metafunc):
 
     set_parameter_if_all(
         TRACE,
-        get_keys_iterator(PDB_FILES, CIF_FILES, keys="PorCA_only"),
-        get_last_entries(PDB_FILES, CIF_FILES, keys="PorCA_only"),
+        get_keys_iterator(PDB_FILES, CIF_FILES, keys=["PorCA_only"]),
+        get_last_entries(PDB_FILES, CIF_FILES, keys=["PorCA_only"]),
     )
