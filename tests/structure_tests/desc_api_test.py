@@ -5,6 +5,8 @@ from pydesc.api.descriptor import create_descriptor
 from pydesc.api.descriptor import create_descriptors
 from pydesc.api.structure import get_structures_from_file
 from pydesc.contacts.maps import ContactMapCalculator
+from pydesc.selection import AtomSetSubclass
+from pydesc.chemistry.base import Mer
 
 
 @pytest.fixture(scope="function")
@@ -17,10 +19,15 @@ def protein_cmap(protein_file):
 
 def test_build_descriptor(protein_cmap):
     s, cm = protein_cmap
-    descriptor = create_descriptor(s, s[22], cm)
-    assert s[22] in descriptor
-    assert len(descriptor.segments) == 3
-    assert len(descriptor.contacts) == 11
+    if len(s) < 15:
+        pytest.xfail("Not enough mers to test descriptors")
+    mer = tuple(AtomSetSubclass(Mer).create_structure(s))[4]
+    descriptor = create_descriptor(s, mer, cm)
+    assert mer in descriptor
+    assert mer in descriptor.central_element
+    assert len(descriptor.central_element) == 5
+    assert len(descriptor.segments) >= 1
+    assert len(descriptor.contacts) >= 1
 
 
 def test_create_descriptors(protein_cmap):
