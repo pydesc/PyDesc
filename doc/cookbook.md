@@ -33,7 +33,6 @@ examples that should not be tested by pytest -- in " ```python <code>" (note spa
 
 ==== TEMPLATE END
 -->
-
   - [Configuration](#configuration)
   - [Loading structures](#loading-structures)
     - [Configuration](#configuration-1)
@@ -77,8 +76,8 @@ examples that should not be tested by pytest -- in " ```python <code>" (note spa
     - [Customizing criteria](#customizing-criteria)
   - [Structure comparison](#structure-comparison)
     - [Overfit](#overfit)
-    - [Compdesc](#compdesc)
     - [FitDesc](#fitdesc)
+    - [Compdesc](#compdesc)
   - [Alignments](#alignments)
     - [Configuration](#configuration-7)
     - [API](#api-6)
@@ -93,7 +92,7 @@ examples that should not be tested by pytest -- in " ```python <code>" (note spa
     - [Configuration](#configuration-8)
     - [API](#api-7)
   - [Geometry](#geometry)
-
+  - [END](#end)
 
 ## Configuration
 
@@ -1864,23 +1863,67 @@ Finally -- results are returned as a list of pairs: RMSD - transformation matrix
 
 Look [here](#geometry) to learn how to work with `TRTMatrix` objects.
 
+### FitDesc
+
+FitDesc performs a structural motif search within a structure of choice.
+As a result, it may return multiple pair alignments, each of which comes with a RMSD
+ of the best superposition and a `TRTMatrix` that transforms motif to superimpose
+ aligned part of the structure.
+
+Sample search for HTH motif in small unit of terminase in SF6 phage:
+
+```python
+from pydesc.api.structure import get_structures
+from pydesc.cydesc.fitdesc import FitDesc
+
+motif, = get_structures("4zc3")   # motif alone
+motif = motif.pdb_ids[:"A:53"]    # binding site according to UNIPROT
+target, = get_structures("3hef")  # whole structure of SF6 phage terminase unit
+
+fitter = FitDesc(motif, target)
+best_result, = fitter.fitdesc(max_rmsd=6., max_res=1)
+
+rmsd, alignment, trt_matrix = best_result
+assert len(alignment) == 48
+```
+Parts where structures are [loaded](#loading-structures) and motif created
+ ([pdb indexing](#indexing-with-pdb-ids)) were explained elsewhere.
+Two lines unique for FitDesc usage are the following:
+* `fitter = FitDesc(motif, target)`, where the fitter is created.
+ It takes motif, which can be any substructure, and target, which in most cases is 
+ a whole structure, but can be substructure as well.
+* `fitter.fitdesc()`, which calls `fitdesc` method, performing actual computation.
+ It takes one positional argument `max_rmsd`, and optional keyword argument `max_res`
+ set to `0` by default.
+ The former sets maximal threshold for a match to be considered a result.
+ The latter determines up to how many results should be returned (`0` meaning "all").
+
+Each of the results consists of:
+* RMSD,
+* alignment object, as described [here](#alignment-objects),
+* `TRTMatrix` object, storing rotation and translation that should be applied to motif 
+  to superimpose it onto target structure.
+
+RMSD is calculated for superposition of corresponding mers representation points.
+Which points are considered representing points depends on mer type.
+More specific, on value of their `representation` attribute.
+
 ### Compdesc
 
 Descriptors of local structure (DLS) were described [here](#descriptors).
 Comparison of DLSs implemented in PyDesc is not a trivial comparison of rigid bodies.
-Scoring function takes into account such factors as overlap of central and 
- peripheral elements and quality of contacts.
-It deals with different numbers of elements and contacts present in descriptors to be 
- compared.
-A result of such comparison is, in fact, a structural alignment.
+With this algorithm, descriptors of different number of elements (and thus -- mers:
+ residues or nucleotides) can be compared.
+There might be more than one way of aligning two descriptors.
+A result of such comparison is, in fact, a number of structural alignments.
 
 DLSs comparison is a part of more complex comparison of two or more structures,
- but since DLS is a structure large enough to store some motifs, running comparison
+ but since DLS is a structure large enough to consist of some motifs, running comparison
  of two DLSs might be interesting on its own, or might be part of procedures not
  implemented in PyDesc.
 
-Procedure below leads to an alignment between two descriptors from kinases `1luf` and 
- `2src`:
+Example below shows how to obtain an alignment between two descriptors from kinases 
+ `1luf` and `2src`:
 ```python
 from pydesc.api.structure import get_structures
 from pydesc.api.cmaps import calculate_contact_map
@@ -1924,11 +1967,12 @@ In such case, each result is stored as a separate tuple in result list.
 Single result has three elements:
 * RMSD,
 * alignment object, as described [here](#alignment-objects),
-* `TRTMatrix` object, storing rotation and translation that should be applied to 
+* `TRTMatrix` object, storing rotation and translation that should be applied to 2nd
+    descriptor passed to `CompDesc` initializer, to superimpose it onto 1st descriptor.
 
-### FitDesc
-
-TBD
+RMSD is calculated for superposition of corresponding mers representation points.
+Which points are considered representing points depends on mer type.
+More specific, on value of their `representation` attribute.
 
 ## Alignments
 
