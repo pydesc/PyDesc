@@ -24,7 +24,8 @@ import ctypes
 import ctypes.util
 
 import pydesc.util.typesdictionary as typesdictionary
-from pydesc import chemistry
+from pydesc.chemistry import bbtrace
+from pydesc.chemistry import full_atom
 from pydesc.contacts.maps import DescriptorMapFactory
 from pydesc.cydesc import CYDESC_LIB
 from pydesc.structure import descriptors
@@ -47,7 +48,8 @@ class CInDelMeta(ctypes.Structure.__class__):
 
     where <<name>> is the name of a Python class being defined.
 
-    By default this metaclass is bound to libcydesc. To change this use use_library(lib) decorator.
+    By default this metaclass is bound to libcydesc.
+    To change this use use_library(lib) decorator.
     """
 
     _lib = CYDESC_LIB
@@ -168,12 +170,12 @@ class CMer(ctypes.Structure, metaclass=CInDelMeta):
 
     # python types are converted into integers according to this dictionary
     types_dict = typesdictionary.TypesDictionary()
-    types_dict[chemistry.full_atom.Residue] = 1
-    types_dict[chemistry.full_atom.Nucleotide] = 2
-    types_dict[chemistry.full_atom.Compound] = 3
-    types_dict[chemistry.full_atom.MonoatomicIon] = 4
-    types_dict[chemistry.bbtrace.CATrace] = 1
-    types_dict[chemistry.bbtrace.PTrace] = 2
+    types_dict[full_atom.Residue] = 1
+    types_dict[full_atom.Nucleotide] = 2
+    types_dict[full_atom.Compound] = 3
+    types_dict[full_atom.MonoatomicIon] = 4
+    types_dict[bbtrace.CATrace] = 1
+    types_dict[bbtrace.PTrace] = 2
 
     def __init__(self, m):  # pylint: disable=W0231
         # __init__ supplied by ctypes.Structure should not be called, if there
@@ -188,9 +190,12 @@ class CMer(ctypes.Structure, metaclass=CInDelMeta):
         point_names = [name.encode() for name in m.get_config("indicators")]
         self.n_points = len(points)
 
-        if m.next_mer:
-            self.next_ind = m.next_mer.ind
-        else:
+        try:
+            next_mer = m.next_mer
+            if next_mer is None:
+                raise AttributeError
+            self.next_ind = next_mer.ind
+        except AttributeError:
             self.next_ind = 0
 
         # final conversion
@@ -252,7 +257,11 @@ class CStructure(ctypes.Structure, metaclass=CInDelMeta):
         start = 0
 
         for (i, (mer1, mer2)) in enumerate(zip(mers, mers[1:])):
-            if not mer1.next_mer == mer2:
+            try:
+                mer1_next_mer = mer1.next_mer
+            except AttributeError:
+                mer1_next_mer = None
+            if not mer1_next_mer == mer2:
                 cmers[i].next_ind = 0
                 segs.append((cmers[start].ind, cmers[i].ind))
                 start = i + 1
