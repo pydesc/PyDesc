@@ -110,7 +110,7 @@ distutils.command.__all__.append("install_shlib")
 sys.modules["distutils.command.install_shlib"] = install_shlib
 setattr(distutils.command, "install_shlib", install_shlib)
 
-install.WINDOWS_SCHEME["shlib"] = "$base/Lib"  # really, I have no idea
+#install.WINDOWS_SCHEME["shlib"] = "$base/Lib"  # really, I have no idea
 install.INSTALL_SCHEMES["unix_prefix"]["shlib"] = "$base/lib"
 install.INSTALL_SCHEMES["unix_home"]["shlib"] = "$base/lib"
 try:
