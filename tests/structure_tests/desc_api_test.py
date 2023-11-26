@@ -19,15 +19,15 @@ def protein_cmap(protein_file):
 
 def test_build_descriptor(protein_cmap):
     s, cm = protein_cmap
-    if len(s) < 15:
-        pytest.xfail("Not enough mers to test descriptors")
-    mer = tuple(AtomSetSubclass(Mer).create_structure(s))[4]
-    descriptor = create_descriptor(s, mer, cm)
-    assert mer in descriptor
-    assert mer in descriptor.central_element
+    most_contacted_mer, max_contacts = max(
+        [(mer, len(cm[mer.ind])) for mer in s], key=lambda x: x[1]
+    )
+    descriptor = create_descriptor(s, most_contacted_mer, cm)
+    assert most_contacted_mer in descriptor
+    assert most_contacted_mer in descriptor.central_element
     assert len(descriptor.central_element) == 5
-    assert len(descriptor.segments) >= 1
-    assert len(descriptor.contacts) >= 1
+    assert len(descriptor.segments) > 1
+    assert 1 < len(descriptor.contacts) < max_contacts
 
 
 def test_create_descriptors(protein_cmap):

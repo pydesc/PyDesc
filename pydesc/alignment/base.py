@@ -187,6 +187,8 @@ class AbstractAlignment(ABC):
         other_array = other.inds[:, column_inds]
         all_inds = numpy.concatenate((self.inds, other_array))
         inds = numpy.vstack(tuple({tuple(row) for row in all_inds}))
+        # numpy.unique(all_inds, axis=0) would be nice, but it does not work for
+        # custom types and inds can contain object()
         klass = type(self)
         return klass(self.structures, inds)
 

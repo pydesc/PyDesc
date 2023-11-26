@@ -20,7 +20,11 @@ TYPE_THRESHOLDS = {Nucleotide: 0.25, Residue: 0.01, MonoatomicIon: 0.0}
 
 @pytest.mark.parametrize(
     "superclass, expected_is_chainable",
-    ((Mer, True), (AtomSet, False), (Ligand, False),),
+    (
+        (Mer, True),
+        (AtomSet, False),
+        (Ligand, False),
+    ),
 )
 def test_mer_subclass(superclass, expected_is_chainable):
     class Subclass(superclass):
@@ -137,6 +141,7 @@ class AtomSetTest:
                     if result is None or class_ not in result:
                         continue
                     result = result[class_]
+                    result.test_pdb_id = str(chain.id) + str(residue.id[1]) + residue.id[2]
                     to_return.append(result)
         return to_return
 
@@ -177,14 +182,20 @@ class TestResidue(AtomSetTest):
                 m2.prev_mer = m1
 
         calculate_residues_angles_vectorized(mers)
+        fails = []
+        good = 0
         for mer in mers:
             assert "angles" in mer.dynamic_features
-            angs = mer.dynamic_features["angles"]
+            psi1, phi1 = mer.dynamic_features["angles"]
             del mer.dynamic_features["angles"]
-            psi1, phi1 = angs
             psi2, phi2 = mer.angles
-            assert pytest.approx(psi1, abs=1.0e-4) == psi2
-            assert pytest.approx(phi1) == phi2
+            if not pytest.approx(psi1, abs=1.0e-4) == psi2:
+                fails.append(f"{mer.test_pdb_id} psi: {psi1} vs {psi2}")
+            if not pytest.approx(phi1) == phi2:
+                fails.append(f"{mer.test_pdb_id} phi: {phi1} vs {phi2}")
+        fails_text = "\n".join(fails)
+        msg = f"Wrong angles in {len(fails)} out of {len(mers)}: {fails_text}"
+        assert len(fails) == 0, msg
 
     def test_bb_average(self, protein_file, structures_dir):
         mers = self.iter_structure(protein_file, Residue, structures_dir)
