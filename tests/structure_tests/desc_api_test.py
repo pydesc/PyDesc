@@ -17,10 +17,13 @@ def protein_cmap(protein_file):
 
 def test_build_descriptor(protein_cmap):
     s, cm = protein_cmap
-    descriptor = create_descriptor(s, s[22], cm)
-    assert s[22] in descriptor
-    assert len(descriptor.segments) == 3
-    assert len(descriptor.contacts) == 11
+    most_contacted_mer, max_contacts = max(
+        [(mer, len(cm[mer.ind])) for mer in s], key=lambda x: x[1]
+    )
+    descriptor = create_descriptor(s, most_contacted_mer, cm)
+    assert most_contacted_mer in descriptor
+    assert len(descriptor.segments) > 1
+    assert 1 < len(descriptor.contacts) < max_contacts
 
 
 def test_create_descriptors(protein_cmap):

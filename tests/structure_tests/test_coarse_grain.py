@@ -61,7 +61,7 @@ def test_ca_trace(structures_dir):
         mpp = mer.mpp.vector
         diff = mpp - ca
         dist = numpy.sqrt(numpy.sum(diff * diff))
-        assert pytest.approx(dist, 1.0)
+        assert pytest.approx(dist, 0.01) == 2.53
         indicators = mer.representation
         assert len(indicators) == 2
 
