@@ -5,8 +5,7 @@ import numpy
 import pytest
 
 from pydesc.alignment.base import DASH
-from pydesc.alignment.base import MultipleAlignment
-from pydesc.alignment.base import PairAlignment
+from pydesc.alignment.base import Alignment
 from pydesc.alignment.loaders import PALLoader
 from pydesc.alignment.savers import CSVSaver
 from pydesc.alignment.savers import FASTASaver
@@ -43,8 +42,15 @@ def structure4(structures_dir):
 
 
 def make_trivial_pair_w_dashes(stc1, stc2):
-    arr = numpy.array([[1, 1], [DASH, 2], [3, DASH], [4, 4],])
-    alignment = PairAlignment((stc1, stc2), arr)
+    arr = numpy.array(
+        [
+            [1, 1],
+            [DASH, 2],
+            [3, DASH],
+            [4, 4],
+        ]
+    )
+    alignment = Alignment((stc1, stc2), arr)
     return alignment
 
 
@@ -56,7 +62,7 @@ def make_full_trivial_alignment(stc1, stc2):
             if i.is_chainable() and j.is_chainable()
         ]
     )
-    alignment = PairAlignment((stc1, stc2), arr)
+    alignment = Alignment((stc1, stc2), arr)
     return alignment
 
 
@@ -128,7 +134,7 @@ class TestFASTASaver:
         }
 
         stream.seek(0)
-        for stc in alignment.structures:
+        for stc in alignment.get_structures():
             header = stream.readline()
             sequence = stream.readline()
             expected_sequence = expected_sequences[stc]
@@ -218,7 +224,7 @@ class TestPALSaver:
         saver = PALSaver()
         arr, _ = numpy.indices((10, 3))
         structures = (structure1, structure2, structure3)
-        alignment = MultipleAlignment(structures, arr)
+        alignment = Alignment(structures, arr)
         stream = StringIO()
 
         saver.save(stream, alignment, names=names)
@@ -237,7 +243,7 @@ class TestPALSaver:
         saver = PALSaver()
         arr, _ = numpy.indices((10, 3))
         structures = (structure1, structure2, structure3)
-        alignment = MultipleAlignment(structures, arr)
+        alignment = Alignment(structures, arr)
         stream = StringIO()
 
         saver.save(stream, alignment)
@@ -258,7 +264,7 @@ class TestPALSaver:
         saver = PALSaver()
         arr, _ = numpy.indices((30, 3))
         structures = (structure1, structure2, structure3)
-        alignment = MultipleAlignment(structures, arr)
+        alignment = Alignment(structures, arr)
         stream = StringIO()
 
         saver.save(stream, alignment)
@@ -295,5 +301,7 @@ class TestPALSaver:
 
         new_alignment = loader.load_alignment((structure1, structure4))
 
-        numpy.testing.assert_array_equal(alignment.inds, new_alignment.inds)
-        assert alignment.structures == new_alignment.structures
+        numpy.testing.assert_array_equal(
+            alignment.get_inds_table(), new_alignment.get_inds_table()
+        )
+        assert alignment.get_structures() == new_alignment.get_structures()

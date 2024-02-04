@@ -229,8 +229,8 @@ class Overfit:
 
     @_ensure_token
     def add_alignment(self, alignment_obj):
-        stc1, stc2 = alignment_obj.structures
-        for ind1, ind2 in alignment_obj.iter_rows():
+        stc1, stc2 = alignment_obj.get_structures()
+        for ind1, ind2 in alignment_obj:
             self.add_mers(stc1[ind1], stc2[ind2])
 
     @_ensure_token
@@ -264,8 +264,8 @@ class Multifit:
             self.add_mers(*mers)
 
     def add_alignment(self, alignment):
-        structures = alignment.structures
-        for row in alignment.iter_rows():
+        structures = alignment.get_structures()
+        for row in alignment:
             mers = [stc[ind] for stc, ind in zip(structures, row)]
             self.add_mers(*mers)
 

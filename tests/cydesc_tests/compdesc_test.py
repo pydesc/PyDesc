@@ -1,4 +1,5 @@
 import pytest
+from numpy.testing import assert_array_equal
 
 from pydesc.api.cmaps import calculate_contact_map
 from pydesc.api.criteria import get_default_protein_criterion
@@ -30,7 +31,7 @@ def test_same_desc_gold_standard_comparison(structures_dir, criterion):
     best_res = res[0]
     best_rmsd, best_al, best_trt = best_res
     assert len(best_al) == 30
-    for ind_stc1, ind_stc2 in best_al.iter_rows():
+    for ind_stc1, ind_stc2 in best_al:
         assert ind_stc1 == ind_stc2
 
     res_rmsds = [rmsd for rmsd, _, _ in res]
@@ -61,7 +62,7 @@ def test_very_similar_desc_comp(structures_dir, criterion):
         assert len(al) == expected_len
 
     best_al, _, _ = res_als
-    best_al_rows = [tuple(row) for row in best_al.iter_rows()]
+    best_al_rows = [tuple(row) for row in best_al]
     assert (42, 291) in best_al_rows
 
 
@@ -80,7 +81,8 @@ def test_similar_different_structures(structures_dir, criterion):
     rmsd, al, _ = res[0]
     assert pytest.approx(rmsd, 0.001) == 1.154
     assert len(al) == 27
-    assert al.get_inds_aligned_with(stc1, [47]) == {stc2: [210]}
+    aligned_with_mer_47 = al[(stc1, 47)].get_inds_table()
+    assert_array_equal(aligned_with_mer_47, [[47, 210]])
 
 
 def test_CATrace_compdesc(structures_dir):

@@ -97,10 +97,9 @@ def get_partial_structures(alignment):
         dict: with structures being keys and partial structures being values.
 
     """
-    structures = alignment.structures
+    inds_map = alignment.get_inds_map()
     result = {}
-    for col, structure in zip(alignment.iter_columns(), structures):
-        inds = col[col != DASH]
-        partial_structure = structure[inds]
+    for structure, inds in inds_map.items():
+        partial_structure = structure[inds.keys()]
         result[structure] = partial_structure
     return result

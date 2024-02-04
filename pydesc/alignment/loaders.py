@@ -25,22 +25,12 @@ from xml.etree import ElementTree
 import numpy
 
 from pydesc.alignment.base import DASH
-from pydesc.alignment.base import JoinedPairAlignments
-from pydesc.alignment.base import MultipleAlignment
-from pydesc.alignment.base import PairAlignment
-from pydesc.alignment.base import drop_single_mer_rows
+from pydesc.alignment.factory import AlignmentFactory
+from pydesc.alignment.factory import get_column_alignment_class
+from pydesc.alignment.processors import Merge
+from pydesc.alignment.processors import SelectStructures
+from pydesc.alignment.processors import drop_single_mer_rows
 from pydesc.numberconverter import PDBid
-
-
-def get_column_alignment_class(array):
-    """Given array of aligned inds, return class that best suits it or raise
-    ValueError for invalid array."""
-    _, n_structures = array.shape
-    if n_structures == 2:
-        return PairAlignment
-    elif n_structures > 2:
-        return MultipleAlignment
-    raise ValueError("Not enough columns to create alignment.")
 
 
 class AbstractLoader(ABC):
@@ -48,6 +38,7 @@ class AbstractLoader(ABC):
 
     def __init__(self, file_handler):
         self.file_handler = file_handler
+        self.factory = AlignmentFactory()
         self._data = {}
         self._metadata = {}
         self._structure_labels = None
@@ -148,8 +139,7 @@ class CSVLoader(AbstractLoader):
                 self._get_ind(converter, pdb_id) for pdb_id, converter in iterator
             ]
             array[i] = row_inds
-        alignment_class = get_column_alignment_class(array)
-        return alignment_class(structures, array)
+        return self.factory.create_from_array(structures, array)
 
 
 class PALLoader(AbstractLoader):
@@ -180,6 +170,7 @@ class PALLoader(AbstractLoader):
         self.id_parser = self._get_id_parser(self.version)
         labels = [self.file_handler.readline().strip() for _ in range(n_structures)]
         self._structure_labels = labels
+        header_count = 0
         while True:
             header = self.file_handler.readline()
             if not header:
@@ -187,20 +178,22 @@ class PALLoader(AbstractLoader):
             if not header.startswith(">"):
                 # not a header
                 continue
+            header_count += 1
             n_lines = int(self.file_handler.readline().replace("@", ""))
+            header = f"{header_count}{header}"
             self._data[header] = [self.file_handler.readline() for _ in range(n_lines)]
         super()._read_file()
 
     def load_alignment(self, structures):
         alignment = super().load_alignment(structures)
         try:
-            return alignment.limit_to_structures(structures)
+            return SelectStructures(alignment, structures).process()
         except AttributeError:
             return alignment
 
     def load_alignment_mapping(self, structures_map):
         joined_pairs = self.load_joined_pairs_mapping(structures_map)
-        alignment = joined_pairs.to_columns()
+        alignment = Merge(joined_pairs).process()
         return alignment
 
     def load_joined_pairs(self, structures):
@@ -216,8 +209,8 @@ class PALLoader(AbstractLoader):
         return alignment
 
     def load_joined_pairs_mapping(self, structures_map):
-        """Method corresponding to load_alignment_mapping, but returning container
-        for pair alignments."""
+        """Method corresponding to load_alignment_mapping, but returning sequence of
+        pairwise alignments."""
         pair_alignments = []
         for header, ranges in self._data.items():
             try:
@@ -226,18 +219,17 @@ class PALLoader(AbstractLoader):
                 continue
             ranges_ids = [self._parse_ranges(line) for line in ranges]
             ranges_ids = self._fill_chains(ranges_ids, structures_subset)
-            inds1, inds2 = self._unwrap_ranges(ranges_ids, structures_subset)
-            inds_rows = numpy.array(tuple(zip(inds1, inds2)), dtype=object)
-            pair_alignment = PairAlignment(structures_subset, inds_rows)
+            inds_lists = self._unwrap_ranges(ranges_ids, structures_subset)
+            pair_alignment = self.factory.create_from_list_of_inds(
+                structures_subset, inds_lists
+            )
             pair_alignments.append(pair_alignment)
 
-        if len(pair_alignments) == 1:
-            return pair_alignments[0]
-        return JoinedPairAlignments(pair_alignments)
+        return pair_alignments
 
     @staticmethod
     def _get_structures(header, label_map):
-        match = re.match(">(.*) (.*)\n", header)
+        match = re.match("\d?>(.*) (.*)\n", header)
         label1, label2 = match.group(1), match.group(2)
         structure1 = label_map[label1]
         structure2 = label_map[label2]
@@ -438,9 +430,8 @@ class FASTALoader(AbstractLoader):
             array[:, ind] = numpy.array(column)
             structures.append(structures_map[label])
             ind += 1
-        alignment_class = get_column_alignment_class(array)
         array = drop_single_mer_rows(array)
-        alignment = alignment_class(structures, array)
+        alignment = self.factory.create_from_array(structures, array)
         return alignment
 
     @staticmethod
@@ -509,8 +500,7 @@ class XMLLoader(AbstractLoader):
             ids = [self._parse_meq(entry) for entry in row]
             inds = list(map(self._get_ind, converters, ids))
             array[i] = inds
-        klass = get_column_alignment_class(array)
-        alignment = klass(structures, array)
+        alignment = self.factory.create_from_array(structures, array)
         return alignment
 
     @staticmethod

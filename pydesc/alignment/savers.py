@@ -26,6 +26,8 @@ from itertools import zip_longest
 import numpy
 
 from pydesc.alignment.base import DASH
+from pydesc.alignment.processors import ConvertToPairwiseAlignments
+from pydesc.alignment.processors import DropSingleMerRows
 from pydesc.warnexcept import MerCodeError
 
 
@@ -63,11 +65,11 @@ class CSVSaver(AbstractSaver):
     def save(self, stream, alignment, *, names=None):
         if names is None:
             names = {}
-        structures = alignment.structures
+        structures = alignment.get_structures()
         writer = csv.writer(stream, delimiter=self.delimiter)
         names = [names.get(structure, structure.name) for structure in structures]
         writer.writerow(names)
-        for row in alignment.iter_rows():
+        for row in alignment.get_inds_table():
             text_row = self._format_row(row, structures)
             writer.writerow(text_row)
 
@@ -112,9 +114,10 @@ class FASTASaver(AbstractSaver):
     def save(self, stream, alignment, *, names=None):
         sequences = {}
         all_segments = {}
-        structures = alignment.structures
-        single_mer_rows = numpy.count_nonzero(alignment.inds == DASH, axis=1) == 1
-        for structure, column in zip(structures, alignment.iter_columns()):
+        structures = alignment.get_structures()
+        inds_table = alignment.get_inds_table()
+        single_mer_rows = numpy.count_nonzero(inds_table == DASH, axis=1) == 1
+        for structure, column in zip(structures, inds_table.T):
             inds = [ind for ind in column if ind is not DASH]
             segments = {}
             for k, group in groupby(inds, key=lambda ind: structure[ind].chain):
@@ -211,10 +214,11 @@ class PALSaver(AbstractSaver):
 
     def save(self, stream, alignment, *, names=None):
         names = self._prepare_names(alignment, names)
-        chains_edges = self._get_chain_edges(alignment.structures)
+        chains_edges = self._get_chain_edges(alignment.get_structures())
         self._write_global_header(stream, alignment, names)
-        joined_pairs = alignment.to_joined_pairs()
-        for pair_alignment in joined_pairs.pair_alignments:
+        pairwise_alignments = ConvertToPairwiseAlignments(alignment).process()
+        for pair_alignment in pairwise_alignments:
+            pair_alignment = DropSingleMerRows(pair_alignment).process()
             self._write_pair_header(stream, pair_alignment, names)
             segments_map = self._prepare_segments(pair_alignment, chains_edges)
             self._write_segments(stream, pair_alignment, segments_map)
@@ -222,7 +226,9 @@ class PALSaver(AbstractSaver):
 
     @staticmethod
     def _prepare_names(alignment, names):
-        all_names = {structure: structure.name for structure in alignment.structures}
+        all_names = {
+            structure: structure.name for structure in alignment.get_structures()
+        }
         if names is not None:
             all_names.update(names)
         return all_names
@@ -238,28 +244,29 @@ class PALSaver(AbstractSaver):
 
     def _write_global_header(self, stream, alignment, names):
         stream.write(f"v:{self.version}\n")
-        stream.write(f"{len(alignment.structures)}\n")
-        for structure in alignment.structures:
+        stream.write(f"{len(alignment.get_structures())}\n")
+        for structure in alignment.get_structures():
             stream.write(f"{names[structure]}\n")
         stream.write("\n")
 
     @staticmethod
     def _write_pair_header(stream, pair_alignment, names):
-        structure1, structure2 = pair_alignment.structures
+        structure1, structure2 = pair_alignment.get_structures()
         name1 = names[structure1]
         name2 = names[structure2]
         stream.write(f">{name1} {name2}\n")
 
     @staticmethod
     def _prepare_segments(pair_alignment, chains_edges):
-        left_structure, right_structure = pair_alignment.structures
+        left_structure, right_structure = pair_alignment.get_structures()
         segments_map = OrderedDict()
         staring_index = 0
-        length, _ = pair_alignment.inds.shape
+        length = len(pair_alignment)
         if length == 0:
             return segments_map
+        inds_table = pair_alignment.get_inds_table()
         for row_index in range(length - 1):
-            nth_row, mth_row = pair_alignment.inds[[row_index, row_index + 1]]
+            nth_row, mth_row = inds_table[[row_index, row_index + 1]]
             if numpy.all(nth_row + 1 == mth_row):
                 right_is_edge = nth_row[0] in chains_edges[left_structure]
                 left_is_edge = nth_row[1] in chains_edges[right_structure]
@@ -271,12 +278,13 @@ class PALSaver(AbstractSaver):
         return segments_map
 
     def _write_segments(self, stream, pair_alignment, segments_map):
-        left_structure, right_structure = pair_alignment.structures
+        left_structure, right_structure = pair_alignment.get_structures()
         n_segments = len(segments_map)
+        inds_table = pair_alignment.get_inds_table()
         stream.write(f"@{n_segments}\n")
         for star_row, end_row in segments_map.items():
-            left_start, right_start = pair_alignment.inds[star_row]
-            left_end, right_end = pair_alignment.inds[end_row]
+            left_start, right_start = inds_table[star_row]
+            left_end, right_end = inds_table[end_row]
             left_segment = self._format_segment(left_structure, left_start, left_end)
             right_segment = self._format_segment(
                 right_structure, right_start, right_end
