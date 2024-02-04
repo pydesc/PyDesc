@@ -1945,7 +1945,7 @@ results = fitter.compdesc()
 
 for rmsd, alignment, trt_matrix in results:
     assert rmsd < 2.0
-    for ind1, ind2 in alignment.iter_rows():
+    for ind1, ind2 in alignment:
         print(structure1[ind1], structure2[ind2])
         if ind1 == desc1.central_element.central_mer.ind:
             assert ind2 == desc2.central_element.central_mer.ind
@@ -1979,24 +1979,19 @@ More specific, on value of their `representation` attribute.
 Alignment is a mapping between residues or nucleotides of two or more biomolecules.
 It could be represented as graph, where vertices are residues or nucleotides (mers)
  and where edges indicate that mer from one structure corresponds with mer from other
- structure(s).
-In proper alignment there should be as many subsets of vertices as many structures
- are aligned.
+ or the same structure(s).
+In proper alignment there should be at least as many subsets of vertices as many
+ structures are aligned.
  Edges would be allowed only between different subsets of vertices and every pair of
- structures would be a bijection (with edges representing relation).
+ such subsets would be a bijection (with edges representing relation).
  In multiple alignment (alignment of more than two structures) that relation should be
  reflexive, meaning that if mer `a` from structure `A` is aligned with mer `b` from
  structure `B` and mer `b` from structure `B` was aligned with mer `c` from structure 
  `C`, that would lead us to conclusion that mer `a` from `A` is aligned with `c` from
  `C`.
- That allows for two kind of improper alignments: ones that align mers within 
- structures, and those that align single mer with more than one mer from other 
- structure.
- First kind in not served by PyDesc at all.
- Second kind might be dealt with using PyDesc.
- Intention was to enable editing in order to fix such improper alignments.
- Bear in mind that there are methods that will result in unexpected behaviour while 
- called for improper alignments though.
+If there are multiple subsets of mers with edges, but representing the same structure,
+ we deal with self-aligned structures (e.g. repetitive motifs).
+ PyDesc is able to handle such cases.
 In PyDesc we assume that an edge between two mers from different structures indicates
  structural similarity.
 It is possible to use PyDesc to work with aligned sequences as well, but note that this
@@ -2059,7 +2054,8 @@ alignment = load_alignment(alignment_path, aligned_structures)
 
 same_alignment = loader.load_alignment(aligned_structures)
 
-assert alignment == same_alignment
+for row1, row2 in zip(alignment, same_alignment):
+    assert (row1 == row2).all()
 ```
 ~~~
 Note that in the example above two aligned structures are stored in a single pdb file.
@@ -2210,58 +2206,56 @@ Version 2.0 allows for chain names longer than one character (at cost of accepti
 
 ### Alignment objects
 
-Loaders method `load_alignment` returns either `PairAlignment` or `MultipleAlignment`.
- They both implement common interface, although Multiple alignment extends it slightly.
- Main difference is details of implementation of some methods.
+Loaders method `load_alignment` returns `Alignment`.
+ Alignments store PyDesc inds of mer objects in arrays.
+ They provide three methods:
+ * `get_structures` -- returning tuple of aligned structure (PyDesc objects)
+ * `get_inds_table` -- returning 2-D numpy array, in which columns represent structures,
+    rows contain mer inds or `DASH` objects.
+ * `get_inds_map` -- returning dictionary, in which structures are keys, while values
+    are dictionaries mapping mer inds to row indices.
 
-Most importantly, alignments store PyDesc inds of mer objects in arrays.
- Each alignment has `structures` attribute, so it is always possible to tell alignment 
- of which structures an object represents.
+It is possible to crop alignment using syntax with `[(<structure>, <index>)]`.
+ Slicing is supported.
+ Additionally `pdb_ids` property, much like in structures, utilises PDB ids.
+ When slicing, new alignment object is created.
 
-There are two iterators: one that iterates over rows, and other iterating over columns.
- Each column corresponds with single structure (line in CSV files).
+Looping over `Alignment` instance will bring rows as numpy arrays.
  Each row stores inds of aligned mers from subsequent structures.
 
-It is also possible to crop alignment using standard notation with "[]".
- In that case new alignment object is created.
- Method allows for single index, slice or sequence of indices.
- Arrays are indexed from 0 and indices are relative to first aligned row, not mers
- in any structure, however such approach is also possible (see below).
 ```python
 from pydesc.alignment.loaders import PALLoader
 from pydesc.api.structure import get_structures_from_file
 
+    # reading two models of different SARS proteins
 pdb_path = "tests/data/test_alignments/structures/sars_pair.pdb"
 structures = get_structures_from_file(pdb_path)
+left_stc, right_stc = structures
+    # renaming models
+left_stc.name = "SARS1"
+    # chain B, aligned from mer 382
+right_stc.name = "SARS2"
+    # chain E, aligned from mer 335
 
 pal_path = "tests/data/test_alignments/pal/sars_pair.pal"
 with open(pal_path) as file_handler:
     loader = PALLoader(file_handler)
 alignment = loader.load_alignment(structures)
 
-left_stc, right_stc = alignment.structures   # this attribute should be identical to 
-                                             # "structures" variable
-for index, row in enumerate(alignment.iter_rows()):
+assert left_stc, right_stc == alignment.get_structures()
+
+for index, row in enumerate(alignment):
     left_ind, right_ind = row
     left_mer_name = left_stc[left_ind].name
     right_mer_name = right_stc[right_ind].name
     print(f"{left_mer_name} aligned with {right_mer_name}")
 
-for structure, aligned_inds in zip(alignment.structures, alignment.iter_columns()):
-    structure_id = id(structure)
-    print(f"Inds aligned for structure {structure_id}:")
-    print(",".join([str(i) for i in aligned_inds]))
-
-first_5_rows = alignment[0:5]
-also_those_rows = alignment[[0, 1, 2, 3, 4]]
-for row1, row2 in zip(first_5_rows.iter_rows(), also_those_rows.iter_rows()):
+first_5_rows = alignment[(left_stc, 0): (right_stc, 6)]
+also_those_rows = alignment.pdb_ids["SARS1:B:382":"SARS2:E:339"]
+for row1, row2 in zip(first_5_rows, also_those_rows):
     assert (row1 == row2).all()     # check if all inds are the same
 assert len(first_5_rows) == len(also_those_rows) == 5
 ```
-
-Given two alignment it is possible to determine what common structures they align with 
- method `get_common_structures`, which returns set.
- See first example [here](#additional-methods) to see it in action.
 
 ### Editing alignments
 ~~~
